@@ -8,6 +8,7 @@ import { ResetPasswordPanel } from "./components/ResetPasswordPanel";
 import { ProfilePage } from "./components/ProfilePage";
 import { SecurityPage } from "./components/SecurityPage";
 import { SettingsPage } from "./components/SettingsPage";
+import { PrivacyPage } from "./components/PrivacyPage";
 import { useWatchlist } from "./hooks/useWatchlist";
 import { Toast } from "./components/Toast";
 import { ShariaDetailWidget } from "./components/ShariaDetailWidget";
@@ -2538,6 +2539,12 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
                   >
                     Einstellungen
                   </button>
+                  <button
+                    onClick={() => { onGo("privacy"); setAccountMenuOpen(false); }}
+                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--gold-soft)]"
+                  >
+                    Datenschutz
+                  </button>
                   <div className="my-1 border-t border-[var(--border)]" />
                   <button
                     onClick={onSignOut}
@@ -2736,6 +2743,7 @@ export default function TazkiyahPrototype() {
         {page === "profile" && <ProfilePage session={session} onGo={goTo} />}
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
+        {page === "privacy" && <PrivacyPage session={session} onGo={goTo} />}
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />

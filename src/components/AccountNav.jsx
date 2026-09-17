@@ -9,6 +9,7 @@ const TABS = [
   { key: "profile", label: "Profil" },
   { key: "security", label: "Sicherheit" },
   { key: "settings", label: "Einstellungen" },
+  { key: "privacy", label: "Datenschutz" },
 ];
 
 export function AccountNav({ active, onGo }) {
