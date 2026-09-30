@@ -24,7 +24,23 @@ import { createSupabaseRepo } from "../src/screening/supabaseRepo.js";
 import { runScreening } from "../src/screening/runner.js";
 
 export default async function handler(req, res) {
-  if (!process.env.CRON_SECRET || req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Leerzeichen/Zeilenumbrüche am Rand ignorieren (entstehen leicht beim Einfügen in Vercel)
+  const secret = (process.env.CRON_SECRET || "").trim();
+  const header = String(req.headers.authorization || "").trim();
+  const token = header.replace(/^Bearer\s+/i, "").trim();
+  if (!secret || !/^Bearer\s+/i.test(header) || token !== secret) {
+    // Diagnose ohne das Geheimwort preiszugeben: nur Grund und Längen
+    const reason = !secret
+      ? "CRON_SECRET ist in dieser Umgebung nicht gesetzt"
+      : !header
+        ? "Anfrage ohne Authorization-Header (Vercel schickt ihn nur, wenn CRON_SECRET beim Deployment gesetzt war)"
+        : !/^Bearer\s+/i.test(header)
+          ? "Authorization-Header ohne 'Bearer'"
+          : "Geheimwort stimmt nicht überein";
+    console.warn(
+      "run-screening abgewiesen: " +
+        JSON.stringify({ reason, env: process.env.VERCEL_ENV || null, secretLength: secret.length, tokenLength: token.length })
+    );
     return res.status(401).json({ error: "Unauthorized" });
   }
 
