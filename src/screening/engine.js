@@ -30,7 +30,7 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.0.0";
+export const ENGINE_VERSION = "1.0.1";
 
 export const STATUS = {
   CONFORM: "konform",
@@ -484,7 +484,7 @@ function stageC({ annual, quarters, profile, p }) {
   const latestQ = quarters[0] || null;
 
   const c1 = makeCriterion("C1", "Reale Vermögenswerte", "SS 21, 3/19; Fußnote zu SS 21, 3/1", {
-    parameterRefs: ["realAssetsMinPct", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "balanceBasis"],
+    parameterRefs: ["realAssetsMinPct", "realAssetsValuation", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "balanceBasis"],
   });
   c1.checks = [realAssetsCheck(annual, "annual", p), realAssetsCheck(latestQ, "quarter", p)];
   c1.result = combine(c1.checks);
@@ -598,7 +598,7 @@ function stageG({ security, holdings, reviews, p }) {
   // G2–G4: manuell aus Prospekt / KID / Jahresbericht, unabhängig vom Look-through
   const manual = [
     ["G2", "Keine synthetische Replikation", "SS 21, 3/14; SS 27, 6/1 [Ableitung]", "ruleG2Synthetic", "Replikationsmethode noch nicht geprüft", "Synthetische Replikation über Swaps"],
-    ["G3", "Keine Wertpapierleihe", "SS 21, 3/9 [Ableitung]", "ruleG3SecuritiesLending", "Wertpapierleihe noch nicht geprüft", "Fonds verleiht Wertpapiere"],
+    ["G3", "Keine Wertpapierleihe", "SS 21, 3/9; SS 21, 3/15 [Ableitung]", "ruleG3SecuritiesLending", "Wertpapierleihe noch nicht geprüft", "Fonds verleiht Wertpapiere"],
     ["G4", "Keine Derivate im Fonds", "SS 21, 3/12–3/14; SS 27, 6/2–6/3 [Ableitung]", "ruleG4Derivatives", "Derivateeinsatz noch nicht geprüft", "Fonds setzt Derivate ein"],
   ];
   for (const [id, name, source, param, missingText, failText] of manual) {

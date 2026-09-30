@@ -37780,7 +37780,7 @@ export const ALL_STOCKS = [
       "wkn": "A0NA46",
       "ter": "0,30% p.a.",
       "holdingsCount": "391",
-      "replication": "Physisch (Vollreplikation)",
+      "replication": "Physisch (laut Jahresbericht 2025: optimierte Auswahl)",
       "sparplanfaehig": "Ja (17+ Broker)"
     },
     "events": {

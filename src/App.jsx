@@ -13,6 +13,7 @@ import { useWatchlist } from "./hooks/useWatchlist";
 import { Toast } from "./components/Toast";
 import { ShariaDetailWidget } from "./components/ShariaDetailWidget";
 import { getMarketStatus } from "./utils/germanTradingCalendar";
+import MethodikPage from "./components/MethodikPage.jsx";
 
 /* ============================================================
    TAZKIYAH — Basis-Prototyp
@@ -2535,6 +2536,16 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           Akademie
         </button>
 
+        <button
+          onClick={() => onGo("methodik")}
+          className={
+            "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
+            (page === "methodik" ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+          }
+        >
+          Methodik
+        </button>
+
         {compareCount > 0 && (
           <button
             onClick={() => onGo("compare")}
@@ -2674,7 +2685,7 @@ export default function TazkiyahPrototype() {
       setActiveAnchor(anchor);
     } else {
       setPage(targetPage);
-      setActiveAnchor(null);
+      setActiveAnchor(anchor || null);
     }
     if (filter) {
       setActiveFilter(filter);
@@ -2779,6 +2790,7 @@ export default function TazkiyahPrototype() {
         )}
         {page === "reports" && <ReportsPage onBack={() => goTo("home")} />}
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
+        {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "sectors" && <SectorsPage onBack={() => goTo("home")} />}
         {page === "compare" && <ComparePage tickers={compareTickers} onBack={() => goTo("home")} />}
         {page === "profile" && <ProfilePage session={session} onGo={goTo} />}

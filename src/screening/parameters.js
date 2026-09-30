@@ -23,7 +23,7 @@
 // speichert einen Schnappschuss der Werte, damit alte Ergebnisse
 // nachvollziehbar bleiben.
 
-export const PARAMETERS_VERSION = "2026-09-30";
+export const PARAMETERS_VERSION = "2026-09-30.2";
 
 export const PRINCIPLE =
   "Wortlaut des AAOIFI-Standards zuerst. Wo der Text Spielraum lässt, gilt die vorsichtigere Variante. Grenzwerte werden nicht strenger gemacht als im Standard (30 %, 30 %, 5 %).";
@@ -124,6 +124,14 @@ export const DEFAULT_PARAMETERS = {
     alternative: "Nur der Umsatz (kleinerer Nenner, strengere Quote).",
     source: "SS 21, 3/4/4",
   },
+  realAssetsValuation: {
+    value: "book_value",
+    method: "Reale Vermögenswerte, Nutzungsrechte und Rechte werden mit ihren Buchwerten aus der Bilanz angesetzt.",
+    rationale:
+      "SS 21, 3/19 spricht vom Marktwert dieser Vermögenswerte. Marktwerte einzelner Vermögenswerte werden von Unternehmen nicht veröffentlicht und stehen in keiner Finanzdatenquelle; die Buchwerte sind die einzige verfügbare, geprüfte Näherung. Diese Datengrenze wird offen ausgewiesen.",
+    alternative: "Marktwerte laut Wortlaut von 3/19 (nicht verfügbar).",
+    source: "SS 21, 3/19",
+  },
   goodwillCountsAsRealAsset: {
     value: false,
     method: "Goodwill zählt NICHT zu den realen Vermögenswerten.",
@@ -166,7 +174,8 @@ export const DEFAULT_PARAMETERS = {
   purificationFrequency: {
     value: "quarterly",
     method: "Reinigungsbetrag pro Aktie quartalsweise; Stichtag jeweils Quartalsende.",
-    rationale: "Genauere Zuordnung für Anleger, die nur einen Teil des Jahres halten.",
+    rationale:
+      "SS 21, 3/4/6/1 nennt ausdrücklich quartalsweise, jährliche oder andere Perioden. Die Quartale ordnen die Reinigung genauer zu, wenn eine Aktie nur einen Teil des Jahres gehalten wird.",
     alternative: "Jährlich zum Geschäftsjahresende.",
     source: "SS 21, 3/4/6/1; SS 21, 3/4/6/4",
   },
@@ -221,9 +230,10 @@ export const DEFAULT_PARAMETERS = {
   ruleG3SecuritiesLending: {
     value: true,
     method: "Verleiht der Fonds Wertpapiere, ist er nicht konform.",
-    rationale: "Aktienleihe verstößt gegen SS 21, 3/9.",
+    rationale:
+      "SS 21, 3/9 verbietet das Verleihen von Aktien, 3/15 die Vermietung von Aktien, wie sie an Börsen üblich ist. Die Wertpapierleihe eines Fonds gegen Gebühr entspricht dem. Das unentgeltliche Verleihen zur Verpfändung nach 3/16 ist davon nicht betroffen.",
     alternative: "Nur markieren.",
-    source: "SS 21, 3/9",
+    source: "SS 21, 3/9; SS 21, 3/15",
     derivation: true,
   },
   ruleG4Derivatives: {

@@ -30,6 +30,13 @@ const UNIVERSE_RECHECK_DAYS = 90;
 
 // ------------------------------------------------------------------ Helfer
 
+// Titel ohne ISIN in der Anbieterdatei werden über Ticker + Land zugeordnet.
+// Das eigene Universum enthält bisher nur US-Aktien.
+const US_COUNTRY_NAMES = new Set(["united states", "vereinigte staaten", "usa", "us"]);
+export function normalizeTicker(t) {
+  return String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 export function fingerprint(result) {
   const { screenedAt: _ignored, ...rest } = result;
   return createHash("sha256").update(JSON.stringify(rest)).digest("hex");
@@ -252,10 +259,16 @@ export async function runScreening({
 
   // 3. ETFs aus Holdings
   const byIsin = new Map(state.securities.filter((s) => s.isin).map((s) => [s.isin, s]));
+  const byUsTicker = new Map(stocks.map((s) => [normalizeTicker(s.ticker), s]));
+  const findHolding = (h) =>
+    byIsin.get(h.holding_isin) ||
+    (h.holding_ticker && US_COUNTRY_NAMES.has((h.holding_country || "").toLowerCase())
+      ? byUsTicker.get(normalizeTicker(h.holding_ticker))
+      : undefined);
   for (const etf of etfs) {
     if (timeLeft() < 3000) break;
     const holdings = (state.holdingsByEtf.get(etf.id) || []).map((h) => {
-      const sec = byIsin.get(h.holding_isin);
+      const sec = findHolding(h);
       return {
         isin: h.holding_isin,
         weight: Number(h.weight),

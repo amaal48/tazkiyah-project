@@ -33,7 +33,7 @@ export function createSupabaseRepo(db) {
             .select("id,security_id,criterion,result,details,source_url,source_note,reviewer,reviewed_at,basis_annual_period_end")
             .order("id")
         ),
-        fetchAll(() => db.from("etf_holdings").select("etf_id,holding_isin,weight,as_of").order("etf_id")),
+        fetchAll(() => db.from("etf_holdings").select("etf_id,holding_isin,holding_ticker,holding_country,weight,as_of").order("etf_id")),
         fetchAll(() =>
           db.from("purification_amounts").select("security_id,period_end,rate_pct_of_price").order("security_id")
         ),

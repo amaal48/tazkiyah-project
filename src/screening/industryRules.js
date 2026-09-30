@@ -51,7 +51,8 @@ export const INDUSTRY_GROUPS = [
     handling: "exclude",
     basis: "Im Standard genannt",
     source: "SS 21, 2/1; SS 21, 3/2",
-    rationale: "Zinsbasierte Finanzgeschäfte sind im Standard ausdrücklich als verbotene Haupttätigkeit genannt.",
+    rationale:
+      "SS 21, 2/1 nennt Riba-Geschäfte ausdrücklich als verbotene Haupttätigkeit. Konventionelle Banken, Versicherungen und Kreditgeber werden dieser Gruppe zugeordnet; Versicherungen stehen dort nicht wörtlich, ihr Geschäftsmodell beruht aber auf zinsbasierten Anlagen und Verträgen.",
     industryKeywords: ["bank", "insurance", "credit services", "mortgage"],
   },
   {

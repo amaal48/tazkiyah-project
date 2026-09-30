@@ -175,3 +175,19 @@ test("OpenFIGI-Auswertung", () => {
   assert.deepEqual(germanVenuesFromMapping({ warning: "No identifier found." }), []);
   assert.equal(germanVenuesFromMapping({ error: "Too many requests" }), undefined);
 });
+
+test("ETF: Holdings ohne ISIN werden über Ticker + Land zugeordnet", async () => {
+  const secs = [
+    { ...stocks[0], id: "BRK", ticker: "BRK-B" },
+    { id: "ETF", ticker: "ETF", name: "ETF", asset_type: "etf", product_type: "standard", isin: "IE1", is_ucits: true, has_kid: true, fund_annual_report_date: "2026-05-31" },
+  ];
+  const repo = memoryRepo(secs, { holdings: [
+    { etf_id: "ETF", holding_isin: "TICKER:BRKB:United States", holding_ticker: "BRKB", holding_country: "United States", weight: 60, as_of: "2026-09-01" },
+    { etf_id: "ETF", holding_isin: "TICKER:ASML:Netherlands", holding_ticker: "ASML", holding_country: "Netherlands", weight: 40, as_of: "2026-09-01" },
+  ] });
+  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 200 });
+  const g1 = repo.db.runs.find((r) => r.security_id === "ETF").result.criteria.find((c) => c.id === "G1");
+  // BRK-B zugeordnet (Status vorhanden), ASML nicht im Universum → nicht geprüft
+  assert.equal(g1.checks[0].uncheckedCount, 2); // beide „nicht geprüft“: BRK-B ohne A2/B3-Prüfung
+  assert.equal(g1.result, "not_checked");
+});

@@ -264,6 +264,10 @@ left join latest l on l.security_id = r.security_id and l.criterion = r.criterio
 
 -- ---------------------------------------------------------------- etf_holdings
 
+-- holding_isin: ISIN, falls die Anbieterdatei eine enthält; sonst ein
+-- Schlüssel "TICKER:<Ticker>:<Land>". Die Zuordnung zu eigenen Titeln läuft
+-- dann über holding_ticker + holding_country (siehe src/screening/runner.js).
+-- Befüllt über scripts/import-etf-holdings.mjs.
 create table if not exists public.etf_holdings (
   etf_id        uuid not null references public.securities(id) on delete cascade,
   holding_isin  text not null,
@@ -273,6 +277,9 @@ create table if not exists public.etf_holdings (
   source_url    text,
   primary key (etf_id, holding_isin, as_of)
 );
+
+alter table public.etf_holdings add column if not exists holding_ticker  text;
+alter table public.etf_holdings add column if not exists holding_country text;
 
 -- -------------------------------------------------------- purification_amounts
 
