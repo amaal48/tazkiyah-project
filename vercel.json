@@ -3,6 +3,15 @@
     {
       "path": "/api/generate-weekly-report",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/run-screening",
+      "schedule": "0 3 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/run-screening.js": {
+      "maxDuration": 60
+    }
+  }
 }
