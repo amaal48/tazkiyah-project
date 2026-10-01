@@ -329,6 +329,48 @@ begin
   end if;
 end $$;
 
+-- ------------------------------------------------------------ screening_lock
+-- Sperre gegen gleichzeitige Screening-Läufe (seit 01.10.2026). Zwei parallele
+-- Läufe hatten am 30.09. das Tagesbudget doppelt verbraucht. Eine Sperre läuft
+-- nach p_ttl_seconds von selbst ab, falls ein Lauf abstürzt.
+
+create table if not exists public.screening_lock (
+  id           integer primary key default 1 check (id = 1),
+  holder       text,
+  locked_until timestamptz not null default 'epoch'
+);
+insert into public.screening_lock (id) values (1) on conflict (id) do nothing;
+
+create or replace function public.acquire_screening_lock(p_holder text, p_ttl_seconds integer)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare got integer;
+begin
+  update public.screening_lock
+     set holder = p_holder, locked_until = now() + make_interval(secs => p_ttl_seconds)
+   where id = 1 and locked_until < now();
+  get diagnostics got = row_count;
+  return got = 1;
+end $$;
+
+create or replace function public.release_screening_lock(p_holder text)
+returns void language sql security definer set search_path = public as $$
+  update public.screening_lock set holder = null, locked_until = 'epoch' where id = 1 and holder = p_holder;
+$$;
+
+revoke all on function public.acquire_screening_lock(text, integer) from public;
+revoke all on function public.release_screening_lock(text) from public;
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    execute 'revoke all on function public.acquire_screening_lock(text, integer) from anon, authenticated';
+    execute 'revoke all on function public.release_screening_lock(text) from anon, authenticated';
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant execute on function public.acquire_screening_lock(text, integer) to service_role';
+    execute 'grant execute on function public.release_screening_lock(text) to service_role';
+  end if;
+end $$;
+
 -- ------------------------------------------------------------------------- RLS
 
 alter table public.securities               enable row level security;
@@ -339,6 +381,7 @@ alter table public.manual_reviews           enable row level security;
 alter table public.etf_holdings             enable row level security;
 alter table public.purification_amounts     enable row level security;
 alter table public.screening_api_usage      enable row level security;  -- keine Policies: nur Service-Role
+alter table public.screening_lock           enable row level security;  -- keine Policies: nur Service-Role
 
 -- Öffentlich lesbar (keine Schreib-Policies → nur Service-Role/Dashboard schreibt)
 do $$

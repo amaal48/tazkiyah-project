@@ -68,8 +68,24 @@ function memoryRepo(securities, { reviews = [], holdings = [] } = {}) {
     },
     async addUsage(_p, n) {
       db.usage += n;
+      return db.usage;
     },
   };
+}
+
+/** Repo mit Sperre wie in Supabase (für Tests gleichzeitiger Läufe). */
+function lockingRepo(securities) {
+  const repo = memoryRepo(securities);
+  let holder = null;
+  repo.acquireLock = async (h) => {
+    if (holder) return false;
+    holder = h;
+    return true;
+  };
+  repo.releaseLock = async (h) => {
+    if (holder === h) holder = null;
+  };
+  return repo;
 }
 
 const stocks = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"].map((t) => ({
@@ -190,4 +206,72 @@ test("ETF: Holdings ohne ISIN werden über Ticker + Land zugeordnet", async () =
   // BRK-B zugeordnet (Status vorhanden), ASML nicht im Universum → nicht geprüft
   assert.equal(g1.checks[0].uncheckedCount, 2); // beide „nicht geprüft“: BRK-B ohne A2/B3-Prüfung
   assert.equal(g1.result, "not_checked");
+});
+
+test("Tageslimit beim Anbieter: Abbruch, Titel nicht als fehlerhaft markiert, später erneut", async () => {
+  const repo = memoryRepo(stocks.slice(0, 4));
+  const provider = fakeProvider();
+  let n = 0;
+  provider.getProfile = async (symbol) => {
+    provider.calls.push(symbol);
+    if (++n > 1) throw Object.assign(new Error("FMP profile 429: Limit Reach"), { kind: "limit" });
+    return { symbol, isin: null, industry: "Software - Infrastructure", description: "" };
+  };
+  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 200 });
+  assert.equal(s.stoppedReason, "Tageslimit beim Datenanbieter erreicht");
+  assert.equal(s.fetched.length, 1);
+  assert.equal(s.fetchErrors.length, 0);
+  assert.ok(repo.db.securities.every((x) => !x.last_error));
+  // Nicht abgerufene Titel sind beim nächsten Lauf wieder fällig
+  const skipped = repo.db.securities.filter((x) => !x.data_fetched_at);
+  assert.ok(skipped.length >= 1);
+  assert.ok(skipped.every((x) => needsFreshData(x, null, NOW.getTime() + 86400000)));
+});
+
+test("Sperre: Ein zweiter gleichzeitiger Lauf wird übersprungen", async () => {
+  const repo = lockingRepo(stocks);
+  const slow = fakeProvider();
+  const orig = slow.getFinancialPeriods;
+  slow.getFinancialPeriods = async (...a) => {
+    await new Promise((r) => setTimeout(r, 20));
+    return orig(...a);
+  };
+  const [a, b] = await Promise.all([
+    runScreening({ repo, provider: slow, now: NOW, dailyCallBudget: 30 }),
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
+  ]);
+  assert.equal([a, b].filter((x) => x.skipped).length, 1);
+  assert.ok(repo.db.usage <= 30);
+  assert.equal(repo.db.runs.filter((r) => r.security_id === "AAA").length, 1);
+  // Nach dem Lauf ist die Sperre wieder frei
+  const c = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 });
+  assert.equal(c.skipped, undefined);
+});
+
+test("Budget hält auch ohne Sperre bei parallelen Läufen (atomare Reservierung)", async () => {
+  const repo = memoryRepo(stocks);
+  // Beide Läufe sehen beim Start usedToday = 0 und planen je 4 Titel
+  await Promise.all([
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
+  ]);
+  assert.ok(repo.db.usage <= 30, `verbraucht: ${repo.db.usage}`);
+});
+
+test("Quartale im Tarif gesperrt: Jahreswerte gespeichert, Abruf erst nach neuem Jahresabschluss", async () => {
+  const repo = memoryRepo(stocks.slice(0, 1));
+  const provider = fakeProvider();
+  provider.getFinancialPeriods = async () => ({
+    annual: snap("annual", "2025-12-31"),
+    quarters: [],
+    notes: ["Quartalsdaten im aktuellen Datentarif nicht verfügbar"],
+  });
+  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 200 });
+  assert.deepEqual(s.dataNotes, ["Quartalsdaten im aktuellen Datentarif nicht verfügbar"]);
+  const run = repo.db.runs[0];
+  assert.equal(run.status, STATUS.NOT_CHECKED);
+  assert.equal(run.inputs.quartersAvailable, false);
+  // Nicht wöchentlich neu abrufen, sondern erst ca. 75 Tage nach dem nächsten Geschäftsjahresende
+  assert.equal(needsFreshData({}, run, Date.parse("2026-11-01T00:00:00Z")), false);
+  assert.equal(needsFreshData({}, run, Date.parse("2027-03-20T00:00:00Z")), true);
 });

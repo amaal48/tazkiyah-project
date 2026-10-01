@@ -131,8 +131,22 @@ export function createSupabaseRepo(db) {
       if (error) throw new Error(error.message);
     },
 
+    /** Zählt Abrufe atomar hoch (negativ = Reservierung zurückgeben) und liefert den neuen Tagesstand. */
     async addUsage(provider, calls) {
-      const { error } = await db.rpc("add_api_usage", { p_provider: provider, p_calls: calls });
+      const { data, error } = await db.rpc("add_api_usage", { p_provider: provider, p_calls: calls });
+      if (error) throw new Error(error.message);
+      return typeof data === "number" ? data : Number(data);
+    },
+
+    /** Sperre gegen gleichzeitige Läufe. true = Sperre erhalten. */
+    async acquireLock(holder, ttlSeconds) {
+      const { data, error } = await db.rpc("acquire_screening_lock", { p_holder: holder, p_ttl_seconds: ttlSeconds });
+      if (error) throw new Error(`Sperre nicht verfügbar (Schema neu einspielen?): ${error.message}`);
+      return data === true;
+    },
+
+    async releaseLock(holder) {
+      const { error } = await db.rpc("release_screening_lock", { p_holder: holder });
       if (error) throw new Error(error.message);
     },
   };

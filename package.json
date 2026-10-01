@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js"
+    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js src/screening/providers/fmp.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

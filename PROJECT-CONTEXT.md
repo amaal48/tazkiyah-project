@@ -1,6 +1,6 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 30.09.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions, um sofort produktiv weiterzumachen.
+Stand: 01.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions, um sofort produktiv weiterzumachen.
 
 ---
 
@@ -102,7 +102,7 @@ supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
 supabase_seed_securities.sql  — Titel aus stocks.js anlegen (wiederholbar)
 ```
 
-**Tests:** `npm run test:screening` (49 Tests: engine, runner, holdingsCsv)
+**Tests:** `npm run test:screening` (61 Tests: engine, runner, holdingsCsv, providers/fmp)
 
 **Wo der Code liegt:** Lokal auf dem MacBook der Nutzerin (`~/Desktop/Website`), zusätzlich auf GitHub. Notion nur für Planung/Dokumentation.
 
@@ -137,7 +137,7 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Prüfstufen (Aktien):**
 - **A Tätigkeit:** A1 Kerngeschäft (Branchengruppen in `industryRules.js`: Ausschluss / manuelle Prüfung / Prüfung über B3), A2 Unternehmenszweck laut Satzung (manuell), A3 Gold-/Silber-/Währungshandel (Ausschluss)
 - **B Kennzahlen:** B1 zinstragende Schulden inkl. Leasing ≤ 30 % der Marktkapitalisierung zum Bilanzstichtag; B2 Cash und alle Anlagen ≤ 30 % (außer Daten belegen Unverzinslichkeit); B3 verbotene Einnahmen (Zinserträge + Segmente aus manueller Prüfung, nach Kategorien) ≤ 5 % der Gesamteinnahmen (Umsatz + Zinserträge + sonstige Erträge). B1/B2 auf letztem Jahresabschluss UND letztem Quartal; B3 auf letzten 4 Quartalen UND letztem Jahresabschluss.
-- **C Vermögensstruktur:** C1 reale Vermögenswerte und Rechte ≥ 33,3 % der Gesamtaktiva (Buchwerte als Näherung für Marktwerte, Goodwill zählt nicht, immaterielle Werte zählen), C2 keine Nur-Cash-Unternehmen/SPACs, C3 keine Nur-Forderungs-Unternehmen
+- **C Vermögensstruktur:** C1 reale Vermögenswerte und Rechte ≥ 33,3 % der Gesamtaktiva (Buchwerte als Näherung für Marktwerte, Goodwill zählt nicht, immaterielle Werte zählen, Forderungen aus dem laufenden Geschäft zählen seit 01.10. nach SS 59, 8/1 mit), C2 keine Nur-Cash-Unternehmen/SPACs, C3 keine Nur-Forderungs-Unternehmen (eigene Prüfung: nach Abzug von Cash, Anlagen, Forderungen und Goodwill muss etwas übrig bleiben; Vorschlag, Bestätigung durch Nutzerin offen)
 - **D Wertpapierart:** keine Vorzugsaktien mit finanziellem Vorrang, keine Tamattu'-Aktien, keine Anleihen
 - **H Produktausschlüsse:** Margin, Leerverkauf, Leihe, Futures, Optionen, Swaps, Index-Derivate, gehebelte/inverse ETFs usw.
 
@@ -153,7 +153,9 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 
 **Cron-Ablauf (`api/run-screening.js`):** täglich. Holt Finanzdaten für nie geprüfte Titel bzw. wenn ein neues Quartal zu erwarten ist (7 Abrufe je Titel, Tagesbudget 200 → ca. 28 Titel/Tag, erster Volldurchlauf ca. 3 Wochen). Rechnet nach neuen manuellen Prüfungen oder Parameter-/Engine-Änderungen aus gespeicherten Daten neu (0 Abrufe). Speichert nur geänderte Ergebnisse (`screening_runs`, Historie; Statuswechsel per Trigger in `screening_status_changes`, Hinweise an Watchlist-Nutzer in `user_notifications`).
 
-**Supabase-Tabellen des Screeners:** `securities`, `screening_runs` (+ View `screening_current`), `screening_status_changes`, `user_notifications`, `manual_reviews` (+ View `manual_reviews_due`), `etf_holdings`, `purification_amounts`, `screening_api_usage`.
+**Schutz des Crons (01.10.):** Sperre gegen gleichzeitige Läufe (Tabelle `screening_lock`, Funktionen `acquire_screening_lock`/`release_screening_lock`), Abrufe werden vor jedem Titel atomar über `add_api_usage` reserviert, FMP-Fehler haben eine Art (`limit`/`premium`/`other`). Bei „Limit Reach“ bricht der Abruf ab, ohne Titel als fehlerhaft zu markieren. Sind Quartale oder historische Marktkapitalisierung im Tarif gesperrt, wird mit den Jahreswerten weitergerechnet (betroffene Prüfungen „nicht geprüft“), und der Titel wird erst nach dem nächsten erwarteten Jahresabschluss erneut abgerufen.
+
+**Supabase-Tabellen des Screeners:** `securities`, `screening_lock`, `screening_runs` (+ View `screening_current`), `screening_status_changes`, `user_notifications`, `manual_reviews` (+ View `manual_reviews_due`), `etf_holdings`, `purification_amounts`, `screening_api_usage`.
 
 ---
 

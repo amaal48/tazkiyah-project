@@ -23,7 +23,7 @@
 // speichert einen Schnappschuss der Werte, damit alte Ergebnisse
 // nachvollziehbar bleiben.
 
-export const PARAMETERS_VERSION = "2026-09-30.2";
+export const PARAMETERS_VERSION = "2026-10-01.1";
 
 export const PRINCIPLE =
   "Wortlaut des AAOIFI-Standards zuerst. Wo der Text Spielraum lässt, gilt die vorsichtigere Variante. Grenzwerte werden nicht strenger gemacht als im Standard (30 %, 30 %, 5 %).";
@@ -138,6 +138,26 @@ export const DEFAULT_PARAMETERS = {
     rationale: "Goodwill ist weder ein realer Vermögenswert noch ein einzeln verwertbares Recht; die vorsichtigere Variante lässt ihn weg.",
     alternative: "Goodwill als Recht mitzählen.",
     source: "SS 21, 3/19",
+  },
+  operatingReceivablesCountAsReal: {
+    value: true,
+    method:
+      "Forderungen aus dem laufenden Geschäft werden bei den realen Vermögenswerten nicht abgezogen. Angesetzt werden die Forderungen nach Wertberichtigung aus der Bilanz. Cash, Finanzanlagen und Goodwill werden weiterhin abgezogen.",
+    rationale:
+      "SS 59, 8/1 (2018): Bei einem laufenden Unternehmen mit erlaubter Tätigkeit spielt der Anteil der Forderungen keine Rolle, solange sie aus dem Geschäft entstehen und das Unternehmen nicht nur aus Forderungen besteht (Zugehörigkeit, tabaʿiyya). Laut den Supervisory Instructions Nr. 1 ändert SS 59 widersprechende Regeln früherer Standards ab. Wortlaut zuerst.",
+    alternative: "Forderungen wie in SS 21, 3/19 abziehen (strenger als der geltende Text).",
+    source: "SS 59, 8/1; SS 59, Supervisory Instructions Nr. 1; SS 21, 3/19",
+  },
+  receivablesOnlyCheck: {
+    value: true,
+    method:
+      "C3 gilt als erfüllt, wenn nach Abzug von Cash, Finanzanlagen, Forderungen und Goodwill noch Vermögenswerte übrig bleiben, im Jahresabschluss und im letzten Quartal. Besteht ein Unternehmen nur aus Geld und Forderungen, ist es nicht konform.",
+    rationale:
+      "Seit Forderungen bei C1 mitzählen, belegt ein bestandenes C1 nicht mehr, dass das Unternehmen nicht nur aus Forderungen besteht. SS 21, 3/18 und SS 59, 8/1 und 8/3 verlangen genau das; deshalb eine eigene Prüfung ohne eigenen Grenzwert.",
+    alternative: "C3 weiter allein über C1 belegen (seit der SS-59-Änderung nicht mehr aussagekräftig).",
+    source: "SS 21, 3/18; SS 59, 8/1 und 8/3",
+    derivation: true,
+    pendingConfirmation: true,
   },
   intangiblesCountAsRights: {
     value: true,

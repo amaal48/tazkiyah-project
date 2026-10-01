@@ -30,7 +30,7 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.0.1";
+export const ENGINE_VERSION = "1.1.0";
 
 export const STATUS = {
   CONFORM: "konform",
@@ -458,13 +458,17 @@ function stageB({ annual, quarters, reviews, annualBasis, p }) {
 
 function realAssetsCheck(s, basis, p) {
   const b = s?.balance || {};
-  const needed = ["totalAssets", "cash", "shortTermInvestments", "longTermInvestments", "netReceivables"];
+  // Forderungen aus dem laufenden Geschäft zählen nach SS 59, 8/1 nicht dagegen
+  const deductReceivables = !p.operatingReceivablesCountAsReal;
+  const needed = ["totalAssets", "cash", "shortTermInvestments", "longTermInvestments"];
+  if (deductReceivables) needed.push("netReceivables");
   if (!p.goodwillCountsAsRealAsset) needed.push("goodwill");
   if (!p.intangiblesCountAsRights) needed.push("intangiblesExGoodwill");
   const missing = needed.filter((k) => !isNum(b[k]));
   let real = null;
   if (!missing.length) {
-    real = b.totalAssets - b.cash - b.shortTermInvestments - b.longTermInvestments - b.netReceivables;
+    real = b.totalAssets - b.cash - b.shortTermInvestments - b.longTermInvestments;
+    if (deductReceivables) real -= b.netReceivables;
     if (!p.goodwillCountsAsRealAsset) real -= b.goodwill;
     if (!p.intangiblesCountAsRights) real -= b.intangiblesExGoodwill;
   }
@@ -480,11 +484,33 @@ function realAssetsCheck(s, basis, p) {
   });
 }
 
+/** C3: Bleibt nach Abzug von Geld, Finanzanlagen, Forderungen und Goodwill etwas übrig? */
+function notOnlyReceivablesCheck(s, basis, p) {
+  const b = s?.balance || {};
+  const label = "Vermögenswerte außer Geld, Finanzanlagen und Forderungen / Gesamtaktiva";
+  const base = { basis, periodEnd: s?.periodEnd ?? null, label, limit: 0, comparator: ">", value: null, distanceToLimit: null };
+  if (!s?.periodEnd) return { ...base, result: RESULT.NOT_CHECKED, reason: `Kein ${basisLabel(basis)} vorhanden` };
+  const needed = ["totalAssets", "cash", "shortTermInvestments", "longTermInvestments", "netReceivables"];
+  if (!p.goodwillCountsAsRealAsset) needed.push("goodwill");
+  const missing = needed.filter((k) => !isNum(b[k]));
+  if (missing.length) return { ...base, result: RESULT.NOT_CHECKED, reason: `Datenfeld fehlt: ${missing.join(", ")}` };
+  if (!(b.totalAssets > 0)) return { ...base, result: RESULT.NOT_CHECKED, reason: "Bezugsgröße fehlt oder ist nicht positiv" };
+  let rest = b.totalAssets - b.cash - b.shortTermInvestments - b.longTermInvestments - b.netReceivables;
+  if (!p.goodwillCountsAsRealAsset) rest -= b.goodwill;
+  const pct = round((rest / b.totalAssets) * 100);
+  return {
+    ...base,
+    value: pct,
+    result: rest > 0 ? RESULT.PASS : RESULT.FAIL,
+    reason: rest > 0 ? null : "Unternehmen besteht nur aus Geld, Finanzanlagen und Forderungen",
+  };
+}
+
 function stageC({ annual, quarters, profile, p }) {
   const latestQ = quarters[0] || null;
 
   const c1 = makeCriterion("C1", "Reale Vermögenswerte", "SS 21, 3/19; Fußnote zu SS 21, 3/1", {
-    parameterRefs: ["realAssetsMinPct", "realAssetsValuation", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "balanceBasis"],
+    parameterRefs: ["realAssetsMinPct", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "balanceBasis"],
   });
   c1.checks = [realAssetsCheck(annual, "annual", p), realAssetsCheck(latestQ, "quarter", p)];
   c1.result = combine(c1.checks);
@@ -493,7 +519,9 @@ function stageC({ annual, quarters, profile, p }) {
   // vorhanden) oder ausgeschlossen, wenn Branche = Shell Company (SPAC).
   const shell = isShellCompany(profile?.industry);
   const c2 = makeCriterion("C2", "Kein Nur-Cash-Unternehmen", "SS 21, 3/17");
-  const c3 = makeCriterion("C3", "Kein Nur-Forderungs-Unternehmen", "SS 21, 3/18");
+  const c3 = makeCriterion("C3", "Kein Nur-Forderungs-Unternehmen", "SS 21, 3/18; SS 59, 8/1 und 8/3", {
+    parameterRefs: ["receivablesOnlyCheck", "operatingReceivablesCountAsReal"],
+  });
   if (shell) {
     c2.result = RESULT.FAIL;
     c2.reason = "Unternehmen ohne Geschäftsbetrieb (z. B. SPAC vor Übernahme) — Handel nur zum Nennwert zulässig";
@@ -504,7 +532,12 @@ function stageC({ annual, quarters, profile, p }) {
     c2.result = RESULT.NOT_CHECKED;
     c2.reason = "Nicht belegbar, da C1 nicht bestanden oder nicht geprüft";
   }
-  if (c1.result === RESULT.PASS) {
+  if (p.receivablesOnlyCheck) {
+    // Eigene Prüfung: C1 zählt Forderungen mit und belegt C3 deshalb nicht mehr
+    c3.checks = [notOnlyReceivablesCheck(annual, "annual", p), notOnlyReceivablesCheck(latestQ, "quarter", p)];
+    c3.result = combine(c3.checks);
+    if (c3.result === RESULT.NOT_CHECKED) c3.reason = "Nicht belegbar, da Bilanzdaten fehlen";
+  } else if (c1.result === RESULT.PASS && !p.operatingReceivablesCountAsReal) {
     c3.result = RESULT.PASS;
     c3.reason = "Reale Vermögenswerte nach C1 vorhanden";
   } else {

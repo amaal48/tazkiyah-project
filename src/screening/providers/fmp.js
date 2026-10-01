@@ -9,7 +9,8 @@
 //
 // Zusätzlich 1 Abruf pro Durchlauf für den EUR/USD-Kurs (getFxToEurSeries).
 // Abrufe pro Titel: 7 (Profil, Bilanz/GuV/Cashflow je Jahr + Quartal,
-// historische Marktkapitalisierung). Free-Tarif: 250/Tag → ca. 35 Titel/Tag.
+// historische Marktkapitalisierung). Free-Tarif: 250/Tag, davon 200 fürs
+// Screening → ca. 28 Titel/Tag.
 // Der Runner muss deshalb gestaffelt arbeiten (nur Titel mit neuem Abschluss
 // bzw. ohne aktuelles Ergebnis).
 //
@@ -24,7 +25,14 @@
 //      nur einen Saldo (nonOperatingIncomeExcludingInterest), der Aufwendungen
 //      enthalten kann. Positiver Saldo → sonstige Erträge, negativer → 0.
 //      Gegen den 10-K prüfen, ob das die Bruttoerträge ausreichend abbildet.
-//   4. Anzahl Aktien: FMP liefert hier den gewichteten Durchschnitt der
+//   4. Fehlerarten (seit 01.10.2026): Jeder Abruf-Fehler ist ein ProviderError
+//      mit kind = "limit" (Tageskontingent erschöpft), "premium" (im Tarif nicht
+//      enthalten) oder "other". Der Runner bricht bei "limit" ab, ohne Titel als
+//      fehlerhaft zu markieren. Sind Quartalsdaten oder die historische Markt-
+//      kapitalisierung im Tarif gesperrt, wird ohne sie weitergerechnet; die
+//      betroffenen Prüfungen bleiben dann „nicht geprüft“. Nach der ersten
+//      Sperre fragt der Adapter diese Daten im selben Lauf nicht mehr ab.
+//   5. Anzahl Aktien: FMP liefert hier den gewichteten Durchschnitt der
 //      Periode, nicht den Bestand zum Stichtag. Wird in der Ausgabe als
 //      sharesBasis angezeigt.
 
@@ -121,18 +129,71 @@ export function mapFmpProfile(p) {
   };
 }
 
+/**
+ * Abruf-Fehler mit Art, damit der Runner richtig reagiert:
+ *   "limit"   — Tageskontingent erschöpft → Lauf abbrechen, Titel nicht als fehlerhaft markieren
+ *   "premium" — Endpunkt oder Parameter im aktuellen Tarif nicht enthalten
+ *   "other"   — alles andere (z. B. unbekanntes Symbol, Netzwerkfehler)
+ */
+export class ProviderError extends Error {
+  constructor(message, kind = "other") {
+    super(message);
+    this.name = "ProviderError";
+    this.kind = kind;
+  }
+}
+
+export function classifyFmpError(status, message = "") {
+  if (status === 429 || /limit reach/i.test(message)) return "limit";
+  if (status === 402 || status === 403 || /premium|subscription|upgrade your plan|special endpoint|exclusive/i.test(message)) {
+    return "premium";
+  }
+  return "other";
+}
+
 export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = {}) {
   if (!apiKey) throw new Error("FMP_API_KEY fehlt");
 
+  // Merkt sich je Lauf, welche Daten im Tarif gesperrt sind (spart Abrufe)
+  const blocked = { quarters: false, marketCap: false };
+
   async function get(path, params) {
     const qs = new URLSearchParams({ ...params, apikey: apiKey });
-    const res = await fetchImpl(`${BASE_URL}/${path}?${qs}`);
-    if (!res.ok) throw new Error(`FMP ${path} ${res.status}`);
-    const data = await res.json();
-    if (data && !Array.isArray(data) && data["Error Message"]) {
-      throw new Error(`FMP ${path}: ${data["Error Message"]}`);
+    let res;
+    try {
+      res = await fetchImpl(`${BASE_URL}/${path}?${qs}`);
+    } catch (err) {
+      throw new ProviderError(`FMP ${path}: Netzwerkfehler (${String(err?.message || err).slice(0, 120)})`, "other");
+    }
+    let data = null;
+    try {
+      const text = await res.text();
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    const message = data && !Array.isArray(data) ? data["Error Message"] || data.message || data.error || "" : "";
+    if (!res.ok || message) {
+      const msg = String(message).slice(0, 160);
+      throw new ProviderError(`FMP ${path} ${res.status}${msg ? `: ${msg}` : ""}`, classifyFmpError(res.status, msg));
     }
     return data;
+  }
+
+  /** Abruf, der bei einer Tarifsperre leer zurückkommt statt abzubrechen. */
+  async function getOptional(key, path, params, notes, note) {
+    if (blocked[key]) {
+      notes.push(note);
+      return [];
+    }
+    try {
+      return await get(path, params);
+    } catch (err) {
+      if (err.kind !== "premium") throw err;
+      blocked[key] = true;
+      notes.push(note);
+      return [];
+    }
   }
 
   return {
@@ -154,22 +215,38 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
     },
 
     async getFinancialPeriods(symbol) {
-      const [bA, iA, cA, bQ, iQ, cQ] = await Promise.all([
+      const notes = [];
+      // Jahreswerte: ohne sie gibt es kein Ergebnis → Fehler werden weitergereicht
+      const [bA, iA, cA] = await Promise.all([
         get("balance-sheet-statement", { symbol, period: "annual", limit: 1 }),
         get("income-statement", { symbol, period: "annual", limit: 1 }),
         get("cash-flow-statement", { symbol, period: "annual", limit: 1 }),
-        get("balance-sheet-statement", { symbol, period: "quarter", limit: 4 }),
-        get("income-statement", { symbol, period: "quarter", limit: 4 }),
-        get("cash-flow-statement", { symbol, period: "quarter", limit: 4 }),
       ]);
 
-      const dates = [bA?.[0]?.date, ...(bQ || []).map((b) => b.date)].filter(Boolean).sort();
+      // Quartale: bei Tarifsperre ohne sie weiterrechnen
+      const qNote = "Quartalsdaten im aktuellen Datentarif nicht verfügbar";
+      const bQ = await getOptional("quarters", "balance-sheet-statement", { symbol, period: "quarter", limit: 4 }, notes, qNote);
+      let iQ = [];
+      let cQ = [];
+      if (!blocked.quarters) {
+        [iQ, cQ] = await Promise.all([
+          getOptional("quarters", "income-statement", { symbol, period: "quarter", limit: 4 }, notes, qNote),
+          getOptional("quarters", "cash-flow-statement", { symbol, period: "quarter", limit: 4 }, notes, qNote),
+        ]);
+      }
+      // Nur vollständige Quartale verwenden
+      const quartersUsable = !blocked.quarters;
+
+      const qDates = quartersUsable ? (bQ || []).map((b) => b.date) : [];
+      const dates = [bA?.[0]?.date, ...qDates].filter(Boolean).sort();
       const mcHistory = dates.length
-        ? await get("historical-market-capitalization", {
-            symbol,
-            from: shiftDays(dates[0], -10),
-            to: dates[dates.length - 1],
-          })
+        ? await getOptional(
+            "marketCap",
+            "historical-market-capitalization",
+            { symbol, from: shiftDays(dates[0], -10), to: dates[dates.length - 1] },
+            notes,
+            "Historische Marktkapitalisierung im aktuellen Datentarif nicht verfügbar"
+          )
         : [];
 
       const byDate = (arr, date) => (arr || []).find((x) => x.date === date) || null;
@@ -185,7 +262,7 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
           })
         : null;
 
-      const quarters = (bQ || [])
+      const quarters = (quartersUsable ? bQ || [] : [])
         .slice()
         .sort((a, b) => (a.date < b.date ? 1 : -1))
         .slice(0, 4)
@@ -200,7 +277,7 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
           })
         );
 
-      return { annual, quarters };
+      return { annual, quarters, notes: [...new Set(notes)] };
     },
   };
 }

@@ -17,6 +17,16 @@
 //   4. Universum: deutsche Handelsplätze per ISIN prüfen (OpenFIGI).
 // Ein neues Ergebnis wird nur gespeichert, wenn es sich vom letzten
 // unterscheidet — die Historie enthält also nur echte Änderungen.
+//
+// Schutz (seit 01.10.2026):
+//   - Sperre: Es läuft immer nur ein Durchlauf gleichzeitig (repo.acquireLock).
+//     Ein zweiter Aufruf beendet sich sofort.
+//   - Budget: Abrufe werden vor jedem Titel in der Datenbank reserviert. Ist
+//     das Tagesbudget erreicht, werden keine weiteren Titel abgerufen — auch
+//     wenn mehrere Läufe am selben Tag stattfinden.
+//   - Tageslimit des Anbieters: Meldet der Anbieter „Limit erreicht“, bricht
+//     der Abruf ab. Betroffene Titel werden NICHT als fehlerhaft markiert und
+//     beim nächsten Lauf wieder versucht.
 
 import { createHash } from "node:crypto";
 import { screenSecurity, ENGINE_VERSION } from "./engine.js";
@@ -27,6 +37,8 @@ const DAY = 86400000;
 const REFETCH_MIN_DAYS = 7; // frühestens nach 7 Tagen erneut abrufen
 const FILING_LAG_DAYS = 45; // neues Quartal ca. 45 Tage nach Quartalsende veröffentlicht
 const UNIVERSE_RECHECK_DAYS = 90;
+const ANNUAL_FILING_LAG_DAYS = 75; // Jahresbericht ca. 60–90 Tage nach Geschäftsjahresende
+const LOCK_TTL_SECONDS = 120; // länger als die maximale Laufzeit (60 s)
 
 // ------------------------------------------------------------------ Helfer
 
@@ -56,7 +68,15 @@ export function needsFreshData(security, run, now) {
   );
   if (lastFetch && now - lastFetch < REFETCH_MIN_DAYS * DAY) return false;
   if (!run || !run.inputs) return true;
-  if (!run.quarter_period_end) return true;
+  if (!run.quarter_period_end) {
+    // Quartale waren im Datentarif gesperrt: erst wieder abrufen, wenn ein neuer
+    // Jahresabschluss zu erwarten ist (nach Tarifwechsel per SQL zurücksetzen).
+    const annualEnd = run.inputs?.annual?.periodEnd;
+    if (run.inputs.quartersAvailable === false && annualEnd) {
+      return now >= addMonths(annualEnd, 12).getTime() + ANNUAL_FILING_LAG_DAYS * DAY;
+    }
+    return true;
+  }
   // Nächstes Quartal endet 3 Monate später und wird ca. 45 Tage danach veröffentlicht.
   const expected = addMonths(run.quarter_period_end, 3).getTime() + FILING_LAG_DAYS * DAY;
   return now >= expected;
@@ -124,7 +144,24 @@ async function mapLimit(items, limit, fn) {
 
 // ------------------------------------------------------------ Hauptfunktion
 
-export async function runScreening({
+export async function runScreening(options) {
+  const { repo, dryRun = false } = options;
+  // Testläufe (dryRun) schreiben nichts und brauchen keine Sperre
+  if (dryRun || typeof repo.acquireLock !== "function") return runScreeningUnlocked(options);
+
+  const holder = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const got = await repo.acquireLock(holder, LOCK_TTL_SECONDS);
+  if (!got) {
+    return { skipped: true, reason: "Ein anderer Screening-Lauf ist noch aktiv; dieser Aufruf wurde übersprungen." };
+  }
+  try {
+    return await runScreeningUnlocked(options);
+  } finally {
+    await repo.releaseLock(holder).catch(() => {});
+  }
+}
+
+async function runScreeningUnlocked({
   repo,
   provider,
   venues = null,
@@ -152,6 +189,8 @@ export async function runScreening({
     etfs: [],
     universeChecked: 0,
     stoppedEarly: false,
+    stoppedReason: null,
+    dataNotes: [],
     pending: { fetch: 0 },
     results: dryRun ? [] : undefined,
   };
@@ -175,9 +214,31 @@ export async function runScreening({
   const toFetch = fetchDue.slice(0, maxTitles);
   summary.pending.fetch = fetchDue.length - toFetch.length;
 
-  async function countCalls(n) {
+  /**
+   * Reserviert Abrufe für einen Titel. Die Datenbank zählt atomar mit, damit
+   * auch parallele Läufe das Tagesbudget nicht überschreiten.
+   */
+  async function reserveCalls(n) {
+    if (dryRun) {
+      if (state.usedToday + summary.callsUsedNow + n > dailyCallBudget) return false;
+      summary.callsUsedNow += n;
+      return true;
+    }
+    const total = await repo.addUsage(provider.id, n);
+    if (typeof total === "number" && total > dailyCallBudget) {
+      await repo.addUsage(provider.id, -n); // Reservierung zurückgeben
+      return false;
+    }
     summary.callsUsedNow += n;
-    if (!dryRun) await repo.addUsage(provider.id, n);
+    return true;
+  }
+
+  let stopFetching = false;
+  function stop(reason) {
+    if (!stopFetching) {
+      stopFetching = true;
+      summary.stoppedReason = reason;
+    }
   }
 
   async function screenAndSave(sec, inputs, holdings = []) {
@@ -213,19 +274,27 @@ export async function runScreening({
   if (toFetch.length) {
     let fx = null;
     if (fxCalls) {
-      await countCalls(1);
-      try {
-        fx = await provider.getFxToEurSeries({ days: 800 });
-      } catch {
-        fx = null; // EUR-Beträge bleiben dann leer, Rest läuft weiter
+      if (!(await reserveCalls(1))) {
+        stop("Tagesbudget für API-Abrufe erreicht");
+      } else {
+        try {
+          fx = await provider.getFxToEurSeries({ days: 800 });
+        } catch (err) {
+          if (err?.kind === "limit") stop("Tageslimit beim Datenanbieter erreicht");
+          fx = null; // EUR-Beträge bleiben dann leer, Rest läuft weiter
+        }
       }
     }
     await mapLimit(toFetch, 3, async (sec) => {
+      if (stopFetching) return;
       if (timeLeft() < 8000) {
         summary.stoppedEarly = true;
         return;
       }
-      await countCalls(CALLS_PER_TITLE);
+      if (!(await reserveCalls(CALLS_PER_TITLE))) {
+        stop("Tagesbudget für API-Abrufe erreicht");
+        return;
+      }
       const symbol = sec.provider_symbol || sec.ticker;
       try {
         const [profile, periods] = await Promise.all([provider.getProfile(symbol), provider.getFinancialPeriods(symbol)]);
@@ -233,7 +302,17 @@ export async function runScreening({
         for (const snap of [periods.annual, ...periods.quarters].filter(Boolean)) {
           if (fx && snap.currency && fx.currency === snap.currency) snap.fxToEurAtPeriodEnd = fxAt(fx.series, snap.periodEnd);
         }
-        const inputs = { provider: provider.id, fetchedAt: now.toISOString(), profile, annual: periods.annual, quarters: periods.quarters };
+        const notes = periods.notes || [];
+        for (const n of notes) if (!summary.dataNotes.includes(n)) summary.dataNotes.push(n);
+        const inputs = {
+          provider: provider.id,
+          fetchedAt: now.toISOString(),
+          profile,
+          annual: periods.annual,
+          quarters: periods.quarters,
+          notes,
+          quartersAvailable: !notes.some((n) => /Quartalsdaten/.test(n)),
+        };
         const patch = { data_fetched_at: now.toISOString(), last_error: null };
         if (profile?.isin && !sec.isin) patch.isin = profile.isin;
         if (!dryRun) await repo.updateSecurity(sec.id, patch);
@@ -241,6 +320,12 @@ export async function runScreening({
         const { result } = await screenAndSave(sec, inputs);
         summary.fetched.push({ ticker: sec.ticker, status: result.status });
       } catch (err) {
+        if (err?.kind === "limit") {
+          // Kontingent beim Anbieter erschöpft: kein Fehler des Titels → beim nächsten Lauf erneut
+          stop("Tageslimit beim Datenanbieter erreicht");
+          summary.limitSkipped = [...(summary.limitSkipped || []), sec.ticker];
+          return;
+        }
         summary.fetchErrors.push({ ticker: sec.ticker, error: String(err.message || err) });
         if (!dryRun) await repo.updateSecurity(sec.id, { data_fetched_at: now.toISOString(), last_error: String(err.message || err).slice(0, 500) });
       }

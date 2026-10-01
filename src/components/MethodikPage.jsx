@@ -30,6 +30,8 @@ const TITLES = {
   allCashInterestBearing: "Cash und Anlagen",
   realAssetsValuation: "Bewertung der realen Vermögenswerte",
   goodwillCountsAsRealAsset: "Goodwill",
+  operatingReceivablesCountAsReal: "Forderungen aus dem laufenden Geschäft",
+  receivablesOnlyCheck: "Kein Unternehmen nur aus Geld und Forderungen",
   intangiblesCountAsRights: "Immaterielle Werte und Nutzungsrechte",
   articlesReview: "Unternehmenszweck laut Satzung",
   goldSilverCurrencyDealers: "Handel mit Gold, Silber oder Währungen",
@@ -65,7 +67,7 @@ const SECTIONS = [
     id: "daten",
     title: "Datengrundlage",
     intro: "Aus welchen Abschlüssen und Bilanzposten die Kennzahlen berechnet werden.",
-    keys: ["balanceBasis", "marketCapBasis", "leaseLiabilitiesAsDebt", "allCashInterestBearing", "realAssetsValuation", "goodwillCountsAsRealAsset", "intangiblesCountAsRights"],
+    keys: ["balanceBasis", "marketCapBasis", "leaseLiabilitiesAsDebt", "allCashInterestBearing", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "receivablesOnlyCheck"],
   },
   {
     id: "taetigkeit",
@@ -139,7 +141,7 @@ const HANDLING_LABELS = {
 const STEPS = [
   ["Tätigkeit", "Ist das Kerngeschäft erlaubt? Nennt die Satzung ein verbotenes Ziel? Handelt das Unternehmen mit Gold, Silber oder Währungen?"],
   ["Kennzahlen", "Zinstragende Schulden, zinstragende Einlagen und verbotene Einnahmen im Verhältnis zu Marktkapitalisierung bzw. Gesamteinnahmen."],
-  ["Vermögensstruktur", "Besteht das Unternehmen zu mindestens einem Drittel aus realen Vermögenswerten und Rechten, statt nur aus Geld und Forderungen?"],
+  ["Vermögensstruktur", "Besteht das Unternehmen zu mindestens einem Drittel aus realen Vermögenswerten und Rechten statt aus Geld und Finanzanlagen? Forderungen aus dem laufenden Geschäft zählen dabei mit (SS 59, 8/1)."],
   ["Wertpapierart", "Stammaktie statt Vorzugsaktie mit finanziellem Vorrang, keine Anleihe."],
 ];
 
@@ -174,6 +176,7 @@ function ParameterEntry({ id, def, showLimit }) {
           </span>
         )}
         {def.derivation && <Tag tone="gold">Ableitung, abschaltbar</Tag>}
+        {def.pendingConfirmation && <Tag tone="amber">Vorschlag, noch nicht bestätigt</Tag>}
       </div>
       <p className="pt-2 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">{nb(def.method)}</p>
       <dl className="mt-4 grid max-w-[68ch] gap-3 text-sm sm:grid-cols-[8rem_1fr]">

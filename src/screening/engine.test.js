@@ -117,13 +117,41 @@ test("B3: verbotene Segmente werden addiert und können durchfallen lassen", () 
   assert.equal(b3.result, RESULT.FAIL);
 });
 
-test("C1: Goodwill zählt nicht, Schwelle 33,3 %", () => {
+test("C1: Goodwill zählt nicht, Forderungen zählen mit (SS 59), Schwelle 33,3 %", () => {
   const r = screenSecurity(base());
-  // 1000 - 50 - 30 - 20 - 100 - 100 (Goodwill) = 700 → 70 %
-  assert.equal(crit(r, "C1").checks[0].value, 70);
-  const low = snap("annual", ANNUAL_END, { balance: { goodwill: 500 } }); // 1000-50-30-20-100-500 = 300 → 30 %
+  // 1000 - 50 (Cash) - 30 - 20 (Anlagen) - 100 (Goodwill) = 800 → 80 %; Forderungen (100) bleiben drin
+  assert.equal(crit(r, "C1").checks[0].value, 80);
+  assert.ok(crit(r, "C1").parameterRefs.includes("operatingReceivablesCountAsReal"));
+  const low = snap("annual", ANNUAL_END, { balance: { goodwill: 600 } }); // 1000-50-30-20-600 = 300 → 30 %
   const r2 = screenSecurity(base({ annual: low }));
   assert.equal(crit(r2, "C1").result, RESULT.FAIL);
+});
+
+test("C1: Hoher Forderungsanteil allein lässt C1 nicht mehr durchfallen", () => {
+  const rec = (type, end) => snap(type, end, { balance: { netReceivables: 700, goodwill: 0, inventory: 0 } });
+  const r = screenSecurity(base({ annual: rec("annual", ANNUAL_END), quarters: Q_ENDS.map((d) => rec("quarter", d)) }));
+  // 1000 - 50 - 30 - 20 = 900 → 90 %, obwohl 70 % Forderungen sind
+  assert.equal(crit(r, "C1").checks[0].value, 90);
+  assert.equal(crit(r, "C1").result, RESULT.PASS);
+  assert.equal(crit(r, "C3").result, RESULT.PASS); // 900 - 700 = 200 übrig
+});
+
+test("C1: Alte Lesart (Forderungen abziehen) bleibt als Parameter möglich", () => {
+  const r = screenSecurity(base({ parameters: { operatingReceivablesCountAsReal: false } }));
+  assert.equal(crit(r, "C1").checks[0].value, 70);
+});
+
+test("C3: Unternehmen nur aus Geld, Anlagen und Forderungen ist nicht konform", () => {
+  const only = (type, end) =>
+    snap(type, end, { balance: { cash: 300, shortTermInvestments: 0, longTermInvestments: 0, netReceivables: 700, goodwill: 0, intangiblesExGoodwill: 0, inventory: 0 } });
+  const r = screenSecurity(base({ annual: only("annual", ANNUAL_END), quarters: Q_ENDS.map((d) => only("quarter", d)) }));
+  assert.equal(crit(r, "C3").result, RESULT.FAIL);
+  assert.equal(r.status, STATUS.NON_CONFORM);
+});
+
+test("C3: ohne Quartal nicht geprüft, normaler Titel bestanden", () => {
+  assert.equal(crit(screenSecurity(base()), "C3").result, RESULT.PASS);
+  assert.equal(crit(screenSecurity(base({ quarters: [] })), "C3").result, RESULT.NOT_CHECKED);
 });
 
 test("C2: SPAC ist ausgeschlossen", () => {
