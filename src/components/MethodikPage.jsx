@@ -31,7 +31,6 @@ const TITLES = {
   realAssetsValuation: "Bewertung der realen Vermögenswerte",
   goodwillCountsAsRealAsset: "Goodwill",
   operatingReceivablesCountAsReal: "Forderungen aus dem laufenden Geschäft",
-  receivablesOnlyCheck: "Kein Unternehmen nur aus Geld und Forderungen",
   intangiblesCountAsRights: "Immaterielle Werte und Nutzungsrechte",
   articlesReview: "Unternehmenszweck laut Satzung",
   goldSilverCurrencyDealers: "Handel mit Gold, Silber oder Währungen",
@@ -67,7 +66,7 @@ const SECTIONS = [
     id: "daten",
     title: "Datengrundlage",
     intro: "Aus welchen Abschlüssen und Bilanzposten die Kennzahlen berechnet werden.",
-    keys: ["balanceBasis", "marketCapBasis", "leaseLiabilitiesAsDebt", "allCashInterestBearing", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights", "receivablesOnlyCheck"],
+    keys: ["balanceBasis", "marketCapBasis", "leaseLiabilitiesAsDebt", "allCashInterestBearing", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights"],
   },
   {
     id: "taetigkeit",

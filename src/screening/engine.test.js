@@ -133,7 +133,6 @@ test("C1: Hoher Forderungsanteil allein lässt C1 nicht mehr durchfallen", () =>
   // 1000 - 50 - 30 - 20 = 900 → 90 %, obwohl 70 % Forderungen sind
   assert.equal(crit(r, "C1").checks[0].value, 90);
   assert.equal(crit(r, "C1").result, RESULT.PASS);
-  assert.equal(crit(r, "C3").result, RESULT.PASS); // 900 - 700 = 200 übrig
 });
 
 test("C1: Alte Lesart (Forderungen abziehen) bleibt als Parameter möglich", () => {
@@ -141,17 +140,13 @@ test("C1: Alte Lesart (Forderungen abziehen) bleibt als Parameter möglich", () 
   assert.equal(crit(r, "C1").checks[0].value, 70);
 });
 
-test("C3: Unternehmen nur aus Geld, Anlagen und Forderungen ist nicht konform", () => {
-  const only = (type, end) =>
-    snap(type, end, { balance: { cash: 300, shortTermInvestments: 0, longTermInvestments: 0, netReceivables: 700, goodwill: 0, intangiblesExGoodwill: 0, inventory: 0 } });
-  const r = screenSecurity(base({ annual: only("annual", ANNUAL_END), quarters: Q_ENDS.map((d) => only("quarter", d)) }));
-  assert.equal(crit(r, "C3").result, RESULT.FAIL);
-  assert.equal(r.status, STATUS.NON_CONFORM);
-});
-
-test("C3: ohne Quartal nicht geprüft, normaler Titel bestanden", () => {
+test("C3: wird über C1 belegt (SS 21, 3/18; SS 59, 8/1, 8/3)", () => {
   assert.equal(crit(screenSecurity(base()), "C3").result, RESULT.PASS);
+  // ohne Quartal ist C1 nicht belegbar → C3 ebenfalls nicht
   assert.equal(crit(screenSecurity(base({ quarters: [] })), "C3").result, RESULT.NOT_CHECKED);
+  // C1 durchgefallen → C3 nicht belegt
+  const low = snap("annual", ANNUAL_END, { balance: { goodwill: 600 } });
+  assert.equal(crit(screenSecurity(base({ annual: low })), "C3").result, RESULT.NOT_CHECKED);
 });
 
 test("C2: SPAC ist ausgeschlossen", () => {

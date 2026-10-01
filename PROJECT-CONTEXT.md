@@ -102,7 +102,7 @@ supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
 supabase_seed_securities.sql  — Titel aus stocks.js anlegen (wiederholbar)
 ```
 
-**Tests:** `npm run test:screening` (61 Tests: engine, runner, holdingsCsv, providers/fmp)
+**Tests:** `npm run test:screening` (60 Tests: engine, runner, holdingsCsv, providers/fmp)
 
 **Wo der Code liegt:** Lokal auf dem MacBook der Nutzerin (`~/Desktop/Website`), zusätzlich auf GitHub. Notion nur für Planung/Dokumentation.
 
@@ -137,7 +137,7 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Prüfstufen (Aktien):**
 - **A Tätigkeit:** A1 Kerngeschäft (Branchengruppen in `industryRules.js`: Ausschluss / manuelle Prüfung / Prüfung über B3), A2 Unternehmenszweck laut Satzung (manuell), A3 Gold-/Silber-/Währungshandel (Ausschluss)
 - **B Kennzahlen:** B1 zinstragende Schulden inkl. Leasing ≤ 30 % der Marktkapitalisierung zum Bilanzstichtag; B2 Cash und alle Anlagen ≤ 30 % (außer Daten belegen Unverzinslichkeit); B3 verbotene Einnahmen (Zinserträge + Segmente aus manueller Prüfung, nach Kategorien) ≤ 5 % der Gesamteinnahmen (Umsatz + Zinserträge + sonstige Erträge). B1/B2 auf letztem Jahresabschluss UND letztem Quartal; B3 auf letzten 4 Quartalen UND letztem Jahresabschluss.
-- **C Vermögensstruktur:** C1 reale Vermögenswerte und Rechte ≥ 33,3 % der Gesamtaktiva (Buchwerte als Näherung für Marktwerte, Goodwill zählt nicht, immaterielle Werte zählen, Forderungen aus dem laufenden Geschäft zählen seit 01.10. nach SS 59, 8/1 mit), C2 keine Nur-Cash-Unternehmen/SPACs, C3 keine Nur-Forderungs-Unternehmen (eigene Prüfung: nach Abzug von Cash, Anlagen, Forderungen und Goodwill muss etwas übrig bleiben; Vorschlag, Bestätigung durch Nutzerin offen)
+- **C Vermögensstruktur:** C1 reale Vermögenswerte und Rechte ≥ 33,3 % der Gesamtaktiva (Buchwerte als Näherung für Marktwerte, Goodwill zählt nicht, immaterielle Werte zählen, Forderungen aus dem laufenden Geschäft zählen seit 01.10. nach SS 59, 8/1 mit), C2 keine Nur-Cash-Unternehmen/SPACs, C3 keine Nur-Forderungs-Unternehmen (belegt über C1, so in der Doku festgelegt; SS 21, 3/18; SS 59, 8/1 und 8/3)
 - **D Wertpapierart:** keine Vorzugsaktien mit finanziellem Vorrang, keine Tamattu'-Aktien, keine Anleihen
 - **H Produktausschlüsse:** Margin, Leerverkauf, Leihe, Futures, Optionen, Swaps, Index-Derivate, gehebelte/inverse ETFs usw.
 
