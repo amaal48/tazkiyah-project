@@ -1,22 +1,37 @@
 // src/components/screening/StatusLegend.jsx
+//
+// Die drei Status mit je einem Satz (Texte: STATUS_EXPLANATIONS in format.js,
+// auch für die Tooltips im Screener).
 
 import StatusBadge from "./StatusBadge.jsx";
+import { STATUS_EXPLANATIONS } from "./format.js";
 
-const ITEMS = [
-  ["konform", "Alle Prüfungen sind bestanden."],
-  ["nicht_konform", "Mindestens eine Prüfung ist nicht bestanden."],
-  ["nicht_geprueft", "Mindestens eine Prüfung steht noch aus oder ließ sich mit den Daten nicht abschließen; keine ist nicht bestanden."],
-];
+const ORDER = ["konform", "nicht_konform", "nicht_geprueft"];
 
-export default function StatusLegend() {
+/** variant "cards" (drei Karten nebeneinander) oder "list" (untereinander, für eine Karte) */
+export default function StatusLegend({ variant = "cards" }) {
+  if (variant === "list") {
+    return (
+      <dl className="space-y-4">
+        {ORDER.map((status) => (
+          <div key={status}>
+            <dt>
+              <StatusBadge status={status} />
+            </dt>
+            <dd className="mt-1.5 text-sm leading-relaxed text-[var(--text-soft)]">{STATUS_EXPLANATIONS[status]}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
   return (
     <dl className="grid gap-3 md:grid-cols-3">
-      {ITEMS.map(([status, text]) => (
+      {ORDER.map((status) => (
         <div key={status} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
           <dt>
             <StatusBadge status={status} />
           </dt>
-          <dd className="mt-2 text-sm leading-relaxed text-[var(--text-soft)]">{text}</dd>
+          <dd className="mt-2 text-sm leading-relaxed text-[var(--text-soft)]">{STATUS_EXPLANATIONS[status]}</dd>
         </div>
       ))}
     </dl>

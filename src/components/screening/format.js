@@ -22,6 +22,14 @@ export const STATUS_TEXT = {
 
 export const STATUS_ORDER = ["konform", "nicht_konform", "nicht_geprueft"];
 
+/** Ein Satz je Status (Legende, Startseite, Tooltips im Screener). */
+export const STATUS_EXPLANATIONS = {
+  konform: "Alle Prüfungen sind bestanden.",
+  nicht_konform: "Mindestens eine Prüfung ist nicht bestanden.",
+  nicht_geprueft: "Mindestens eine Prüfung steht noch aus oder ließ sich mit den Daten nicht abschließen; keine ist nicht bestanden.",
+};
+
+
 /** Zahl mit Komma, ohne Tausenderpunkt bei kleinen Werten. */
 export function fmtNum(n, digits) {
   if (typeof n !== "number" || !Number.isFinite(n)) return "–";

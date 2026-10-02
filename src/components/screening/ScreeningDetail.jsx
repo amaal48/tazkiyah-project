@@ -271,16 +271,20 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
   const groups = result ? groupCriteria(result.criteria, assetType === "etf") : [];
 
   return (
-    <div className="font-body text-left">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
-        <button type="button" onClick={onBack} className="hover:text-[var(--text)]">
+    <div className="font-body page text-left">
+      <header className="flex items-center gap-3 py-6 text-sm text-[var(--muted)]">
+        <a href={routes.home()} className="hover:text-[var(--text)]">
           Tazkiyah
+        </a>
+        <span aria-hidden="true">/</span>
+        <button type="button" onClick={onBack} className="hover:text-[var(--text)]">
+          Screener
         </button>
         <span aria-hidden="true">/</span>
         <span className="text-[var(--text)]">{ticker}</span>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="pb-24">
         {loading && <p className="py-10 text-sm text-[var(--muted)]">Lade Ergebnis…</p>}
 
         {detail.error && (
@@ -292,8 +296,8 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
         {notFound && (
           <div className="py-10">
             <p className="text-[var(--text)]">Zu „{ticker}“ gibt es keinen Titel in der Prüfliste.</p>
-            <a href={routes.home()} className="mt-3 inline-block text-sm text-[var(--gold-soft)] underline underline-offset-2">
-              Zur Übersicht
+            <a href={routes.screener()} className="mt-3 inline-block text-sm text-[var(--gold-soft)] underline underline-offset-2">
+              Zum Screener
             </a>
           </div>
         )}

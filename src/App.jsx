@@ -15,10 +15,10 @@ import MethodikPage from "./components/MethodikPage.jsx";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
 import StatusBadge from "./components/screening/StatusBadge.jsx";
-import ScreeningHero from "./components/screening/ScreeningHero.jsx";
-import StageDiagram from "./components/screening/StageDiagram.jsx";
-import StatusLegend from "./components/screening/StatusLegend.jsx";
-import ScreeningList, { ScreeningRow } from "./components/screening/ScreeningList.jsx";
+import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
+import ScreenerPage from "./components/screening/ScreenerPage.jsx";
+import StartPage from "./components/StartPage.jsx";
+import PortfolioPage from "./components/PortfolioPage.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
 import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./components/screening/format.js";
@@ -197,7 +197,7 @@ function StockChart({ stock }) {
             </>
           )}
         </div>
-        <div className="flex gap-1 rounded-full border border-[var(--border)] p-1">
+        <div className="flex flex-wrap gap-1 rounded-full border border-[var(--border)] p-1">
           {CHART_RANGES.map((r) => (
             <button
               key={r.key}
@@ -277,180 +277,6 @@ const holdings = [
 
 const SECTORS = [...new Set(sampleStocks.map((s) => s.sector))].sort();
 
-const STATUS_BAR = {
-  konform: "bg-[var(--emerald)]",
-  nicht_konform: "bg-[var(--red)]",
-  nicht_geprueft: "bg-[var(--faint)]",
-};
-
-/* ---------- Startseite ---------- */
-
-function HomePage({ watchlist, onToggleWatchlist, compareTickers, onToggleCompare, presetFilter }) {
-  const list = useScreeningList();
-  const [preset, setPreset] = useState(null);
-
-  // Von der Sidebar gesetzter Status-/Sektor-Filter
-  useEffect(() => {
-    if (!presetFilter) return;
-    if (presetFilter.type === "status") setPreset({ statuses: [presetFilter.value], ts: presetFilter.ts });
-    if (presetFilter.type === "sector") setPreset({ sectors: [presetFilter.value], ts: presetFilter.ts });
-  }, [presetFilter]);
-
-  const quickTiles = [
-    { title: "Konforme Titel", desc: "Alle Prüfungen bestanden", preset: { statuses: ["konform"], sort: "name" } },
-    { title: "Nicht geprüft", desc: "Mindestens eine Prüfung steht noch aus", preset: { statuses: ["nicht_geprueft"], sort: "name" } },
-    { title: "Niedrigste Verschuldung", desc: "Konforme Titel, geringste zinstragende Schulden zuerst", preset: { statuses: ["konform"], sort: "debt" } },
-  ];
-
-  const counts = Object.fromEntries(STATUS_ORDER.map((s) => [s, list.rows.filter((r) => r.status === s).length]));
-  const holdingRows = holdings.map((h) => ({ ...h, status: list.byTicker.get(h.ticker)?.status ?? "nicht_geprueft" }));
-
-  return (
-    <div className="font-body">
-      {/* HEADER (Navigation liegt in der linken Sidebar) */}
-      <header className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-3">
-          <LogoMark size={34} />
-          <span className="font-display text-lg tracking-wide">Tazkiyah</span>
-        </div>
-        <button className="rounded-full border border-[var(--gold)]/50 px-4 py-2 text-sm text-[var(--gold-soft)] transition-colors hover:bg-[var(--gold)]/10">
-          Kostenlos starten
-        </button>
-      </header>
-
-      {/* 1. Kopfbereich */}
-      <ScreeningHero />
-
-      {/* 2. Prüfstufen */}
-      <section className="mx-auto max-w-[1440px] px-6 pb-10 text-left">
-        <p className="mb-4 text-xs uppercase tracking-[0.25em] text-[var(--muted)]">So wird geprüft</p>
-        <StageDiagram />
-      </section>
-
-      {/* 3. Legende */}
-      <section className="mx-auto max-w-[1440px] px-6 pb-4 text-left">
-        <StatusLegend />
-      </section>
-
-      {/* Schnellauswahl */}
-      <section className="mx-auto max-w-[1440px] px-6 pb-4 pt-10">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {quickTiles.map((tile) => (
-            <button
-              key={tile.title}
-              type="button"
-              onClick={() => {
-                setPreset({ ...tile.preset, ts: Date.now() });
-                document.getElementById("screener")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-6 py-5 text-left transition-colors hover:border-[var(--emerald)]/60"
-            >
-              <p className="text-[15px] text-[var(--text)]">{tile.title}</p>
-              <p className="mt-1 text-xs text-[var(--muted)]">{tile.desc}</p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* 4.–5. Filter, Sortierung, Liste */}
-      <section id="screener" className="mx-auto max-w-[1440px] px-6 py-16">
-        <div className="mb-6 text-left">
-          <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Screener</p>
-          <h2 className="font-display mt-2 text-2xl text-[var(--text)]">Aktien und ETFs durchsuchen</h2>
-        </div>
-        <ScreeningList
-          rows={list.rows}
-          loading={list.loading}
-          error={list.error}
-          sortable={list.sortable}
-          sectors={SECTORS}
-          preset={preset}
-          watchlist={watchlist}
-          onToggleWatchlist={onToggleWatchlist}
-          compareTickers={compareTickers}
-          onToggleCompare={onToggleCompare}
-        />
-      </section>
-
-      {/* PORTFOLIO (Überarbeitung in Schritt 3) */}
-      <section id="portfolio" className="mx-auto max-w-[1440px] px-6 pb-16 text-left">
-        <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Portfolio</p>
-        <h2 className="font-display mt-2 text-2xl text-[var(--text)]">Dein Beispiel-Portfolio</h2>
-        <div className="mt-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 md:p-8">
-          {/* TODO Schritt 3: Anteil konformer Positionen am Portfolio (früher „Halal-Anteil“ als Stern) */}
-          <div className="mb-4 h-3 w-full overflow-hidden rounded-full bg-[var(--track)]">
-            {holdingRows.map((h) => (
-              <div
-                key={h.ticker}
-                className={"float-left h-full " + STATUS_BAR[h.status]}
-                style={{ width: `${h.weight}%` }}
-                title={`${h.ticker} · ${h.weight}% · ${STATUS_TEXT[h.status]}`}
-              />
-            ))}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {holdingRows.map((h) => (
-              <a
-                key={h.ticker}
-                href={routes.stock(h.ticker)}
-                className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-[var(--border)] px-3 py-2 text-sm hover:border-[var(--emerald)]/60"
-              >
-                <span className="font-[IBM_Plex_Mono] text-[var(--text)]">{h.ticker}</span>
-                <span className="text-[var(--muted)]">{h.weight}% Gewichtung</span>
-                <StatusBadge status={h.status} />
-              </a>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-[var(--muted)]">
-            Beispielgewichtungen. {holdingRows.filter((h) => h.status !== "konform").length} Position(en) nicht konform oder noch nicht geprüft.
-          </p>
-        </div>
-      </section>
-
-      {/* REINHEITS-RECHNER (folgt) */}
-      <section id="rechner" className="mx-auto max-w-[1440px] px-6 pb-16 text-left">
-        <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Werkzeug</p>
-        <h2 className="font-display mt-2 text-2xl text-[var(--text)]">Reinheits-Rechner für Dividenden</h2>
-        <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-          Auch bei konformen Aktien enthalten die Einnahmen oft einen kleinen Anteil aus unzulässigen Quellen (z. B.
-          Zinserträge). Dieser Anteil wird gespendet.
-        </p>
-        <p className="mt-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-sm text-[var(--text-soft)] md:p-8">
-          Folgt. Die Reinigungsbeträge setzen die Prüfung der Umsatzsegmente voraus und werden berechnet, sobald sie vorliegt.
-        </p>
-      </section>
-
-      {/* MARKTBERICHT */}
-      <section id="bericht" className="mx-auto max-w-[1440px] px-6 pb-24 text-left">
-        <div className="rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--bg)] p-8 md:p-10">
-          <div className="grid gap-10 md:grid-cols-[1fr_1fr]">
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Marktbericht</p>
-              <h2 className="font-display mt-2 text-2xl text-[var(--text)]">Diese Woche im Überblick</h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-[var(--muted)]">Der wöchentliche Marktbericht erscheint in Kürze.</p>
-            </div>
-            <div className="flex flex-col justify-center gap-4 border-t border-[var(--border)] pt-6 md:border-l md:border-t-0 md:pl-10 md:pt-0">
-              {[
-                { label: "Titel in der Prüfliste", value: list.rows.length.toLocaleString("de-DE") },
-                ...STATUS_ORDER.map((s) => ({ label: STATUS_TEXT[s], value: counts[s].toLocaleString("de-DE") })),
-              ].map((stat) => (
-                <div key={stat.label} className="flex items-baseline justify-between">
-                  <span className="text-sm text-[var(--muted)]">{stat.label}</span>
-                  <span className="font-[IBM_Plex_Mono] text-lg text-[var(--gold-soft)]">{list.loading ? "…" : stat.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className="mx-auto max-w-[1440px] px-6 pb-10 text-left text-xs text-[var(--faint)]">
-        Tazkiyah · Prüfung nach den AAOIFI Shari'ah Standards Nr. 21, 27 und 35 · Nicht mit der AAOIFI verbunden · Unabhängig, keine Depot- oder Produktbindung · Keine Anlageberatung
-      </footer>
-    </div>
-  );
-}
-
 /* ---------- Aktien-Detailseite ---------- */
 
 const EVENT_TYPE_STYLE = {
@@ -528,12 +354,12 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
   const attention = items.filter((s) => s.status !== "konform");
   return (
     <div className="font-body text-left">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Watchlist</span>
       </header>
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Deine Watchlist</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           {items.length === 0
@@ -756,12 +582,12 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
 
   return (
     <div className="font-body">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Kalender</span>
       </header>
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Termin-Kalender</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Hauptversammlungen, Earnings-Calls und Dividendenstichtage — alle Termine sind Demo-Daten.
@@ -1037,14 +863,14 @@ function ReportsPage({ onBack }) {
     const r = selectedReport;
     return (
       <div className="font-body">
-        <header className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+        <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
           <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
           <span>/</span>
           <span onClick={() => setSelectedReport(null)} className="cursor-pointer hover:text-[var(--text)]">Berichte</span>
           <span>/</span>
           <span className="text-[var(--text)]">{r.title}</span>
         </header>
-        <main className="mx-auto max-w-3xl px-6 pb-24">
+        <main className="page pb-24">
           <button
             onClick={() => setSelectedReport(null)}
             className="mb-4 text-sm text-[var(--faint)] hover:text-[var(--gold-soft)]"
@@ -1117,12 +943,12 @@ function ReportsPage({ onBack }) {
 
   return (
     <div className="font-body">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Berichte</span>
       </header>
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Wöchentliche Berichte</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Automatisch erstellt, jeden Montag aktualisiert · Berichte bleiben 6 Monate abrufbar.
@@ -1295,18 +1121,18 @@ function AkademiePage({ onBack }) {
 
   return (
     <div className="font-body">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Akademie</span>
       </header>
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-3xl text-[var(--text)]">Akademie</h1>
         <p className="mt-2 max-w-xl text-sm text-[var(--muted)]">
           Grundlagen, Vergleiche und Erklärungen — unabhängig davon, wo du dein Depot führst.
         </p>
 
-        <div className="mt-6 flex gap-2 border-b border-[var(--border)]">
+        <div className="mt-6 flex flex-wrap gap-x-2 border-b border-[var(--border)]">
           {AKADEMIE_TABS.map((t) => (
             <button
               key={t}
@@ -1501,12 +1327,12 @@ function SectorsPage({ onBack }) {
   });
   return (
     <div className="font-body">
-      <header className="mx-auto flex max-w-4xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Sektoren</span>
       </header>
-      <main className="mx-auto max-w-4xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Sektor-Übersicht</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">Wie viele geprüfte Titel je Branche konform sind.</p>
         <div className="mt-6 grid gap-3">
@@ -1541,12 +1367,12 @@ function ComparePage({ tickers, onBack }) {
   ];
   return (
     <div className="font-body">
-      <header className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
         <span>/</span>
         <span className="text-[var(--text)]">Vergleichen</span>
       </header>
-      <main className="mx-auto max-w-5xl px-6 pb-24">
+      <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Aktien vergleichen</h1>
         {items.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--muted)]">Wähle im Screener bis zu 3 Aktien zum Vergleichen aus.</p>
@@ -1585,10 +1411,9 @@ const NAV_GROUPS = [
   {
     key: "screener",
     label: "Screener",
-    page: "home",
-    anchor: "screener",
+    page: "screener",
     children: [
-      { label: "Alle Aktien", page: "home", anchor: "screener" },
+      { label: "Alle Aktien", page: "screener", reset: true },
       { type: "heading", label: "Status" },
       ...STATUS_ORDER.map((st) => ({ type: "filter", label: STATUS_TEXT[st], filter: { type: "status", value: st } })),
       { type: "heading", label: "Sektor" },
@@ -1600,11 +1425,10 @@ const NAV_GROUPS = [
   {
     key: "portfolio",
     label: "Portfolio",
-    page: "home",
-    anchor: "portfolio",
+    page: "portfolio",
     children: [
-      { label: "Übersicht", page: "home", anchor: "portfolio" },
-      { label: "Reinheits-Rechner", page: "home", anchor: "rechner" },
+      { label: "Übersicht", page: "portfolio" },
+      { label: "Reinheits-Rechner", page: "portfolio", anchor: "rechner" },
       { label: "Kalender", page: "calendar" },
     ],
   },
@@ -1613,7 +1437,6 @@ const NAV_GROUPS = [
     label: "Berichte",
     page: "reports",
     children: [
-      { label: "Marktbericht", page: "home", anchor: "bericht" },
       { label: "PDF-Berichte", page: "reports" },
     ],
   },
@@ -1644,10 +1467,10 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
       className="fixed left-0 top-0 z-30 flex h-screen flex-shrink-0 flex-col overflow-hidden border-r border-[var(--border)] bg-[var(--bg-deep)]"
     >
       <div className={"flex items-center py-6 " + (collapsed ? "justify-center px-0" : "justify-between px-5")}>
-        <div className="flex items-center gap-3 overflow-hidden">
+        <a href={routes.home()} onClick={() => onGo("home")} className="flex items-center gap-3 overflow-hidden" aria-label="Tazkiyah, zur Startseite">
           <LogoMark size={30} />
           {!collapsed && <span className="font-display whitespace-nowrap text-base tracking-wide">Tazkiyah</span>}
-        </div>
+        </a>
         {!collapsed && (
           <button
             onClick={onToggleCollapse}
@@ -1673,8 +1496,8 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
         <div className="mt-2 flex flex-col items-center gap-1">
           {[
             { label: "Start", page: "home" },
-            { label: "Screener", page: "home", anchor: "screener" },
-            { label: "Portfolio", page: "home", anchor: "portfolio" },
+            { label: "Screener", page: "screener" },
+            { label: "Portfolio", page: "portfolio" },
             { label: "Berichte", page: "reports" },
             { label: "Watchlist", page: "watchlist", badge: watchlistCount },
             { label: "Akademie", page: "faq" },
@@ -1740,7 +1563,9 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
                     <button
                       key={child.label}
                       onClick={() =>
-                        child.type === "filter" ? onGo("home", "screener", child.filter) : onGo(child.page, child.anchor)
+                        child.type === "filter"
+                          ? onGo("screener", null, child.filter)
+                          : onGo(child.page, child.anchor, child.reset ? { type: "all" } : undefined)
                       }
                       className={
                         "block w-full truncate rounded-lg px-3 py-1.5 text-left text-[13px] " +
@@ -1881,10 +1706,10 @@ function MenuIcon() {
 /* ---------- Root ---------- */
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["detail", "criterion", "methodik"];
+const ROUTED_PAGES = ["screener", "detail", "criterion", "methodik"];
 
 export default function TazkiyahPrototype() {
-  const [page, setPage] = useState("home"); // home | detail | criterion | methodik | watchlist | reports | faq | sectors | compare | …
+  const [page, setPage] = useState("home"); // home | screener | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | compare | …
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [criterionId, setCriterionId] = useState(null);
   const [session, setSession] = useState(null);
@@ -1908,11 +1733,17 @@ export default function TazkiyahPrototype() {
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
   const [compareTickers, setCompareTickers] = useState([]);
   const [activeAnchor, setActiveAnchor] = useState(null);
-  const [pendingAnchor, setPendingAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
   const [presetFilter, setPresetFilter] = useState(null);
   // Auf schmalen Bildschirmen eingeklappt starten, sonst bleibt neben der Sidebar kaum Platz
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 767px)").matches);
+  // Wird das Fenster schmal, einklappen (z. B. Drehen des Telefons oder Verkleinern)
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = (e) => e.matches && setSidebarCollapsed(true);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   function toggleCompare(ticker) {
     setCompareTickers((prev) =>
@@ -1937,12 +1768,15 @@ export default function TazkiyahPrototype() {
       setCriterionId(route.id);
       setPage("criterion");
       setActiveAnchor(null);
+    } else if (route.name === "screener") {
+      setPage("screener");
+      setActiveAnchor(null);
     } else if (route.name === "methodik") {
       setPage("methodik");
       setActiveAnchor(methodikAnchorRef.current);
       methodikAnchorRef.current = null;
     } else {
-      // "#/": von einer Adress-Seite zurück zur Hauptseite; page-Seiten (Watchlist usw.) bleiben
+      // "#/": von einer Adress-Seite zurück zur Startseite; page-Seiten (Watchlist usw.) bleiben
       setPage((p) => (ROUTED_PAGES.includes(p) ? "home" : p));
     }
   }, [route]);
@@ -1954,17 +1788,11 @@ export default function TazkiyahPrototype() {
       if (page === "methodik") setActiveAnchor(anchor || null);
       else methodikAnchorRef.current = anchor || null;
       navigate(routes.methodik());
-    } else if (targetPage === "home") {
-      navigate(routes.home());
-      if (anchor && page === "home") {
-        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
-      } else if (anchor) {
-        setPendingAnchor(anchor);
-      } else if (page === "home") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-      setPage("home");
-      setActiveAnchor(anchor || null);
+    } else if (targetPage === "home" || targetPage === "screener") {
+      navigate(targetPage === "home" ? routes.home() : routes.screener());
+      if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
+      setPage(targetPage);
+      setActiveAnchor(null);
     } else {
       // Seite ohne eigene Adresse: Adresse auf "#/" setzen, damit "Zurück" zur vorigen Adresse führt
       pushHashSilently(routes.home());
@@ -1972,18 +1800,19 @@ export default function TazkiyahPrototype() {
       setActiveAnchor(anchor || null);
     }
     if (filter) {
-      setActiveFilter(filter);
+      setActiveFilter(filter.type === "all" ? null : filter);
       setPresetFilter({ ...filter, ts: Date.now() });
     }
   }
 
-  React.useEffect(() => {
-    if (page === "home" && pendingAnchor) {
-      const el = document.getElementById(pendingAnchor);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-      setPendingAnchor(null);
-    }
-  }, [page, pendingAnchor]);
+  // Sidebar-Filter → Vorgabe für die Screener-Liste
+  const screenerPreset = presetFilter
+    ? {
+        ts: presetFilter.ts,
+        ...(presetFilter.type === "status" ? { statuses: [presetFilter.value] } : {}),
+        ...(presetFilter.type === "sector" ? { sector: presetFilter.value } : {}),
+      }
+    : null;
 
   return (
     <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
@@ -2010,6 +1839,12 @@ export default function TazkiyahPrototype() {
           --amber: #8A6A2E;
           --amber-soft: #E0B368;
           --lattice-dot: rgba(201,166,107,0.14);
+        }
+
+        /* Inhaltsbreite neben der Sidebar: linksbündig, höchstens 1280 px.
+           In der Komponenten-Ebene, damit Utilities wie max-w-2xl (Formulare) sie übersteuern. */
+        @layer components {
+          .page { width: 100%; max-width: 1280px; margin-inline: 0; padding-inline: clamp(16px, 3vw, 48px); box-sizing: border-box; }
         }
 
         .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
@@ -2041,19 +1876,22 @@ export default function TazkiyahPrototype() {
       <div
         style={{ marginLeft: sidebarCollapsed ? "4rem" : "15rem", transition: "margin-left 200ms ease" }}
       >
-        {page === "home" && (
-          <HomePage
+        {page === "home" && <StartPage onGo={goTo} />}
+        {page === "screener" && (
+          <ScreenerPage
+            sectors={SECTORS}
+            preset={screenerPreset}
             watchlist={wl.watchlist}
             onToggleWatchlist={wl.toggle}
             compareTickers={compareTickers}
             onToggleCompare={toggleCompare}
-            presetFilter={presetFilter}
           />
         )}
+        {page === "portfolio" && <PortfolioPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "detail" && selectedTicker && (
           <StockDetailPage
             ticker={selectedTicker}
-            onBack={() => goTo("home")}
+            onBack={() => goTo("screener")}
             watchlist={wl.watchlist}
             onToggleWatchlist={wl.toggle}
           />

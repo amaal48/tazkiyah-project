@@ -141,14 +141,14 @@ export function PrivacyPage({ session, onGo }) {
 
   if (!session) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center text-sm text-[var(--muted)]">
+      <div className="page max-w-2xl py-16 text-center text-sm text-[var(--muted)]">
         Bitte melde dich an, um diesen Bereich zu sehen.
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="page max-w-2xl py-12">
       <h1 className="font-display mb-2 text-2xl text-[var(--text)]">Mein Konto</h1>
       <AccountNav active="privacy" onGo={onGo} />
 

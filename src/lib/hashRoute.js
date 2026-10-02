@@ -4,7 +4,8 @@
 // sind Seiten; alles andere (z. B. "#screener") ist eine Sprungmarke und wird
 // hier ignoriert.
 //
-//   #/                 Hauptseite
+//   #/                 Startseite (Überblick)
+//   #/screener         Screener (Filter und Liste)
 //   #/aktie/AAPL       Detailseite
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
@@ -30,11 +31,13 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "aktie" && parts[1]) return { name: "stock", ticker: parts[1].toUpperCase() };
   if (parts[0] === "kriterium" && parts[1]) return { name: "criterion", id: parts[1].toUpperCase() };
   if (parts[0] === "methodik") return { name: "methodik" };
+  if (parts[0] === "screener") return { name: "screener" };
   return { name: "home" };
 }
 
 export const routes = {
   home: () => "#/",
+  screener: () => "#/screener",
   stock: (ticker) => `#/aktie/${encodeURIComponent(ticker)}`,
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",

@@ -46,7 +46,7 @@ export default function CriterionPage({ id, onBack }) {
 
   if (!e) {
     return (
-      <div className="font-body mx-auto max-w-4xl px-6 py-16 text-left">
+      <div className="font-body page py-16 text-left">
         <p className="text-[var(--text)]">Zu „{id}“ gibt es keine Erklärseite.</p>
         <a href={routes.methodik()} className="mt-3 inline-block text-sm text-[var(--gold-soft)] underline underline-offset-2">
           Zur Methodik
@@ -65,7 +65,7 @@ export default function CriterionPage({ id, onBack }) {
 
   return (
     <div className="font-body text-left">
-      <header className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page flex-wrap items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <button type="button" onClick={onBack} className="hover:text-[var(--text)]">
           Tazkiyah
         </button>
@@ -77,7 +77,7 @@ export default function CriterionPage({ id, onBack }) {
         <span className="text-[var(--text)]">{e.name}</span>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 pb-24">
+      <main className="page pb-24">
         {/* 1. Titel und Stufe */}
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
           {stage ? `Stufe ${stage.id} · ${stage.title}` : "Prüfung"} · {id}
