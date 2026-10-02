@@ -17,6 +17,10 @@ import {
   USER_NOTICES,
 } from "../screening/parameters.js";
 import { INDUSTRY_GROUPS, PROHIBITED_INCOME_CATEGORIES } from "../screening/industryRules.js";
+import { ETF_STAGE, EXPLANATIONS, STAGES } from "../screening/explanations.js";
+import { routes } from "../lib/hashRoute.js";
+import StageDiagram from "./screening/StageDiagram.jsx";
+import { shortExplanation } from "./screening/format.js";
 
 // Kurztitel je Parameter (Überschrift des Eintrags)
 const TITLES = {
@@ -55,6 +59,15 @@ const TITLES = {
   etfPurificationMinCoveragePct: "Mindestabdeckung",
   etfPurificationUncovered: "Fehlende Bestandteile",
 };
+
+// Auch für die Erklärseiten je Prüfung (CriterionPage)
+export { TITLES as PARAMETER_TITLES };
+
+// Parameter → Prüfungen, deren parameterRefs ihn enthalten („Verwendet bei:“)
+const USED_BY = {};
+for (const [cid, e] of Object.entries(EXPLANATIONS)) {
+  for (const k of e.parameterRefs) (USED_BY[k] ||= []).push(cid);
+}
 
 const SECTIONS = [
   {
@@ -187,12 +200,24 @@ function ParameterEntry({ id, def, showLimit }) {
         <dd className="leading-relaxed text-[var(--text-soft)]">{nb(def.alternative)}</dd>
         <dt className="text-[var(--muted)]">Quelle</dt>
         <dd className="text-[var(--text-soft)]">{def.source}</dd>
+        {USED_BY[id] && (
+          <>
+            <dt className="text-[var(--muted)]">Verwendet bei</dt>
+            <dd className="flex flex-wrap gap-x-3 gap-y-1">
+              {USED_BY[id].map((cid) => (
+                <a key={cid} href={routes.criterion(cid)} className="text-[var(--gold-soft)] underline decoration-[var(--gold)]/40 underline-offset-2">
+                  {EXPLANATIONS[cid].name} ({cid})
+                </a>
+              ))}
+            </dd>
+          </>
+        )}
       </dl>
     </article>
   );
 }
 
-function IndustryGroups() {
+export function IndustryGroups() {
   return (
     <div id="methodik-industryGroups" className="scroll-mt-24 mt-8">
       <h3 className="font-display text-lg text-[var(--text)]">Branchen</h3>
@@ -301,12 +326,48 @@ export default function MethodikPage({ onBack, anchor }) {
           <p className="pt-4 text-xs text-[var(--muted)]">Stand der Parameter: {formatDate(PARAMETERS_VERSION.slice(0, 10))}</p>
         </section>
 
+        <section id="pruefungen" aria-label="Prüfstufen" className="scroll-mt-24 pb-16">
+          <StageDiagram />
+          <h2 className="font-display mt-12" style={H2_STYLE}>Alle Prüfungen</h2>
+          <div className="mt-6 grid gap-x-10 gap-y-8 md:grid-cols-2">
+            {[...STAGES, ETF_STAGE].map((stage) => (
+              <div key={stage.id}>
+                <p className="text-sm text-[var(--text)]">
+                  Stufe {stage.id} · {stage.title}
+                  {stage.id === ETF_STAGE.id && <span className="text-[var(--muted)]"> (nur ETFs)</span>}
+                </p>
+                <ul className="mt-2 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+                  {stage.criteria.map((cid) => (
+                    <li key={cid} className="py-2.5">
+                      <a href={routes.criterion(cid)} className="group block">
+                        <span className="flex items-baseline gap-2">
+                          <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{cid}</span>
+                          <span className="text-sm text-[var(--text)] group-hover:underline">{EXPLANATIONS[cid].name}</span>
+                        </span>
+                        <span className="block pl-8 pt-0.5 text-sm leading-relaxed text-[var(--text-soft)]">{nb(shortExplanation(cid))}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:gap-14">
           <nav aria-label="Inhalt" className="hidden lg:block">
             <ul className="sticky top-8 space-y-2 border-l border-[var(--border)] pl-4 text-sm">
               {toc.map((t) => (
                 <li key={t.id}>
-                  <a href={`#${t.id}`} className="text-[var(--muted)] hover:text-[var(--text)] focus-visible:text-[var(--text)]">
+                  <a
+                    href={`#${t.id}`}
+                    onClick={(e) => {
+                      // Hash-Adresse (#/methodik) behalten, nur scrollen
+                      e.preventDefault();
+                      document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="text-[var(--muted)] hover:text-[var(--text)] focus-visible:text-[var(--text)]"
+                  >
                     {t.title}
                   </a>
                 </li>
@@ -343,7 +404,7 @@ export default function MethodikPage({ onBack, anchor }) {
                   erfüllt. Das gilt auch dann, wenn andere Daten noch fehlen.
                 </p>
                 <p>
-                  <span className="text-[var(--amber-soft)]">Nicht geprüft</span>: Nichts ist durchgefallen, aber mindestens
+                  <span className="text-[var(--text)]">Nicht geprüft</span>: Nichts ist durchgefallen, aber mindestens
                   eine Angabe fehlt oder ist unklar. Fehlende Daten führen nie zu „konform“.
                 </p>
                 <p>
