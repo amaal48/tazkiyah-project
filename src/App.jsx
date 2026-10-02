@@ -427,24 +427,7 @@ function HomePage({ watchlist, onToggleWatchlist, compareTickers, onToggleCompar
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Marktbericht</p>
               <h2 className="font-display mt-2 text-2xl text-[var(--text)]">Diese Woche im Überblick</h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-[var(--muted)]">
-                Konforme KI-Infrastrukturwerte zeigen relative Stärke gegenüber dem
-                Gesamtmarkt. Clean-Energy-ETFs profitieren von sinkenden Finanzierungskosten.
-                Bei Halal-Fintechs bleibt die Verschuldungsquote im Sektor stabil unter 20%.
-              </p>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.15em] text-[var(--faint)]">
-                Automatisch erstellt · Keine Anlageberatung
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {["KI-Infrastruktur", "Clean Energy", "Halal-Fintech"].map((tag) => (
-                  <span key={tag} className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--muted)]">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <button className="mt-7 rounded-full bg-[var(--gold)] px-5 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90">
-                Vollständigen Bericht lesen
-              </button>
+              <p className="mt-4 text-[15px] leading-relaxed text-[var(--muted)]">Der wöchentliche Marktbericht erscheint in Kürze.</p>
             </div>
             <div className="flex flex-col justify-center gap-4 border-t border-[var(--border)] pt-6 md:border-l md:border-t-0 md:pl-10 md:pt-0">
               {[
@@ -1177,8 +1160,8 @@ function ReportsPage({ onBack }) {
 
 const topFragen = [
   {
-    q: "Sind alle Technologie-Aktien automatisch halal?",
-    a: "Nein. Auch bei Tech-Unternehmen wird jede Aktie einzeln geprüft — vor allem die Verschuldungsquote. Manche große Tech-Konzerne gelten trotz unproblematischer Branche als Grenzwertig, weil sie stark fremdfinanziert sind.",
+    q: "Sind alle Technologie-Aktien automatisch konform?",
+    a: "Nein. Auch bei Tech-Unternehmen wird jede Aktie einzeln geprüft, unabhängig von der Branche. Neben der Tätigkeit zählen Kennzahlen wie die zinstragenden Schulden und das zinstragende Geld im Verhältnis zur Marktkapitalisierung. Ein Unternehmen mit unproblematischer Branche kann daran scheitern, zum Beispiel weil es stark fremdfinanziert ist.",
   },
   {
     q: "Warum sind ETFs schwieriger zu screenen als Einzelaktien?",
@@ -1234,23 +1217,25 @@ const glossarAZ = [
   { term: "Fractional Shares (Teilaktien)", def: "Bruchteile einer Aktie — ermöglichen es, auch mit kleinem Budget in teure Einzeltitel zu investieren." },
   { term: "Free Float", def: "Der Anteil der Aktien eines Unternehmens, der frei an der Börse gehandelt wird, ohne fest gebundene Großaktionäre." },
   { term: "Gharar", def: "Übermäßige Unsicherheit oder Mehrdeutigkeit in einem Geschäft. Gilt neben Riba als zentrales Ausschlussprinzip im islamischen Finanzwesen." },
-  { term: "Grenzwertig", def: "Tazkiyahs mittlere Status-Stufe: Mindestens eine Kennzahl liegt knapp über dem AAOIFI-Grenzwert. Weder klar konform noch klar ausgeschlossen — sollte regelmäßig neu geprüft werden." },
   { term: "Growth Stock (Wachstumsaktie)", def: "Eine Aktie, deren Wert vor allem auf erwartetem zukünftigem Wachstum beruht, oft mit wenig oder keiner Dividende." },
-  { term: "Halal", def: "Wörtlich 'erlaubt'. Im Anlagekontext: eine Aktie oder ein Fonds, der alle Geschäftsmodell- und Finanzkriterien des Screenings erfüllt." },
+  { term: "Halal", def: "Wörtlich „erlaubt“. Im Anlagekontext der Begriff für Anlagen, die nach islamischen Grundsätzen zulässig sind. Tazkiyah vergibt ihn nicht als Bewertung, sondern zeigt, ob eine Aktie die Prüfungen nach den AAOIFI-Standards besteht (konform, nicht konform, nicht geprüft). Ob eine Anlage für dich zulässig ist, entscheidest du, gegebenenfalls mit Rat eines Gelehrten." },
   { term: "Haram", def: "Wörtlich 'verboten'. Das Gegenstück zu Halal — bezeichnet Geschäftsfelder oder Praktiken, die nach islamischen Grundsätzen unzulässig sind." },
   { term: "IPO (Börsengang)", def: "Initial Public Offering — der erste Verkauf von Unternehmensanteilen an die Öffentlichkeit über die Börse." },
   { term: "ISIN", def: "International Securities Identification Number — eine weltweit eindeutige Kennung für ein Wertpapier, unabhängig vom Börsenplatz." },
   { term: "Ijara", def: "Eine islamische Leasing-Struktur: Der Eigentümer vermietet einen Vermögenswert gegen feste Zahlungen, statt einen verzinsten Kredit zu vergeben." },
   { term: "KGV (P/E-Ratio)", def: "Kurs-Gewinn-Verhältnis — der Aktienkurs geteilt durch den Gewinn je Aktie. Ein gängiges, aber grobes Bewertungsmaß." },
   { term: "Klumpenrisiko", def: "Die Gefahr, dass ein Portfolio zu stark auf wenige Werte, Branchen oder Regionen konzentriert ist und dadurch überdurchschnittlich schwankt." },
+  { term: "Konform", def: "Alle Prüfungen nach den AAOIFI-Standards (SS 21, 27 und 35), die Tazkiyah durchführt, sind bestanden. Das ist keine Anlageempfehlung und kein Rechtsgutachten (Fatwa)." },
   { term: "Liquidität", def: "Wie leicht sich ein Vermögenswert kurzfristig in Bargeld umwandeln lässt, ohne größere Wertverluste." },
   { term: "Marktkapitalisierung", def: "Der Gesamtwert aller ausstehenden Aktien eines Unternehmens (Aktienkurs × Anzahl Aktien). Dient als Bezugsgröße für Verschuldungs- und Cash-Quote im Screening." },
   { term: "Maysir", def: "Glücksspiel bzw. Spekulation ohne wirtschaftliche Substanz — neben Riba und Gharar ein weiteres zentrales Ausschlussprinzip im islamischen Finanzwesen." },
   { term: "Mudarabah", def: "Ein islamisches Gewinnbeteiligungsmodell: Ein Kapitalgeber stellt Geld, ein Unternehmer die Arbeit — Gewinne werden nach vereinbartem Schlüssel geteilt, Verluste trägt primär der Kapitalgeber." },
   { term: "Murabaha", def: "Ein Kostenaufschlag-Verkauf: Der Verkäufer nennt offen Einkaufspreis und Marge, statt Zinsen zu berechnen — eine gängige Struktur im islamischen Handelsfinanzwesen." },
   { term: "Musharakah", def: "Eine Partnerschaft, bei der mehrere Parteien gemeinsam Kapital einbringen und Gewinn wie Verlust anteilig tragen — Grundlage vieler islamischer Beteiligungsmodelle." },
+  { term: "Nicht geprüft", def: "Keine Prüfung ist durchgefallen, aber mindestens eine steht noch aus oder ließ sich mit den vorhandenen Daten nicht abschließen. Auf der Detailseite steht, was fehlt." },
+  { term: "Nicht konform", def: "Mindestens eine Prüfung ist nicht bestanden, zum Beispiel weil die zinstragenden Schulden über dem Grenzwert liegen. Auf der Detailseite steht, welche." },
   { term: "Nisab", def: "Der Vermögens-Schwellenwert, ab dem Zakat fällig wird. Liegt das Gesamtvermögen darunter, entfällt die Zakat-Pflicht für den Zeitraum." },
-  { term: "Portfolio", def: "Die Gesamtheit der Anlagen einer Person — bei Tazkiyah inklusive einer aggregierten Halal-Reinheits-Ansicht über alle Positionen hinweg." },
+  { term: "Portfolio", def: "Die Gesamtheit der Anlagen einer Person, bei Tazkiyah mit dem Status je Position." },
   { term: "Purification (Dividenden-Reinigung)", def: "Das Abtrennen des unzulässigen Ertragsanteils (meist Zinserträge) einer ansonsten erlaubten Dividende — traditionell durch Spende dieses Anteils." },
   { term: "Qard Hasan", def: "Ein zinsloses, wohltätiges Darlehen im islamischen Finanzwesen — der Kreditgeber erwartet ausschließlich die Rückzahlung des Nennbetrags." },
   { term: "Rebalancing", def: "Das planmäßige Zurücksetzen eines Portfolios auf eine Ziel-Gewichtung, nachdem sich die Kurse einzelner Positionen unterschiedlich entwickelt haben." },
@@ -1272,9 +1257,9 @@ const glossarAZ = [
 const einstiegsSteps = [
   { title: "1. Grundbegriffe verstehen", text: "Aktie, ETF, Dividende, Sparplan — bevor es um Halal-Kriterien geht, hilft ein Blick ins Glossar weiter unten. Niemand muss alles auf einmal verstehen." },
   { title: "2. Broker auswählen", text: "Ein Depot ist Voraussetzung fürs Investieren. Tazkiyah empfiehlt keinen bestimmten Anbieter — der Vergleich unten zeigt nur Kriterien, keine Wertung. Achte besonders auf schariakonforme Kontoführung, falls dir das wichtig ist." },
-  { title: "3. Screening verstehen", text: "Bevor du eine Aktie kaufst, prüf ihren Status im Screener und lies die 'Warum'-Begründung auf der Detailseite. Bei 'Grenzwertig' lohnt sich ein zweiter Blick vor dem Kauf." },
+  { title: "3. Screening verstehen", text: "Bevor du eine Aktie kaufst, prüf ihren Status im Screener und lies die Begründung auf der Detailseite. Bei „Nicht geprüft“ steht dort, welche Prüfung noch aussteht. Zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite." },
   { title: "4. Klein anfangen", text: "Ein Sparplan mit kleinen, regelmäßigen Beträgen ist oft sinnvoller als eine einzelne große Investition — gerade am Anfang, wenn Marktschwankungen noch ungewohnt sind." },
-  { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um Statusänderungen (z. B. Halal → Grenzwertig) nicht zu verpassen, und prüfe die Portfolio-Reinheit regelmäßig — Unternehmen können sich verändern." },
+  { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um deine Titel im Blick zu behalten, und prüfe ihren Status regelmäßig. Unternehmen können sich verändern, deshalb wird der Status mit neuen Quartals- und Jahresabschlüssen neu berechnet." },
   { title: "6. Dividenden bereinigen", text: "Sobald du Dividenden erhältst, hilf dir der Reinheits-Rechner dabei, den Spendenanteil zu schätzen — ein fester Bestandteil vieler Muslim-Investment-Routinen." },
 ];
 
@@ -1297,7 +1282,7 @@ const vertiefenItems = [
   },
   {
     title: "Risiken & Chancen",
-    text: "Halal-konforme Aktien sind nicht automatisch risikoärmer — die Ausschlusskriterien führen oft zu einer Konzentration auf bestimmte Sektoren (z. B. Technologie, Gesundheit), was Klumpenrisiken erzeugen kann. Gleichzeitig bringt der niedrigere Verschuldungsgrad vieler konformer Unternehmen tendenziell mehr finanzielle Stabilität in Krisenzeiten mit sich — beides gehört zur ehrlichen Einordnung.",
+    text: "Konforme Aktien sind nicht automatisch risikoärmer: Die Ausschlusskriterien führen oft zu einer Konzentration auf bestimmte Sektoren (z. B. Technologie, Gesundheit), was Klumpenrisiken erzeugen kann. Gleichzeitig kann der niedrigere Verschuldungsgrad vieler konformer Unternehmen in Krisenzeiten für mehr finanzielle Stabilität sorgen. Beides gehört zur ehrlichen Einordnung.",
   },
 ];
 
@@ -1427,12 +1412,16 @@ function AkademiePage({ onBack }) {
         {tab === "Methodik" && (
           <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
             <p className="text-sm leading-relaxed text-[var(--text-soft)]">
-              Das Screening orientiert sich an AAOIFI-Standards und prüft jede Aktie in zwei
-              Schritten: zuerst das Geschäftsmodell (z. B. Ausschluss von Banken, Alkohol,
-              Glücksspiel), danach die Finanzkennzahlen (Verschuldung, zinstragende Erträge und
-              Einlagen — jeweils im Verhältnis zur Marktkapitalisierung). Liegt eine Kennzahl über
-              dem Grenzwert, gilt der Titel als nicht konform; liegt sie knapp darunter, als
-              Grenzwertig. Die genaue Berechnung ist auf jeder Aktien-Detailseite einsehbar.
+              Das Screening folgt den AAOIFI Shari'ah Standards Nr. 21, 27 und 35. Jede Aktie durchläuft vier Stufen:
+              Tätigkeit (ist das Hauptgeschäft erlaubt, und was sagt die Satzung zum Zweck?), Kennzahlen (zinstragende
+              Schulden, zinstragende Einlagen und verbotene Einnahmen im Verhältnis zur Marktkapitalisierung bzw. zu den
+              Einnahmen), Vermögen (Anteil realer Vermögenswerte) und Aktie und Produkt (Aktiengattung und ausgeschlossene
+              Produkte). Besteht eine Aktie alle Prüfungen, ist sie konform. Fällt eine durch, ist sie nicht konform. Steht
+              noch eine Prüfung aus, ist sie nicht geprüft. Zu jeder Prüfung nennen wir die Fundstelle im Standard und
+              erklären sie auf einer eigenen Seite.{" "}
+              <a href={routes.methodik()} className="text-[var(--gold-soft)] underline underline-offset-2">
+                Alle Regeln im Überblick
+              </a>
             </p>
             <p className="mt-3 text-xs text-[var(--faint)]">Automatisch berechnet · Keine Anlageberatung</p>
           </div>
