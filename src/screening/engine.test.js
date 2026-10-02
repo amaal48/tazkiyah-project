@@ -349,3 +349,93 @@ test("B3: Derivate + Wertpapierleihe ohne Auslegungs-Flag, unbekannte Kategorie 
   const r2 = screenSecurity(base({ manualReviews: segReviewWith(bad) }));
   assert.equal(crit(r2, "B3").result, RESULT.NOT_CHECKED);
 });
+
+// ------------------------------------------------ Leasing im Quartal (Schätzung)
+
+const EST = { source: "annual", periodEnd: ANNUAL_END, amount: 100 };
+function withLatestQuarter(balance, extra = {}) {
+  return Q_ENDS.map((d, i) => (i === 0 ? snap("quarter", d, { balance, ...extra }) : snap("quarter", d)));
+}
+const leaseReview = (over = {}) => ({
+  criterion: "B1_LEASE", result: "pass", reviewer: "A.", reviewedAt: "2026-10-02", basisAnnualPeriodEnd: ANNUAL_END, sourceUrl: "https://example.com/10q",
+  details: { quarterPeriodEnd: Q_ENDS[0], leaseLiabilities: 40 }, ...over,
+});
+
+test("Leasing-Schätzung ohne Einfluss auf das Ergebnis: bestanden, als Schätzung gekennzeichnet", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 100, leaseLiabilities: 20, leaseEstimate: EST });
+  const b1 = crit(screenSecurity(base({ quarters })), "B1");
+  assert.equal(b1.result, RESULT.PASS);
+  assert.equal(b1.checks[1].leaseSource, "annual_estimate");
+  assert.ok(b1.flags.includes("leasing_geschaetzt"));
+});
+
+test("Leasing-Schätzung entscheidet (mit > 30 %, ohne ≤ 30 %): nicht geprüft, 10-Q manuell prüfen", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 250, leaseLiabilities: 100, leaseEstimate: EST });
+  const b1 = crit(screenSecurity(base({ quarters })), "B1");
+  assert.equal(b1.checks[1].value, 35);
+  assert.equal(b1.checks[1].result, RESULT.NOT_CHECKED);
+  assert.equal(b1.checks[1].leaseEstimateDecisive, true);
+  assert.match(b1.checks[1].reason, /10-Q/);
+  assert.equal(b1.result, RESULT.NOT_CHECKED);
+  assert.ok(b1.flags.includes("leasing_schaetzung_entscheidend"));
+});
+
+test("Schulden allein schon über der Grenze: nicht konform, Schätzung ändert nichts", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 350, leaseLiabilities: 100, leaseEstimate: EST });
+  assert.equal(crit(screenSecurity(base({ quarters })), "B1").result, RESULT.FAIL);
+});
+
+test("Manuelle 10-Q-Prüfung ersetzt die Schätzung (bestanden und durchgefallen)", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 250, leaseLiabilities: 100, leaseEstimate: EST });
+  const ok = crit(screenSecurity(base({ quarters, manualReviews: [...validReviews, leaseReview()] })), "B1"); // (250+40)/1000 = 29 %
+  assert.equal(ok.checks[1].value, 29);
+  assert.equal(ok.checks[1].result, RESULT.PASS);
+  assert.equal(ok.checks[1].leaseSource, "manual_10q");
+  assert.ok(ok.flags.includes("leasing_manuell_geprueft"));
+  const fail = crit(screenSecurity(base({ quarters, manualReviews: [...validReviews, leaseReview({ details: { quarterPeriodEnd: Q_ENDS[0], leaseLiabilities: 60 } })] })), "B1");
+  assert.equal(fail.checks[1].result, RESULT.FAIL); // (250+60)/1000 = 31 %
+});
+
+test("Prüfung eines älteren Quartals wird ignoriert", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 250, leaseLiabilities: 100, leaseEstimate: EST });
+  const stale = leaseReview({ details: { quarterPeriodEnd: "2026-03-31", leaseLiabilities: 40 } });
+  const b1 = crit(screenSecurity(base({ quarters, manualReviews: [...validReviews, stale] })), "B1");
+  assert.equal(b1.checks[1].leaseEstimateDecisive, true);
+});
+
+test("Schätzung abgeschaltet: Leasing im Quartal gilt als unbekannt", () => {
+  const quarters = withLatestQuarter({ interestBearingDebtExLeases: 100, leaseLiabilities: 20, leaseEstimate: EST });
+  const b1 = crit(screenSecurity(base({ quarters, parameters: { leaseQuarterEstimate: false } })), "B1");
+  assert.equal(b1.checks[1].result, RESULT.NOT_CHECKED);
+  assert.match(b1.checks[1].reason, /leaseLiabilities/);
+});
+
+// ------------------------------------------------ Marktkapitalisierung aus Kurs, mehrere Gattungen
+
+test("Selbst gebildete Marktkapitalisierung: gekennzeichnet, bei Durchschnitts-Aktienzahl als Datenabweichung", () => {
+  const derived = (type, end, basis) => snap(type, end, { marketCapSource: "price_x_weighted_avg_shares", sharesBasis: basis });
+  const r = screenSecurity(base({ annual: derived("annual", ANNUAL_END, "weighted_average"), quarters: Q_ENDS.map((d) => derived("quarter", d, "weighted_average")) }));
+  for (const id of ["B1", "B2"]) {
+    assert.ok(crit(r, id).flags.includes("marktkapitalisierung_aus_kurs"));
+    assert.ok(crit(r, id).flags.includes("datenabweichung"));
+  }
+  // Bestand am Periodenende → keine Datenabweichung
+  const pe = (type, end) => snap(type, end, { marketCapSource: "price_x_period_end_shares", sharesBasis: "period_end" });
+  const r2 = screenSecurity(base({ annual: pe("annual", ANNUAL_END), quarters: Q_ENDS.map((d) => pe("quarter", d)) }));
+  assert.ok(crit(r2, "B1").flags.includes("marktkapitalisierung_aus_kurs"));
+  assert.ok(!crit(r2, "B1").flags.includes("datenabweichung"));
+  // Wert vom Anbieter → keine Kennzeichnung
+  assert.deepEqual(crit(screenSecurity(base()), "B1").flags, []);
+});
+
+test("Mehrere Aktiengattungen: selbst gebildeter Wert gilt nicht → B1/B2 nicht geprüft; Anbieterwert gilt", () => {
+  const derived = (type, end) => snap(type, end, { marketCapSource: "price_x_weighted_avg_shares", sharesBasis: "weighted_average" });
+  const multi = { ...base().security, multiClassIssuer: true };
+  const r = screenSecurity(base({ security: multi, annual: derived("annual", ANNUAL_END), quarters: Q_ENDS.map((d) => derived("quarter", d)) }));
+  assert.equal(crit(r, "B1").result, RESULT.NOT_CHECKED);
+  assert.equal(crit(r, "B2").result, RESULT.NOT_CHECKED);
+  assert.match(crit(r, "B1").checks[0].reason, /mehrere Aktiengattungen/);
+  // Marktkapitalisierung vom Anbieter (ganzes Unternehmen) → normal geprüft
+  const r2 = screenSecurity(base({ security: multi }));
+  assert.equal(crit(r2, "B1").result, RESULT.PASS);
+});

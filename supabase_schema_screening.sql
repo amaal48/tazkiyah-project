@@ -199,6 +199,12 @@ create trigger status_change_notify after insert on public.screening_status_chan
 --   die zählt die Engine automatisch. Beträge in Berichtswährung.
 --   Fehlt eine Periode oder ist eine Kategorie unbekannt → „nicht geprüft“.
 --
+-- details bei criterion = 'B1_LEASE' (Leasing im letzten Quartal laut Quartalsbericht, 10-Q),
+-- nur nötig, wenn B1 wegen einer Leasing-Schätzung „nicht geprüft“ ist:
+--   {"quarterPeriodEnd": "2026-06-27", "leaseLiabilities": 13720000000}
+--   Betrag in Berichtswährung, ohne bereits in den Schuldenposten enthaltenes Leasing.
+--   result = 'pass' bestätigt den Wert; gilt nur für dieses Quartal und den aktuellen Jahresabschluss.
+--
 -- details bei criterion = 'G5_FUND_INCOME' (fondseigene Zinserträge, ETF):
 --   {"interestIncomePctOfAssets": 0.02}   -- in % des Fondsvermögens, laut Jahresbericht
 
@@ -220,7 +226,7 @@ create table if not exists public.manual_reviews (
 -- dieses Skript einfach erneut ausführen können.
 alter table public.manual_reviews drop constraint if exists manual_reviews_criterion_check;
 alter table public.manual_reviews add constraint manual_reviews_criterion_check
-  check (criterion in ('A1', 'A2', 'A3', 'B3_SEGMENTS', 'G2', 'G3', 'G4', 'G5_FUND_INCOME'));
+  check (criterion in ('A1', 'A2', 'A3', 'B1_LEASE', 'B3_SEGMENTS', 'G2', 'G3', 'G4', 'G5_FUND_INCOME'));
 
 create index if not exists manual_reviews_lookup_idx
   on public.manual_reviews (security_id, criterion, reviewed_at desc);

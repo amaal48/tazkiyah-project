@@ -95,8 +95,8 @@ const stocks = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"].map((t) => ({
 test("Budget begrenzt die Zahl der Titel; Abrufe werden gezählt", async () => {
   const repo = memoryRepo(stocks);
   const provider = fakeProvider();
-  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 30 });
-  assert.equal(s.fetched.length, 4); // (30 - 1 FX-Abruf) / 7 = 4
+  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 33 });
+  assert.equal(s.fetched.length, 4); // (33 - 1 FX-Abruf) / 8 = 4
   assert.equal(repo.db.usage, 1 + 4 * CALLS_PER_TITLE);
   assert.equal(s.pending.fetch, 2);
   assert.equal(repo.db.runs.length, 4);
@@ -111,8 +111,8 @@ test("Budget begrenzt die Zahl der Titel; Abrufe werden gezählt", async () => {
 
 test("Zweiter Lauf am selben Tag: kein Budget mehr, nichts doppelt", async () => {
   const repo = memoryRepo(stocks);
-  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 });
-  const s2 = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 });
+  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 });
+  const s2 = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 });
   assert.equal(s2.fetched.length, 0);
   assert.equal(repo.db.runs.length, 4);
 });
@@ -237,14 +237,14 @@ test("Sperre: Ein zweiter gleichzeitiger Lauf wird übersprungen", async () => {
     return orig(...a);
   };
   const [a, b] = await Promise.all([
-    runScreening({ repo, provider: slow, now: NOW, dailyCallBudget: 30 }),
-    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
+    runScreening({ repo, provider: slow, now: NOW, dailyCallBudget: 33 }),
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 }),
   ]);
   assert.equal([a, b].filter((x) => x.skipped).length, 1);
-  assert.ok(repo.db.usage <= 30);
+  assert.ok(repo.db.usage <= 33);
   assert.equal(repo.db.runs.filter((r) => r.security_id === "AAA").length, 1);
   // Nach dem Lauf ist die Sperre wieder frei
-  const c = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 });
+  const c = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 });
   assert.equal(c.skipped, undefined);
 });
 
@@ -252,10 +252,10 @@ test("Budget hält auch ohne Sperre bei parallelen Läufen (atomare Reservierung
   const repo = memoryRepo(stocks);
   // Beide Läufe sehen beim Start usedToday = 0 und planen je 4 Titel
   await Promise.all([
-    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
-    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 30 }),
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 }),
+    runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 }),
   ]);
-  assert.ok(repo.db.usage <= 30, `verbraucht: ${repo.db.usage}`);
+  assert.ok(repo.db.usage <= 33, `verbraucht: ${repo.db.usage}`);
 });
 
 test("Quartale im Tarif gesperrt: Jahreswerte gespeichert, Abruf erst nach neuem Jahresabschluss", async () => {
@@ -274,4 +274,47 @@ test("Quartale im Tarif gesperrt: Jahreswerte gespeichert, Abruf erst nach neuem
   // Nicht wöchentlich neu abrufen, sondern erst ca. 75 Tage nach dem nächsten Geschäftsjahresende
   assert.equal(needsFreshData({}, run, Date.parse("2026-11-01T00:00:00Z")), false);
   assert.equal(needsFreshData({}, run, Date.parse("2027-03-20T00:00:00Z")), true);
+});
+
+function derivedProvider(ciks) {
+  const provider = fakeProvider();
+  provider.getProfile = async (symbol) => {
+    provider.calls.push(symbol);
+    return { symbol, isin: null, industry: "Software - Infrastructure", description: "", cik: ciks[symbol] ?? null };
+  };
+  provider.getFinancialPeriods = async () => {
+    const mark = (x) => Object.assign(x, { marketCapSource: "price_x_weighted_avg_shares" });
+    return { annual: mark(snap("annual", "2025-12-31")), quarters: ["2026-06-30", "2026-03-31", "2025-12-31", "2025-09-30"].map((d) => mark(snap("quarter", d))) };
+  };
+  return provider;
+}
+const b1Of = (repo, id) => repo.db.runs.filter((r) => r.security_id === id).at(-1).result.criteria.find((c) => c.id === "B1");
+
+test("Mehrere Aktiengattungen (gleiche CIK): B1 nicht geprüft; verschiedene CIK: normal", async () => {
+  const two = [{ ...stocks[0], id: "G1", ticker: "GOOGL", provider_symbol: "GOOGL" }, { ...stocks[1], id: "G2", ticker: "GOOG", provider_symbol: "GOOG" }];
+  const repo = memoryRepo(two);
+  await runScreening({ repo, provider: derivedProvider({ GOOGL: "1652044", GOOG: "1652044" }), now: NOW, dailyCallBudget: 200 });
+  for (const id of ["G1", "G2"]) {
+    assert.equal(b1Of(repo, id).result, "not_checked");
+    assert.match(b1Of(repo, id).checks[0].reason, /mehrere Aktiengattungen/);
+  }
+  const repo2 = memoryRepo(two);
+  await runScreening({ repo: repo2, provider: derivedProvider({ GOOGL: "1", GOOG: "2" }), now: NOW, dailyCallBudget: 200 });
+  assert.equal(b1Of(repo2, "G1").result, "pass");
+});
+
+test("Schwester-Titel kommt später dazu: erster Titel wird ohne Abruf neu gerechnet", async () => {
+  const first = [{ ...stocks[0], id: "G1", ticker: "GOOGL", provider_symbol: "GOOGL" }];
+  const repo = memoryRepo(first);
+  const ciks = { GOOGL: "1652044", GOOG: "1652044" };
+  await runScreening({ repo, provider: derivedProvider(ciks), now: NOW, dailyCallBudget: 200 });
+  assert.equal(b1Of(repo, "G1").result, "pass"); // allein im Universum
+  repo.db.securities.push({ updated_at: "2026-01-01T00:00:00Z", ...stocks[1], id: "G2", ticker: "GOOG", provider_symbol: "GOOG", data_fetched_at: null });
+  const later = new Date("2026-10-08T03:00:00Z");
+  const provider = derivedProvider(ciks);
+  const s = await runScreening({ repo, provider, now: later, dailyCallBudget: 200 });
+  assert.deepEqual(provider.calls, ["GOOG"]); // nur der neue Titel wurde abgerufen
+  assert.equal(b1Of(repo, "G1").result, "not_checked");
+  assert.equal(b1Of(repo, "G2").result, "not_checked");
+  assert.ok(s.rescreened.some((x) => x.ticker === "GOOGL"));
 });

@@ -23,7 +23,7 @@
 // speichert einen Schnappschuss der Werte, damit alte Ergebnisse
 // nachvollziehbar bleiben.
 
-export const PARAMETERS_VERSION = "2026-10-01.2";
+export const PARAMETERS_VERSION = "2026-10-02.2";
 
 export const PRINCIPLE =
   "Wortlaut des AAOIFI-Standards zuerst. Wo der Text Spielraum lässt, gilt die vorsichtigere Variante. Grenzwerte werden nicht strenger gemacht als im Standard (30 %, 30 %, 5 %).";
@@ -77,12 +77,32 @@ export const DEFAULT_PARAMETERS = {
     alternative: "Aktueller Wert oder Durchschnitt über mehrere Monate.",
     source: "SS 21, 3/4/2; SS 21, 3/4/3",
   },
+  marketCapFromPrice: {
+    value: "price_times_shares",
+    method:
+      "Die Marktkapitalisierung zum Bilanzstichtag wird aus dem Schlusskurs am Stichtag (bei Wochenende oder Feiertag der letzte Handelstag davor, höchstens 7 Tage) mal der Aktienzahl gebildet. Als Aktienzahl dient der Bestand am Periodenende, sobald die Datenquelle ihn liefert; bis dahin der Durchschnitt der Periode, und das ist als Datenabweichung gekennzeichnet. Hat ein Unternehmen mehrere Aktiengattungen, müssen alle Gattungen zusammengezählt werden. Ist das mit den Daten nicht möglich, bleiben B1 und B2 „nicht geprüft“. Liefert die Datenquelle die Marktkapitalisierung selbst, hat sie Vorrang.",
+    rationale:
+      "Der Standard verlangt die Marktkapitalisierung, nicht ihre Herkunft. Historische Marktkapitalisierungen zu Bilanzstichtagen gibt es nicht in jeder Datenquelle, Schlusskurse schon. Der Durchschnitt der Periode liegt bei Unternehmen mit Aktienrückkäufen etwas über dem Bestand; die Marktkapitalisierung ist dann leicht zu hoch und die Schuldenquote leicht zu niedrig. Diese Datengrenze wird offen ausgewiesen. Sobald die Datenquelle die Marktkapitalisierung selbst liefert, ersetzt sie die Näherung.",
+    alternative: "Aktienzahl vom Deckblatt des Jahresberichts (nicht automatisierbar).",
+    source: "SS 21, 3/4/2; SS 21, 3/4/3",
+  },
   leaseLiabilitiesAsDebt: {
     value: true,
     method: "Leasingverbindlichkeiten zählen zu den zinstragenden Schulden.",
     rationale: "Der Text lässt Spielraum; die vorsichtigere Variante zählt sie mit.",
     alternative: "Leasingverbindlichkeiten ausklammern.",
     source: "SS 21, 3/4/2",
+  },
+  leaseQuarterEstimate: {
+    value: true,
+    method:
+      "Weist ein Quartalsabschluss Leasingverbindlichkeiten nicht gesondert aus, wird der Leasingwert des letzten Jahresabschlusses übernommen und das Ergebnis als „Schätzung aus Jahresabschluss“ gekennzeichnet. Ist Leasing bereits in den Schuldenposten enthalten, wird nichts ergänzt. Würde die Schätzung das Ergebnis ändern (B1 mit Leasing über 30 %, ohne Leasing darunter), lautet der Status „nicht geprüft“, und der Quartalsbericht (10-Q) wird von Hand geprüft.",
+    rationale:
+      "Zinstragende Schulden nach SS 21, 3/4/2 umfassen auch Leasing, soweit es als Schuld ausgewiesen ist. Viele Unternehmen weisen es im Quartal nicht gesondert aus; es wegzulassen würde die Quote zu niedrig zeigen. Der Jahreswert ist die beste belegte Näherung. Entscheidet er über das Ergebnis, ersetzt die Prüfung des Quartalsberichts die Schätzung.",
+    alternative:
+      "Quartal ohne Leasing rechnen (Quote zu niedrig) oder jedes Quartal ohne gesonderten Ausweis als „nicht geprüft“ werten (strenger, würde sehr viele Unternehmen betreffen).",
+    source: "SS 21, 3/4/2",
+    derivation: true,
   },
   allCashInterestBearing: {
     value: true,

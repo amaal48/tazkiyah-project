@@ -30,7 +30,7 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.1.1";
+export const ENGINE_VERSION = "1.2.0";
 
 export const STATUS = {
   CONFORM: "konform",
@@ -256,12 +256,50 @@ function stageA({ profile, reviews, annualBasis, p }) {
 
 // ---------------------------------------------------------- Stufe B
 
-function debtCheck(s, basis, p) {
-  const b = s?.balance || {};
+/**
+ * Marktkapitalisierung nutzbar? Ein selbst gebildeter Wert (marketCapSource) gilt nicht,
+ * wenn der Emittent mehrere Aktiengattungen hat: Dann müssten alle Gattungen addiert werden,
+ * die Stückzahl je Gattung liegt aber nicht vor.
+ */
+function marketCapIssue(s, security) {
+  if (!isNum(s?.marketCapAtPeriodEnd)) return "marketCapAtPeriodEnd";
+  if (security?.multiClassIssuer && s.marketCapSource) {
+    return "marketCapAtPeriodEnd (mehrere Aktiengattungen: Wert aller Gattungen nicht ermittelbar)";
+  }
+  return null;
+}
+
+/** Gültige manuelle Prüfung des Leasings im letzten Quartal (10-Q), sonst null. */
+function leaseReviewFor(latestQ, reviews, annualBasis) {
+  if (!latestQ?.balance?.leaseEstimate) return null;
+  const picked = pickReview(reviews, "B1_LEASE", annualBasis);
+  const r = picked.review;
+  if (picked.state !== "valid" || r.result !== "pass") return null;
+  const d = r.details || {};
+  if (d.quarterPeriodEnd !== latestQ.periodEnd || !isNum(d.leaseLiabilities) || d.leaseLiabilities < 0) return null;
+  return { picked, amount: d.leaseLiabilities };
+}
+
+function debtCheck(s, basis, p, security, leaseReview = null) {
+  const b0 = s?.balance || {};
+  const est = p.leaseLiabilitiesAsDebt ? b0.leaseEstimate ?? null : null;
+  let b = b0;
+  let leaseSource = null;
+  if (est) {
+    if (leaseReview) {
+      b = { ...b0, leaseLiabilities: leaseReview.amount };
+      leaseSource = "manual_10q";
+    } else if (!p.leaseQuarterEstimate) {
+      b = { ...b0, leaseLiabilities: null }; // Schätzung abgeschaltet → Leasing unbekannt
+    } else {
+      leaseSource = "annual_estimate";
+    }
+  }
   const keys = ["interestBearingDebtExLeases", ...(p.leaseLiabilitiesAsDebt ? ["leaseLiabilities"] : [])];
   const { value, missing } = sumFields(b, keys);
-  if (!isNum(s?.marketCapAtPeriodEnd)) missing.push("marketCapAtPeriodEnd");
-  return ratioCheck({
+  const mcIssue = marketCapIssue(s, security);
+  if (mcIssue) missing.push(mcIssue);
+  const check = ratioCheck({
     basis,
     periodEnd: s?.periodEnd,
     numerator: value,
@@ -271,9 +309,26 @@ function debtCheck(s, basis, p) {
     missing,
     label: "Zinstragende Schulden / Marktkapitalisierung",
   });
+
+  if (leaseSource) {
+    check.leaseSource = leaseSource;
+    check.leaseAmount = b.leaseLiabilities;
+    if (leaseSource === "annual_estimate") check.leaseEstimate = est;
+  }
+  // Entscheidet die Schätzung über das Ergebnis, wird das Quartal von Hand geprüft
+  if (leaseSource === "annual_estimate" && check.result === RESULT.FAIL && isNum(b.interestBearingDebtExLeases) && s.marketCapAtPeriodEnd > 0) {
+    const withoutLeasePct = (b.interestBearingDebtExLeases / s.marketCapAtPeriodEnd) * 100;
+    if (withoutLeasePct <= p.debtMaxPct) {
+      check.result = RESULT.NOT_CHECKED;
+      check.leaseEstimateDecisive = true;
+      check.reason =
+        "Leasing im Quartal nur aus dem Jahresabschluss geschätzt: mit Schätzung über der Grenze, ohne darunter. Quartalsbericht (10-Q) manuell prüfen (B1_LEASE)";
+    }
+  }
+  return check;
 }
 
-function depositsCheck(s, basis, p) {
+function depositsCheck(s, basis, p, security) {
   const b = s?.balance || {};
   let value;
   let missing;
@@ -287,7 +342,8 @@ function depositsCheck(s, basis, p) {
     // Alternative: nur ausdrücklich als verzinslich ausgewiesene Posten
     ({ value, missing } = sumFields(b, ["explicitInterestBearingDeposits"]));
   }
-  if (!isNum(s?.marketCapAtPeriodEnd)) missing.push("marketCapAtPeriodEnd");
+  const mcIssue = marketCapIssue(s, security);
+  if (mcIssue) missing.push(mcIssue);
   return ratioCheck({
     basis,
     periodEnd: s?.periodEnd,
@@ -367,22 +423,39 @@ function incomeDenominator(s, p) {
   return sumFields(s?.income || {}, keys);
 }
 
-function stageB({ annual, quarters, reviews, annualBasis, p }) {
+function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
   const latestQ = quarters[0] || null;
 
   // B1
   const b1 = makeCriterion("B1", "Zinstragende Schulden", "SS 21, 3/4/2", {
-    parameterRefs: ["debtMaxPct", "marketCapBasis", "leaseLiabilitiesAsDebt", "balanceBasis"],
+    parameterRefs: ["debtMaxPct", "marketCapBasis", "marketCapFromPrice", "leaseLiabilitiesAsDebt", "leaseQuarterEstimate", "balanceBasis"],
   });
-  b1.checks = [debtCheck(annual, "annual", p), debtCheck(latestQ, "quarter", p)];
+  const leaseReview = leaseReviewFor(latestQ, reviews, annualBasis);
+  b1.checks = [debtCheck(annual, "annual", p, security), debtCheck(latestQ, "quarter", p, security, leaseReview)];
   b1.result = combine(b1.checks);
+  const qCheck = b1.checks[1];
+  if (qCheck.leaseSource === "annual_estimate") b1.flags.push("leasing_geschaetzt");
+  if (qCheck.leaseSource === "manual_10q") {
+    b1.flags.push("leasing_manuell_geprueft");
+    b1.review = reviewInfo(leaseReview.picked);
+  }
+  if (qCheck.leaseEstimateDecisive) b1.flags.push("leasing_schaetzung_entscheidend");
 
   // B2
   const b2 = makeCriterion("B2", "Zinstragende Einlagen", "SS 21, 3/4/3", {
-    parameterRefs: ["depositsMaxPct", "marketCapBasis", "allCashInterestBearing", "balanceBasis"],
+    parameterRefs: ["depositsMaxPct", "marketCapBasis", "marketCapFromPrice", "allCashInterestBearing", "balanceBasis"],
   });
-  b2.checks = [depositsCheck(annual, "annual", p), depositsCheck(latestQ, "quarter", p)];
+  b2.checks = [depositsCheck(annual, "annual", p, security), depositsCheck(latestQ, "quarter", p, security)];
   b2.result = combine(b2.checks);
+
+  // Marktkapitalisierung selbst gebildet? → kennzeichnen (Datenabweichung, wenn Durchschnitts-Aktienzahl)
+  const derivedCaps = [annual, latestQ].filter((x) => x?.marketCapSource);
+  if (derivedCaps.length) {
+    for (const c of [b1, b2]) {
+      c.flags.push("marktkapitalisierung_aus_kurs");
+      if (derivedCaps.some((x) => x.sharesBasis === "weighted_average")) c.flags.push("datenabweichung");
+    }
+  }
 
   // B3 (inkl. B5 alle Quellen, B6 unklar → nicht geprüft)
   const b3 = makeCriterion("B3", "Verbotene Einnahmen", "SS 21, 3/4/4", {
@@ -856,7 +929,7 @@ export function screenSecurity(input) {
   } else {
     criteria = [
       ...stageA({ profile, reviews: manualReviews, annualBasis, p }),
-      ...stageB({ annual, quarters: qs, reviews: manualReviews, annualBasis, p }),
+      ...stageB({ annual, quarters: qs, reviews: manualReviews, annualBasis, security, p }),
       ...stageC({ annual, quarters: qs, profile, p }),
       ...stageD({ security }),
       ...stageH({ security }),

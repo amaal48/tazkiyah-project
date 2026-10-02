@@ -8,7 +8,7 @@
 //
 // Ablauf pro Durchlauf:
 //   1. Aktien mit fälligen Daten (nie geprüft / neues Quartal zu erwarten)
-//      → Finanzdaten holen (7 Abrufe je Titel), rechnen, speichern.
+//      → Finanzdaten holen (8 Abrufe je Titel), rechnen, speichern.
 //      Begrenzt durch das Tagesbudget an API-Abrufen.
 //   2. Aktien, bei denen sich seit dem letzten Lauf manuelle Prüfungen,
 //      Stammdaten, Engine- oder Parameterversion geändert haben
@@ -32,7 +32,8 @@ import { createHash } from "node:crypto";
 import { screenSecurity, ENGINE_VERSION } from "./engine.js";
 import { PARAMETERS_VERSION } from "./parameters.js";
 
-export const CALLS_PER_TITLE = 7;
+// Profil (1) + Bilanz/GuV/Cashflow je Jahr und Quartal (6) + Kursverlauf (1)
+export const CALLS_PER_TITLE = 8;
 const DAY = 86400000;
 const REFETCH_MIN_DAYS = 7; // frühestens nach 7 Tagen erneut abrufen
 const FILING_LAG_DAYS = 45; // neues Quartal ca. 45 Tage nach Quartalsende veröffentlicht
@@ -83,17 +84,20 @@ export function needsFreshData(security, run, now) {
 }
 
 /** Muss aus gespeicherten Daten neu gerechnet werden (ohne API-Abruf)? */
-export function needsRescreen(security, run, lastReviewAt) {
+export function needsRescreen(security, run, lastReviewAt, multiClassNow = undefined) {
   if (!run) return false;
   if (run.engine_version !== ENGINE_VERSION || run.parameters_version !== PARAMETERS_VERSION) return true;
+  // Ein Schwester-Titel (gleiche Gesellschaft, andere Aktiengattung) ist neu hinzugekommen oder weggefallen
+  if (multiClassNow !== undefined && Boolean(run.inputs?.multiClassIssuer) !== multiClassNow) return true;
   const runAt = Date.parse(run.run_at);
   if (lastReviewAt && Date.parse(lastReviewAt) > runAt) return true;
   if (security.updated_at && Date.parse(security.updated_at) > runAt) return true;
   return false;
 }
 
-export function toEngineSecurity(s) {
+export function toEngineSecurity(s, { multiClassIssuer = false } = {}) {
   return {
+    multiClassIssuer,
     ticker: s.ticker,
     isin: s.isin,
     name: s.name,
@@ -196,6 +200,28 @@ async function runScreeningUnlocked({
   };
 
   const stocks = state.securities.filter((s) => s.asset_type === "stock");
+
+  // Mehrere Aktiengattungen eines Unternehmens im Universum erkennt man an der gleichen CIK
+  const cikOf = new Map();
+  const cikCount = new Map();
+  function setCik(id, cik) {
+    const next = cik ? String(cik) : null;
+    const old = cikOf.get(id) ?? null;
+    if (old === next) return;
+    if (old) cikCount.set(old, (cikCount.get(old) || 1) - 1);
+    if (next) {
+      cikOf.set(id, next);
+      cikCount.set(next, (cikCount.get(next) || 0) + 1);
+    } else {
+      cikOf.delete(id);
+    }
+  }
+  for (const s of stocks) setCik(s.id, state.currentRuns.get(s.id)?.inputs?.profile?.cik);
+  const isMultiClass = (id) => {
+    const c = cikOf.get(id);
+    return Boolean(c && (cikCount.get(c) || 0) > 1);
+  };
+
   const etfs = state.securities.filter((s) => s.asset_type === "etf");
 
   // Planen: zuerst nie geprüfte, dann älteste Daten zuerst
@@ -241,9 +267,11 @@ async function runScreeningUnlocked({
     }
   }
 
-  async function screenAndSave(sec, inputs, holdings = []) {
+  async function screenAndSave(sec, inputsIn, holdings = []) {
+    const multi = sec.asset_type === "stock" && isMultiClass(sec.id);
+    const inputs = sec.asset_type === "stock" ? { ...(inputsIn || {}), multiClassIssuer: multi } : inputsIn;
     const result = screenSecurity({
-      security: toEngineSecurity(sec),
+      security: toEngineSecurity(sec, { multiClassIssuer: multi }),
       profile: inputs?.profile ?? null,
       annual: inputs?.annual ?? null,
       quarters: inputs?.quarters ?? [],
@@ -299,6 +327,7 @@ async function runScreeningUnlocked({
       try {
         const [profile, periods] = await Promise.all([provider.getProfile(symbol), provider.getFinancialPeriods(symbol)]);
         if (!profile && !periods.annual) throw new Error("Keine Daten beim Anbieter");
+        setCik(sec.id, profile?.cik);
         for (const snap of [periods.annual, ...periods.quarters].filter(Boolean)) {
           if (fx && snap.currency && fx.currency === snap.currency) snap.fxToEurAtPeriodEnd = fxAt(fx.series, snap.periodEnd);
         }
@@ -337,7 +366,7 @@ async function runScreeningUnlocked({
   for (const sec of stocks) {
     if (fetchedIds.has(sec.id) || timeLeft() < 3000) continue;
     const run = state.currentRuns.get(sec.id);
-    if (!needsRescreen(sec, run, state.lastReviewAt.get(sec.id))) continue;
+    if (!needsRescreen(sec, run, state.lastReviewAt.get(sec.id), isMultiClass(sec.id))) continue;
     const { result, saved } = await screenAndSave(sec, run.inputs);
     if (saved) summary.rescreened.push({ ticker: sec.ticker, status: result.status });
   }

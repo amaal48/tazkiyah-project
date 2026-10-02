@@ -38,6 +38,7 @@
  * @property {string|null} currency             Berichtswährung
  * @property {number|null} marketCapAtPeriodEnd Marktkapitalisierung zum Stichtag
  * @property {number|null} priceAtPeriodEnd     Schlusskurs zum Stichtag
+ * @property {string|null}  marketCapSource      null = vom Anbieter geliefert; "price_x_weighted_avg_shares" = aus Kurs und Aktienzahl gebildet (Näherung)
  * @property {number|null} fxToEurAtPeriodEnd   1 Einheit Berichtswährung in EUR am Stichtag
  * @property {number|null} sharesOutstanding
  * @property {string|null} sharesBasis          z. B. "weighted_average" — wird angezeigt
@@ -72,12 +73,15 @@ export function emptySnapshot(periodType, periodEnd) {
     currency: null,
     marketCapAtPeriodEnd: null,
     priceAtPeriodEnd: null,
+    marketCapSource: null,
     fxToEurAtPeriodEnd: null,
     sharesOutstanding: null,
     sharesBasis: null,
     balance: {
       interestBearingDebtExLeases: null,
       leaseLiabilities: null,
+      leaseSeparateFromDebt: null,
+      leaseEstimate: null,
       cash: null,
       shortTermInvestments: null,
       longTermInvestments: null,

@@ -26,6 +26,8 @@ const TITLES = {
   realAssetsMinPct: "Reale Vermögenswerte",
   balanceBasis: "Welche Abschlüsse zählen",
   marketCapBasis: "Marktkapitalisierung",
+  marketCapFromPrice: "Marktkapitalisierung aus Kurs und Aktienzahl",
+  leaseQuarterEstimate: "Leasing im Quartal",
   leaseLiabilitiesAsDebt: "Leasingverbindlichkeiten",
   allCashInterestBearing: "Cash und Anlagen",
   realAssetsValuation: "Bewertung der realen Vermögenswerte",
@@ -66,7 +68,7 @@ const SECTIONS = [
     id: "daten",
     title: "Datengrundlage",
     intro: "Aus welchen Abschlüssen und Bilanzposten die Kennzahlen berechnet werden.",
-    keys: ["balanceBasis", "marketCapBasis", "leaseLiabilitiesAsDebt", "allCashInterestBearing", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights"],
+    keys: ["balanceBasis", "marketCapBasis", "marketCapFromPrice", "leaseLiabilitiesAsDebt", "leaseQuarterEstimate", "allCashInterestBearing", "realAssetsValuation", "operatingReceivablesCountAsReal", "goodwillCountsAsRealAsset", "intangiblesCountAsRights"],
   },
   {
     id: "taetigkeit",
@@ -396,7 +398,18 @@ export default function MethodikPage({ onBack, anchor }) {
                 <p>Wo die verfügbaren Daten vom Wortlaut des Standards abweichen, sagen wir das offen:</p>
                 <ul className="list-disc space-y-2 pl-5">
                   <li>Reale Vermögenswerte werden mit Buchwerten statt mit Marktwerten angesetzt, weil Marktwerte einzelner Vermögenswerte nicht veröffentlicht werden.</li>
-                  <li>Die Zahl der Aktien ist der Durchschnitt der Periode, nicht der Bestand am Stichtag.</li>
+                  <li>
+                    Die Marktkapitalisierung zum Stichtag wird aus Schlusskurs mal Aktienzahl gebildet. Als Aktienzahl dient
+                    bisher der Durchschnitt der Periode, nicht der Bestand am Stichtag; das ist bei den Kennzahlen als
+                    Datenabweichung gekennzeichnet. Bei mehreren Aktiengattungen müssten alle Gattungen addiert werden;
+                    ist das mit den Daten nicht möglich, bleibt die Prüfung „nicht geprüft“. Liefert die Datenquelle die
+                    Marktkapitalisierung selbst, ersetzt sie die Näherung.
+                  </li>
+                  <li>
+                    Weist ein Quartal Leasing nicht gesondert aus, wird der Wert des letzten Jahresabschlusses übernommen
+                    und als „Schätzung aus Jahresabschluss“ gekennzeichnet. Hängt das Ergebnis von dieser Schätzung ab,
+                    lautet der Status „nicht geprüft“, bis der Quartalsbericht von Hand geprüft ist.
+                  </li>
                   <li>Sonstige Erträge liegen teilweise nur als Saldo mit Aufwendungen vor.</li>
                 </ul>
                 <p>

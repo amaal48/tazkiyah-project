@@ -1,7 +1,7 @@
 // src/screening/providers/fmp.test.js — ausführen mit: node --test src/screening/providers/fmp.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createFmpProvider, classifyFmpError } from "./fmp.js";
+import { createFmpProvider, classifyFmpError, mapFmpPeriod, pickPriceAt, applyLeaseEstimate } from "./fmp.js";
 
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) });
 
@@ -36,7 +36,7 @@ test("„Limit Reach“ mit Status 200 wird als Limit-Fehler gemeldet", async ()
   await assert.rejects(() => p.getProfile("AAPL"), (err) => err.kind === "limit");
 });
 
-test("Quartale und Marktkapitalisierung gesperrt: Jahreswerte kommen, Sperre wird gemerkt", async () => {
+test("Quartale und Kursverlauf gesperrt: Jahreswerte kommen, Sperre wird gemerkt", async () => {
   const premium = json(402, { "Error Message": "Premium Query Parameter: this value set for 'period' is not available under your current subscription" });
   const { impl, calls } = fakeFetch({
     "balance-sheet-statement:annual": json(200, [balance("2025-09-27")]),
@@ -45,15 +45,15 @@ test("Quartale und Marktkapitalisierung gesperrt: Jahreswerte kommen, Sperre wir
     "balance-sheet-statement:quarter": premium,
     "income-statement:quarter": premium,
     "cash-flow-statement:quarter": premium,
-    "historical-market-capitalization": json(402, { "Error Message": "Special Endpoint : this endpoint is not available under your current subscription" }),
+    light: json(402, { "Error Message": "Special Endpoint : this endpoint is not available under your current subscription" }),
   });
   const p = createFmpProvider({ apiKey: "k", fetchImpl: impl });
   const r1 = await p.getFinancialPeriods("AAPL");
   assert.equal(r1.annual.periodEnd, "2025-09-27");
   assert.deepEqual(r1.quarters, []);
   assert.equal(r1.notes.length, 2);
-  assert.equal(r1.annual.marketCapAtPeriodEnd, null); // → B1/B2 „nicht geprüft“
-  const firstCount = calls.length; // 3 Jahr + 1 Quartal + 1 Marktkap.
+  assert.equal(r1.annual.marketCapAtPeriodEnd, null); // ohne Kurs keine Marktkapitalisierung → B1/B2 „nicht geprüft“
+  const firstCount = calls.length; // 3 Jahr + 1 Quartal + 1 Kursverlauf
   assert.equal(firstCount, 5);
   // Zweiter Titel: gesperrte Daten werden nicht mehr abgefragt
   const r2 = await p.getFinancialPeriods("MSFT");
@@ -70,4 +70,120 @@ test("Limit während der Quartale bricht ab (kein stilles Weiterrechnen)", async
   });
   const p = createFmpProvider({ apiKey: "k", fetchImpl: impl });
   await assert.rejects(() => p.getFinancialPeriods("AAPL"), (err) => err.kind === "limit");
+});
+
+test("Marktkapitalisierung aus Schlusskurs × Aktienzahl, Stichtag am Samstag → letzter Handelstag", () => {
+  const priceHistory = [
+    { date: "2025-09-29", price: 254.43 },
+    { date: "2025-09-26", price: 255.46 },
+    { date: "2025-09-25", price: 256.87 },
+  ];
+  const s = mapFmpPeriod({
+    balance: balance("2025-09-27"),
+    income: { ...income("2025-09-27"), weightedAverageShsOut: 14_900_000_000 },
+    cashflow: cash("2025-09-27"),
+    priceHistory,
+    periodType: "annual",
+  });
+  assert.equal(s.priceAtPeriodEnd, 255.46);
+  assert.equal(s.marketCapAtPeriodEnd, 255.46 * 14_900_000_000);
+  assert.equal(s.marketCapSource, "price_x_weighted_avg_shares");
+});
+
+test("Marktkapitalisierung vom Anbieter hat Vorrang vor der Näherung", () => {
+  const s = mapFmpPeriod({
+    balance: balance("2025-09-27"),
+    income: { ...income("2025-09-27"), weightedAverageShsOut: 10 },
+    cashflow: cash("2025-09-27"),
+    marketCapHistory: [{ date: "2025-09-26", marketCap: 5000 }],
+    priceHistory: [{ date: "2025-09-26", price: 1 }],
+    periodType: "annual",
+  });
+  assert.equal(s.marketCapAtPeriodEnd, 5000);
+  assert.equal(s.marketCapSource, null);
+});
+
+test("Kurs zu weit vom Stichtag entfernt oder Aktienzahl fehlt → unbekannt statt geraten", () => {
+  assert.equal(pickPriceAt([{ date: "2025-09-10", price: 200 }], "2025-09-27"), null);
+  const s = mapFmpPeriod({
+    balance: balance("2025-09-27"),
+    income: income("2025-09-27"), // ohne weightedAverageShsOut
+    cashflow: cash("2025-09-27"),
+    priceHistory: [{ date: "2025-09-26", price: 255.46 }],
+    periodType: "annual",
+  });
+  assert.equal(s.marketCapAtPeriodEnd, null);
+});
+
+// ------------------------------------------------ Aktienzahl und Leasing
+
+test("Aktienzahl am Periodenende hat Vorrang vor dem Durchschnitt", () => {
+  const s = mapFmpPeriod({
+    balance: balance("2025-09-27"),
+    income: { ...income("2025-09-27"), weightedAverageShsOut: 15_000 },
+    cashflow: cash("2025-09-27"),
+    priceHistory: [{ date: "2025-09-26", price: 10 }],
+    sharesAtPeriodEnd: 14_800,
+    periodType: "annual",
+  });
+  assert.equal(s.sharesBasis, "period_end");
+  assert.equal(s.marketCapAtPeriodEnd, 148_000);
+  assert.equal(s.marketCapSource, "price_x_period_end_shares");
+});
+
+function period(date, type, over) {
+  return mapFmpPeriod({
+    balance: { date, totalAssets: 1000, cashAndCashEquivalents: 50, ...over },
+    income: income(date),
+    cashflow: cash(date),
+    periodType: type,
+  });
+}
+
+const annualApple = () =>
+  period("2025-09-27", "annual", { shortTermDebt: 20, longTermDebt: 80, capitalLeaseObligationsCurrent: 2, capitalLeaseObligationsNonCurrent: 11, totalDebt: 113 });
+const quarterNoLease = () => period("2026-06-27", "quarter", { shortTermDebt: 15, longTermDebt: 70, capitalLeaseObligationsCurrent: 0, capitalLeaseObligationsNonCurrent: 0, totalDebt: 85 });
+
+test("Leasing im Quartal nicht ausgewiesen: Jahreswert wird übernommen und gekennzeichnet", () => {
+  const annual = annualApple();
+  assert.equal(annual.balance.leaseLiabilities, 13);
+  assert.equal(annual.balance.leaseSeparateFromDebt, true);
+  const q = quarterNoLease();
+  applyLeaseEstimate(annual, [q]);
+  assert.equal(q.balance.leaseLiabilities, 13);
+  assert.deepEqual(q.balance.leaseEstimate, { source: "annual", periodEnd: "2025-09-27", amount: 13 });
+});
+
+test("Keine Ergänzung: Quartal weist Leasing aus, Anbieter liefert Schulden inkl. Leasing, Jahreswert 0", () => {
+  const withLease = period("2026-06-27", "quarter", { shortTermDebt: 15, longTermDebt: 70, capitalLeaseObligationsCurrent: 3, capitalLeaseObligationsNonCurrent: 6, totalDebt: 94 });
+  applyLeaseEstimate(annualApple(), [withLease]);
+  assert.equal(withLease.balance.leaseLiabilities, 9);
+  assert.equal(withLease.balance.leaseEstimate, null);
+
+  const q1 = quarterNoLease();
+  applyLeaseEstimate(annualApple(), [q1], { debtFieldsIncludeLeases: true });
+  assert.equal(q1.balance.leaseLiabilities, 0);
+
+  const noLeaseAnnual = period("2025-09-27", "annual", { shortTermDebt: 20, longTermDebt: 80, capitalLeaseObligationsCurrent: 0, capitalLeaseObligationsNonCurrent: 0, totalDebt: 100 });
+  const q2 = quarterNoLease();
+  applyLeaseEstimate(noLeaseAnnual, [q2]);
+  assert.equal(q2.balance.leaseEstimate, null);
+});
+
+test("Doppelzählung vermeiden: Jahresabschluss zeigt Leasing erkennbar innerhalb der Schuldenposten", () => {
+  // Leasing 13 ausgewiesen, aber totalDebt = nur Schuldenposten → vermutlich dort enthalten
+  const annual = period("2025-09-27", "annual", { shortTermDebt: 20, longTermDebt: 80, capitalLeaseObligations: 13, totalDebt: 100 });
+  assert.equal(annual.balance.leaseSeparateFromDebt, false);
+  const q = quarterNoLease();
+  applyLeaseEstimate(annual, [q]);
+  assert.equal(q.balance.leaseEstimate, null);
+  assert.equal(q.balance.leaseLiabilities, 0);
+});
+
+test("Nicht erkennbar, ob getrennt (kein totalDebt): Ergänzung wird gemacht und gekennzeichnet", () => {
+  const annual = period("2025-09-27", "annual", { shortTermDebt: 20, longTermDebt: 80, capitalLeaseObligations: 13 });
+  assert.equal(annual.balance.leaseSeparateFromDebt, null);
+  const q = quarterNoLease();
+  applyLeaseEstimate(annual, [q]);
+  assert.equal(q.balance.leaseEstimate.amount, 13);
 });

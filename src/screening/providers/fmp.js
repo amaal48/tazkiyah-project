@@ -8,9 +8,8 @@
 // Ein Wechsel von Tarif oder Anbieter berührt die Engine nicht.
 //
 // Zusätzlich 1 Abruf pro Durchlauf für den EUR/USD-Kurs (getFxToEurSeries).
-// Abrufe pro Titel: 7 (Profil, Bilanz/GuV/Cashflow je Jahr + Quartal,
-// historische Marktkapitalisierung). Free-Tarif: 250/Tag, davon 200 fürs
-// Screening → ca. 28 Titel/Tag.
+// Abrufe pro Titel: 8 (Profil, Bilanz/GuV/Cashflow je Jahr + Quartal = 6,
+// Kursverlauf). Free-Tarif: 250/Tag, davon 200 fürs Screening → ca. 25 Titel/Tag.
 // Der Runner muss deshalb gestaffelt arbeiten (nur Titel mit neuem Abschluss
 // bzw. ohne aktuelles Ergebnis).
 //
@@ -25,14 +24,21 @@
 //      nur einen Saldo (nonOperatingIncomeExcludingInterest), der Aufwendungen
 //      enthalten kann. Positiver Saldo → sonstige Erträge, negativer → 0.
 //      Gegen den 10-K prüfen, ob das die Bruttoerträge ausreichend abbildet.
-//   4. Fehlerarten (seit 01.10.2026): Jeder Abruf-Fehler ist ein ProviderError
+//   4. Marktkapitalisierung (seit 02.10.2026): Der Endpunkt
+//      historical-market-capitalization liefert im Free-Tarif nur die letzten
+//      ca. 3 Monate. Deshalb wird sie aus Schlusskurs (historical-price-eod/light,
+//      1 Abruf je Titel, weit zurück verfügbar) mal Aktienzahl der Periode
+//      gebildet und als Näherung gekennzeichnet (marketCapSource). Liefert der
+//      Anbieter die Marktkapitalisierung selbst (marketCapHistory), hat sie Vorrang.
+//   5. Fehlerarten (seit 01.10.2026): Jeder Abruf-Fehler ist ein ProviderError
 //      mit kind = "limit" (Tageskontingent erschöpft), "premium" (im Tarif nicht
 //      enthalten) oder "other". Der Runner bricht bei "limit" ab, ohne Titel als
 //      fehlerhaft zu markieren. Sind Quartalsdaten oder die historische Markt-
 //      kapitalisierung im Tarif gesperrt, wird ohne sie weitergerechnet; die
 //      betroffenen Prüfungen bleiben dann „nicht geprüft“. Nach der ersten
 //      Sperre fragt der Adapter diese Daten im selben Lauf nicht mehr ab.
-//   5. Anzahl Aktien: FMP liefert hier den gewichteten Durchschnitt der
+//   6. Leasing im Quartal (seit 02.10.2026): siehe applyLeaseEstimate.
+//   7. Anzahl Aktien: FMP liefert hier den gewichteten Durchschnitt der
 //      Periode, nicht den Bestand zum Stichtag. Wird in der Ausgabe als
 //      sharesBasis angezeigt.
 
@@ -66,8 +72,19 @@ export function pickMarketCapAt(history, periodEnd) {
   return gapDays <= 7 ? num(hit.marketCap) : null;
 }
 
+/** Schlusskurs zum Stichtag: letzter Handelstag am oder vor periodEnd (höchstens 7 Tage davor). */
+export function pickPriceAt(history, periodEnd) {
+  if (!Array.isArray(history)) return null;
+  const hit = history
+    .filter((h) => h?.date && h.date <= periodEnd && num(h.price) !== null && num(h.price) > 0)
+    .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  if (!hit) return null;
+  const gapDays = (new Date(periodEnd) - new Date(hit.date)) / 86400000;
+  return gapDays <= 7 ? num(hit.price) : null;
+}
+
 /** Reine Übersetzungsfunktion — ohne Netzwerk, daher testbar. */
-export function mapFmpPeriod({ balance, income, cashflow, marketCapHistory, periodType, options = {} }) {
+export function mapFmpPeriod({ balance, income, cashflow, marketCapHistory, priceHistory, sharesAtPeriodEnd = null, periodType, options = {} }) {
   const { debtFieldsIncludeLeases = false } = options;
   const s = emptySnapshot(periodType, balance?.date ?? null);
 
@@ -75,10 +92,21 @@ export function mapFmpPeriod({ balance, income, cashflow, marketCapHistory, peri
   s.audited = periodType === "annual" ? true : false;
   s.currency = balance?.reportedCurrency ?? null;
   s.marketCapAtPeriodEnd = s.periodEnd ? pickMarketCapAt(marketCapHistory, s.periodEnd) : null;
-  s.sharesOutstanding = firstNum(income, ["weightedAverageShsOut"]);
-  s.sharesBasis = s.sharesOutstanding !== null ? "weighted_average" : null;
+  // Aktienzahl: Bestand am Periodenende, wenn die Quelle ihn liefert; sonst Periodendurchschnitt
+  const periodEndShares = num(sharesAtPeriodEnd);
+  const averageShares = firstNum(income, ["weightedAverageShsOut"]);
+  s.sharesOutstanding = periodEndShares ?? averageShares;
+  s.sharesBasis = periodEndShares !== null ? "period_end" : averageShares !== null ? "weighted_average" : null;
   if (s.marketCapAtPeriodEnd !== null && s.sharesOutstanding) {
     s.priceAtPeriodEnd = s.marketCapAtPeriodEnd / s.sharesOutstanding;
+  } else if (s.marketCapAtPeriodEnd === null && s.periodEnd && s.sharesOutstanding) {
+    // Keine Marktkapitalisierung vom Anbieter: aus Schlusskurs × Aktienzahl bilden
+    const price = pickPriceAt(priceHistory, s.periodEnd);
+    if (price !== null) {
+      s.priceAtPeriodEnd = price;
+      s.marketCapAtPeriodEnd = price * s.sharesOutstanding;
+      s.marketCapSource = s.sharesBasis === "period_end" ? "price_x_period_end_shares" : "price_x_weighted_avg_shares";
+    }
   }
 
   const shortDebt = firstNum(balance, ["shortTermDebt"]);
@@ -91,6 +119,13 @@ export function mapFmpPeriod({ balance, income, cashflow, marketCapHistory, peri
       : firstNum(balance, ["capitalLeaseObligations"]);
 
   const debt = sumOrNull(shortDebt, longDebt);
+  // Stehen Leasingverbindlichkeiten außerhalb der Schuldenposten? Dann gilt totalDebt = Schulden + Leasing.
+  // true = getrennt ausgewiesen, false = vermutlich in den Schuldenposten enthalten, null = nicht erkennbar.
+  const totalDebtField = firstNum(balance, ["totalDebt"]);
+  s.balance.leaseSeparateFromDebt =
+    debt !== null && leaseTotal !== null && totalDebtField !== null
+      ? Math.abs(totalDebtField - (debt + leaseTotal)) <= Math.max(1, Math.abs(totalDebtField) * 0.005)
+      : null;
   s.balance.leaseLiabilities = leaseTotal;
   s.balance.interestBearingDebtExLeases =
     debt === null ? null : debtFieldsIncludeLeases && leaseTotal !== null ? debt - leaseTotal : debt;
@@ -122,11 +157,34 @@ export function mapFmpProfile(p) {
     symbol: p.symbol ?? null,
     name: p.companyName ?? null,
     isin: p.isin || null,
+    cik: p.cik || null,
     industry: p.industry ?? null,
     sector: p.sector ?? null,
     description: p.description ?? null,
     currency: p.currency ?? null,
   };
+}
+
+/**
+ * Leasing im Quartal: Weist ein Quartal Leasingverbindlichkeiten nicht gesondert aus
+ * (Feld fehlt oder 0), der letzte Jahresabschluss aber schon, wird der Jahreswert
+ * übernommen und als Schätzung gekennzeichnet (balance.leaseEstimate).
+ * Nichts ergänzt wird, wenn
+ *   - das Quartal Leasing ausweist (> 0),
+ *   - der Anbieter die Schuldenposten inkl. Leasing liefert (options.debtFieldsIncludeLeases),
+ *   - der Jahresabschluss erkennbar Leasing in den Schuldenposten enthält (Doppelzählung).
+ */
+export function applyLeaseEstimate(annual, quarters, { debtFieldsIncludeLeases = false } = {}) {
+  if (!annual || debtFieldsIncludeLeases) return;
+  const annualLease = annual.balance?.leaseLiabilities;
+  if (!(annualLease > 0) || annual.balance?.leaseSeparateFromDebt === false) return;
+  for (const q of quarters || []) {
+    const l = q.balance?.leaseLiabilities;
+    if (l === null || l === undefined || l === 0) {
+      q.balance.leaseLiabilities = annualLease;
+      q.balance.leaseEstimate = { source: "annual", periodEnd: annual.periodEnd, amount: annualLease };
+    }
+  }
 }
 
 /**
@@ -155,7 +213,7 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
   if (!apiKey) throw new Error("FMP_API_KEY fehlt");
 
   // Merkt sich je Lauf, welche Daten im Tarif gesperrt sind (spart Abrufe)
-  const blocked = { quarters: false, marketCap: false };
+  const blocked = { quarters: false, prices: false };
 
   async function get(path, params) {
     const qs = new URLSearchParams({ ...params, apikey: apiKey });
@@ -239,13 +297,13 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
 
       const qDates = quartersUsable ? (bQ || []).map((b) => b.date) : [];
       const dates = [bA?.[0]?.date, ...qDates].filter(Boolean).sort();
-      const mcHistory = dates.length
+      const priceHistory = dates.length
         ? await getOptional(
-            "marketCap",
-            "historical-market-capitalization",
+            "prices",
+            "historical-price-eod/light",
             { symbol, from: shiftDays(dates[0], -10), to: dates[dates.length - 1] },
             notes,
-            "Historische Marktkapitalisierung im aktuellen Datentarif nicht verfügbar"
+            "Kursverlauf im aktuellen Datentarif nicht verfügbar"
           )
         : [];
 
@@ -256,7 +314,7 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
             balance: bA[0],
             income: byDate(iA, bA[0].date),
             cashflow: byDate(cA, bA[0].date),
-            marketCapHistory: mcHistory,
+            priceHistory,
             periodType: "annual",
             options,
           })
@@ -271,11 +329,13 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
             balance: b,
             income: byDate(iQ, b.date),
             cashflow: byDate(cQ, b.date),
-            marketCapHistory: mcHistory,
+            priceHistory,
             periodType: "quarter",
             options,
           })
         );
+
+      applyLeaseEstimate(annual, quarters, options);
 
       return { annual, quarters, notes: [...new Set(notes)] };
     },
