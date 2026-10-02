@@ -102,7 +102,7 @@ supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
 supabase_seed_securities.sql  — Titel aus stocks.js anlegen (wiederholbar)
 ```
 
-**Tests:** `npm run test:screening` (81 Tests: engine, runner, holdingsCsv, providers/fmp)
+**Tests:** `npm run test:screening` (85 Tests: engine, runner, holdingsCsv, providers/fmp)
 
 **Wo der Code liegt:** Lokal auf dem MacBook der Nutzerin (`~/Desktop/Website`), zusätzlich auf GitHub. Notion nur für Planung/Dokumentation.
 
@@ -154,6 +154,10 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Cron-Ablauf (`api/run-screening.js`):** täglich. Holt Finanzdaten für nie geprüfte Titel bzw. wenn ein neues Quartal zu erwarten ist (8 Abrufe je Titel: Profil, 6 Abschlüsse, Kursverlauf; Tagesbudget 200 → ca. 25 Titel/Tag, erster Volldurchlauf ca. 3 Wochen). Bis 01.10. war CALLS_PER_TITLE fälschlich 7 → Budget wurde um 1 Abruf je Titel unterschätzt.. Rechnet nach neuen manuellen Prüfungen oder Parameter-/Engine-Änderungen aus gespeicherten Daten neu (0 Abrufe). Speichert nur geänderte Ergebnisse (`screening_runs`, Historie; Statuswechsel per Trigger in `screening_status_changes`, Hinweise an Watchlist-Nutzer in `user_notifications`).
 
 **Schutz des Crons (01.10.):** Sperre gegen gleichzeitige Läufe (Tabelle `screening_lock`, Funktionen `acquire_screening_lock`/`release_screening_lock`), Abrufe werden vor jedem Titel atomar über `add_api_usage` reserviert, FMP-Fehler haben eine Art (`limit`/`premium`/`other`). Bei „Limit Reach“ bricht der Abruf ab, ohne Titel als fehlerhaft zu markieren. Sind Quartale oder der Kursverlauf im Tarif gesperrt, wird mit den Jahreswerten weitergerechnet (betroffene Prüfungen „nicht geprüft“), und der Titel wird erst nach dem nächsten erwarteten Jahresabschluss erneut abgerufen.
+
+**Oberfläche (Entscheidungen 02.10.):** Statt der alten Bewertung drei Status (konform / nicht konform / nicht geprüft), kein Score, kein Stern, kein „Grenzwertig“, keine Zählung „x von y bestanden“; bei „nicht geprüft“ steht in Worten, was fehlt. Ein vierter Status „noch nicht bearbeitet“ entfällt (zeigt „Wird demnächst geprüft“). Hauptseite: Kopf mit Grundlage AAOIFI SS 21/27/35 (kein AAOIFI-Logo, Satz zur fehlenden Verbindung), Prüfstufen-Grafik, Legende, Filter, Liste mit Begründungszeile. Detailseite: Kriterien mit Werten, Abstand zur Grenze, Kennzeichnungen, Quellen. **Jede Quelle ist ein Link auf eine eigene Erklärseite je Prüfung** (`#/kriterium/b1`), Texte zentral in `src/screening/explanations.js` und `parameters.js`. Free/Pro-Abgrenzung später. Arbeitsanweisung für Claude Code: `docs/UI-UMBAU-SCHRITT-1.md`, Umbau auf Branch `ui-screening`. Engine 1.3.0 liefert `result.headline` (Kurzfassung für die Liste). Offen: `todo`-Felder in explanations.js (D2 Tamattu', C3 SS 59), Fundstellen gegen den Standardtext prüfen.
+
+**A2/B3-Prüfung (Planung):** Vorprüfung durch KI mit Quelle und wörtlicher Textstelle, Stichproben durch die Nutzerin (gezielt: Grenzfälle, Mischkonzerne, Zufallsanteil; die ersten ca. 20 komplett), Grenzfälle werden gelistet und von ihr separat geprüft. A2 jährlich, B3 geplant nach jedem Quartalsbericht (Fundstelle SS 21, 3/4/8 noch prüfen). Methodik-Seite und Prüfer-Angabe müssen dann „KI-gestützt, mit Stichprobenkontrolle“ ausweisen. Nur Titel prüfen, die nicht schon an A1/B1/B2/C1 scheitern. Kontrollseite statt reiner Eingabemaske (Entwurf, Quelle, Textstelle, „bestätigt/korrigieren“).
 
 **Datenversion (02.10.):** `INPUT_DATA_VERSION` (runner.js) = Stand der Datenaufbereitung; Ergebnisse mit älterem Stand (`inputs.dataVersion`, ersatzweise Feld `multiClassIssuer` = Version 2) werden einmal neu abgerufen, auch innerhalb der 7-Tage-Sperre. Grund: die 28 Titel vom 30.09. hatten keine Marktkapitalisierung und wären sonst bis ca. Mitte November nicht neu abgerufen worden. Bei Änderungen, die gespeicherte Eingangsdaten entwerten, hochzählen.
 

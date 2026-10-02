@@ -30,7 +30,7 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.2.0";
+export const ENGINE_VERSION = "1.3.0";
 
 export const STATUS = {
   CONFORM: "konform",
@@ -905,6 +905,30 @@ function zakat({ annual, quarters, p }) {
  * @param {Object}  [input.parameters]  Überschreibungen { key: value }
  * @param {Date}    [input.now]
  */
+/**
+ * Kurzfassung für die Listenansicht: je durchgefallener Prüfung der maßgebliche Wert, je offener Prüfung der Grund.
+ * Die Oberfläche baut daraus die Begründungszeile; die Texte selbst stehen nicht hier.
+ */
+function buildHeadline(criteria) {
+  const failed = [];
+  const notChecked = [];
+  for (const c of criteria) {
+    if (c.result === RESULT.FAIL) {
+      const bad = (c.checks || []).find((x) => x.result === RESULT.FAIL);
+      failed.push({
+        criterion: c.id,
+        name: c.name,
+        reason: c.reason ?? null,
+        check: bad ? { basis: bad.basis, periodEnd: bad.periodEnd, value: bad.value, limit: bad.limit, comparator: bad.comparator } : null,
+      });
+    } else if (c.result === RESULT.NOT_CHECKED) {
+      const open = (c.checks || []).find((x) => x.result === RESULT.NOT_CHECKED);
+      notChecked.push({ criterion: c.id, name: c.name, reason: c.reason ?? open?.reason ?? null });
+    }
+  }
+  return { failed, notChecked };
+}
+
 export function screenSecurity(input) {
   const {
     security = {},
@@ -951,6 +975,7 @@ export function screenSecurity(input) {
     status,
     statusLabel: STATUS_LABELS[status],
     summary: { failed, notChecked },
+    headline: buildHeadline(criteria),
     universe: evaluateUniverse(security),
     dataBasis: {
       provider: dataProvider,

@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import { screenSecurity, STATUS, RESULT } from "./engine.js";
 import { emptySnapshot } from "./providers/model.js";
 import { mapFmpPeriod, pickMarketCapAt } from "./providers/fmp.js";
+import { readFileSync } from "node:fs";
+import { EXPLANATIONS, STAGES, ETF_STAGE, FLAG_TEXTS, fillParams, splitSources } from "./explanations.js";
+import { DEFAULT_PARAMETERS } from "./parameters.js";
 
 const ANNUAL_END = "2025-12-31";
 const Q_ENDS = ["2026-06-30", "2026-03-31", "2025-12-31", "2025-09-30"];
@@ -438,4 +441,65 @@ test("Mehrere Aktiengattungen: selbst gebildeter Wert gilt nicht → B1/B2 nicht
   // Marktkapitalisierung vom Anbieter (ganzes Unternehmen) → normal geprüft
   const r2 = screenSecurity(base({ security: multi }));
   assert.equal(crit(r2, "B1").result, RESULT.PASS);
+});
+
+// ------------------------------------------------ Kurzfassung für die Listenansicht
+
+test("headline: durchgefallene Prüfung mit Wert, offene Prüfung mit Grund", () => {
+  const quarters = Q_ENDS.map((d, i) => (i === 0 ? snap("quarter", d, { balance: { interestBearingDebtExLeases: 400, leaseLiabilities: 0 } }) : snap("quarter", d)));
+  const r = screenSecurity(base({ quarters, manualReviews: [] }));
+  const b1 = r.headline.failed.find((x) => x.criterion === "B1");
+  assert.equal(b1.name, "Zinstragende Schulden");
+  assert.equal(b1.check.basis, "quarter");
+  assert.equal(b1.check.value, 40);
+  assert.equal(b1.check.limit, 30);
+  assert.equal(b1.check.comparator, "<=");
+  const a2 = r.headline.notChecked.find((x) => x.criterion === "A2");
+  assert.match(a2.reason, /manuell/);
+  // headline spiegelt summary
+  assert.deepEqual(r.headline.failed.map((x) => x.criterion), r.summary.failed);
+  assert.deepEqual(r.headline.notChecked.map((x) => x.criterion), r.summary.notChecked);
+});
+
+// ------------------------------------------------ Erklärtexte stimmen mit der Engine überein
+
+function allEngineCriteria() {
+  const stock = screenSecurity({ security: { ticker: "X", assetType: "stock", productType: "standard", shareClass: "common" }, profile: { industry: "Software - Infrastructure" }, annual: null, quarters: [] });
+  const etf = screenSecurity({ security: { ticker: "E", assetType: "etf", productType: "standard", isUcits: true, hasKid: true }, holdings: [] });
+  const byId = new Map();
+  for (const c of [...stock.criteria, ...etf.criteria]) byId.set(c.id, c);
+  return byId;
+}
+
+test("Erklärtexte: Name, Quelle und Parameterverweise entsprechen der Engine", () => {
+  const criteria = allEngineCriteria();
+  for (const [id, c] of criteria) {
+    const e = EXPLANATIONS[id];
+    assert.ok(e, `Erklärung für ${id} fehlt`);
+    assert.equal(e.name, c.name, `Name ${id}`);
+    assert.equal(e.source, c.source, `Quelle ${id}`);
+    assert.deepEqual(e.parameterRefs, c.parameterRefs, `Parameterverweise ${id}`);
+  }
+  for (const id of Object.keys(EXPLANATIONS)) assert.ok(criteria.has(id), `${id} gibt es in der Engine nicht`);
+});
+
+test("Erklärtexte: Parameterverweise existieren, Platzhalter lassen sich einsetzen, Stufen sind vollständig", () => {
+  for (const [id, e] of Object.entries(EXPLANATIONS)) {
+    for (const ref of e.parameterRefs) assert.ok(ref === "industryGroups" || ref in DEFAULT_PARAMETERS, `${id}: ${ref}`);
+    for (const t of e.simple) assert.ok(!/\{\w+\}/.test(fillParams(t)), `${id}: Platzhalter nicht ersetzt`);
+    assert.ok(splitSources(e.source).length >= 1);
+  }
+  assert.equal(fillParams("höchstens {debtMaxPct} %"), "höchstens 30 %");
+  assert.equal(fillParams("mindestens {realAssetsMinPct} %"), "mindestens 33,3 %");
+  for (const stage of [...STAGES, ETF_STAGE]) for (const id of stage.criteria) assert.ok(EXPLANATIONS[id], `${stage.id}: ${id}`);
+});
+
+test("Kennzeichnungen: jede Kennzeichnung der Engine hat einen Klartext", () => {
+  const source = readFileSync(new URL("./engine.js", import.meta.url), "utf8");
+  const flags = new Set([...source.matchAll(/flags\.push\("([a-z0-9_]+)"\)/g)].map((m) => m[1]));
+  assert.ok(flags.size >= 6);
+  for (const f of flags) {
+    assert.ok(FLAG_TEXTS[f], `Text für Kennzeichnung ${f} fehlt`);
+    assert.ok(EXPLANATIONS[FLAG_TEXTS[f].criterion], `Zielseite für ${f}`);
+  }
 });
