@@ -16,6 +16,10 @@
 //   /api/run-screening?limit=2&dryRun=1
 //   limit  — höchstens so viele Titel mit neuen Daten
 //   dryRun — rechnet, speichert aber keine Ergebnisse (API-Abrufe zählen trotzdem)
+//   tickers — nur diese Ticker abrufen, kommagetrennt, z. B. tickers=AAPL,MSFT
+//   force   — zusammen mit tickers: auch Titel mit frischen Daten neu abrufen (force=1)
+//   Beispiel (Terminal, Production-Adresse, Geheimwort nicht in den Chat kopieren):
+//   curl -s -H "Authorization: Bearer $CRON_SECRET" "https://DEINE-DOMAIN/api/run-screening?tickers=AAPL,MSFT&force=1"
 
 import { createClient } from "@supabase/supabase-js";
 import { createFmpProvider } from "../src/screening/providers/fmp.js";
@@ -52,6 +56,12 @@ export default async function handler(req, res) {
 
   const limit = req.query.limit ? Math.max(0, parseInt(req.query.limit, 10) || 0) : Infinity;
   const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true";
+  const onlyTickers = String(req.query.tickers || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  const force = onlyTickers.length > 0 && (req.query.force === "1" || req.query.force === "true");
 
   try {
     const summary = await runScreening({
@@ -61,6 +71,8 @@ export default async function handler(req, res) {
       dailyCallBudget: parseInt(process.env.SCREENING_DAILY_CALL_BUDGET || "200", 10),
       limit,
       dryRun,
+      onlyTickers: onlyTickers.length ? onlyTickers : null,
+      force,
       timeBudgetMs: 50000,
     });
     return res.status(200).json(summary);

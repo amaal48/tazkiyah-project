@@ -7,6 +7,7 @@ import { germanVenuesFromMapping } from "./providers/openfigi.js";
 import { STATUS } from "./engine.js";
 
 const NOW = new Date("2026-09-30T03:00:00Z");
+const DAY_MS = 86400000;
 
 function snap(type, end) {
   const s = emptySnapshot(type, end);
@@ -317,4 +318,20 @@ test("Schwester-Titel kommt später dazu: erster Titel wird ohne Abruf neu gerec
   assert.equal(b1Of(repo, "G1").result, "not_checked");
   assert.equal(b1Of(repo, "G2").result, "not_checked");
   assert.ok(s.rescreened.some((x) => x.ticker === "GOOGL"));
+});
+
+test("Manueller Lauf für bestimmte Ticker: nur diese, mit force auch bei frischen Daten", async () => {
+  const repo = memoryRepo(stocks);
+  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 200 }); // alle 6 frisch
+  const next = new Date(NOW.getTime() + DAY_MS);
+
+  const p1 = fakeProvider();
+  const s1 = await runScreening({ repo, provider: p1, now: next, dailyCallBudget: 400, onlyTickers: ["bbb", "zzz"], force: true });
+  assert.deepEqual(p1.calls, ["BBB"]);
+  assert.deepEqual(s1.unknownTickers, ["ZZZ"]);
+
+  // ohne force: frische Daten werden nicht erneut abgerufen
+  const p2 = fakeProvider();
+  await runScreening({ repo, provider: p2, now: next, dailyCallBudget: 400, onlyTickers: ["CCC"] });
+  assert.equal(p2.calls.length, 0);
 });

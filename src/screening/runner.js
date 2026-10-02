@@ -174,6 +174,8 @@ async function runScreeningUnlocked({
   limit = Infinity,
   timeBudgetMs = 45000,
   dryRun = false,
+  onlyTickers = null, // manueller Lauf: nur diese Ticker abrufen
+  force = false, // nur zusammen mit onlyTickers: auch frische Daten neu abrufen
 }) {
   const started = Date.now();
   const timeLeft = () => timeBudgetMs - (Date.now() - started);
@@ -225,8 +227,14 @@ async function runScreeningUnlocked({
   const etfs = state.securities.filter((s) => s.asset_type === "etf");
 
   // Planen: zuerst nie geprüfte, dann älteste Daten zuerst
-  const fetchDue = stocks
-    .filter((s) => needsFreshData(s, state.currentRuns.get(s.id), nowMs))
+  const only = onlyTickers?.length ? new Set(onlyTickers.map((t) => String(t).trim().toUpperCase()).filter(Boolean)) : null;
+  const candidates = only ? stocks.filter((s) => only.has(String(s.ticker).toUpperCase())) : stocks;
+  if (only) {
+    const known = new Set(candidates.map((s) => String(s.ticker).toUpperCase()));
+    summary.unknownTickers = [...only].filter((t) => !known.has(t));
+  }
+  const fetchDue = candidates
+    .filter((s) => (only && force) || needsFreshData(s, state.currentRuns.get(s.id), nowMs))
     .sort((a, b) => {
       const ra = state.currentRuns.get(a.id);
       const rb = state.currentRuns.get(b.id);
@@ -396,7 +404,7 @@ async function runScreeningUnlocked({
   }
 
   // 4. Universum: deutsche Handelsplätze
-  if (venues && timeLeft() > 5000) {
+  if (venues && !only && timeLeft() > 5000) {
     const due = state.securities
       .filter((s) => s.asset_type === "stock" && s.isin)
       .filter((s) => !s.universe_checked_at || nowMs - Date.parse(s.universe_checked_at) > UNIVERSE_RECHECK_DAYS * DAY)

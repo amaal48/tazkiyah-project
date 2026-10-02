@@ -102,7 +102,7 @@ supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
 supabase_seed_securities.sql  — Titel aus stocks.js anlegen (wiederholbar)
 ```
 
-**Tests:** `npm run test:screening` (78 Tests: engine, runner, holdingsCsv, providers/fmp)
+**Tests:** `npm run test:screening` (79 Tests: engine, runner, holdingsCsv, providers/fmp)
 
 **Wo der Code liegt:** Lokal auf dem MacBook der Nutzerin (`~/Desktop/Website`), zusätzlich auf GitHub. Notion nur für Planung/Dokumentation.
 
@@ -154,6 +154,8 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Cron-Ablauf (`api/run-screening.js`):** täglich. Holt Finanzdaten für nie geprüfte Titel bzw. wenn ein neues Quartal zu erwarten ist (8 Abrufe je Titel: Profil, 6 Abschlüsse, Kursverlauf; Tagesbudget 200 → ca. 25 Titel/Tag, erster Volldurchlauf ca. 3 Wochen). Bis 01.10. war CALLS_PER_TITLE fälschlich 7 → Budget wurde um 1 Abruf je Titel unterschätzt.. Rechnet nach neuen manuellen Prüfungen oder Parameter-/Engine-Änderungen aus gespeicherten Daten neu (0 Abrufe). Speichert nur geänderte Ergebnisse (`screening_runs`, Historie; Statuswechsel per Trigger in `screening_status_changes`, Hinweise an Watchlist-Nutzer in `user_notifications`).
 
 **Schutz des Crons (01.10.):** Sperre gegen gleichzeitige Läufe (Tabelle `screening_lock`, Funktionen `acquire_screening_lock`/`release_screening_lock`), Abrufe werden vor jedem Titel atomar über `add_api_usage` reserviert, FMP-Fehler haben eine Art (`limit`/`premium`/`other`). Bei „Limit Reach“ bricht der Abruf ab, ohne Titel als fehlerhaft zu markieren. Sind Quartale oder der Kursverlauf im Tarif gesperrt, wird mit den Jahreswerten weitergerechnet (betroffene Prüfungen „nicht geprüft“), und der Titel wird erst nach dem nächsten erwarteten Jahresabschluss erneut abgerufen.
+
+**Manueller Lauf (02.10.):** `/api/run-screening?tickers=AAPL,MSFT&force=1` ruft nur diese Ticker ab (max. 20), auch wenn ihre Daten frisch sind (sonst gilt die 7-Tage-Sperre); Budget und Sperre gelten wie sonst, Universumsprüfung entfällt. Antwort enthält `unknownTickers`. Aufruf nur mit CRON_SECRET (Terminal: curl mit Authorization-Header auf die Production-Adresse).
 
 **Marktkapitalisierung (02.10., von der Nutzerin bestätigt, Entwicklungsphase):** FMP Free liefert `historical-market-capitalization` nur für die letzten ca. 65 Handelstage (mit `from` gesperrt), `historical-price-eod/light` dagegen auch Jahre zurück (getestet für 2025). Deshalb: Marktkapitalisierung zum Stichtag = Schlusskurs am Stichtag (sonst letzter Handelstag davor, max. 7 Tage) × Aktienzahl. Aktienzahl: Bestand am Periodenende, wenn eine Quelle ihn liefert (Adapter-Parameter `sharesAtPeriodEnd`, bisher keine Quelle); sonst gewichteter Periodendurchschnitt, dann als `datenabweichung` gekennzeichnet. Snapshot-Feld `marketCapSource` (`price_x_weighted_avg_shares` / `price_x_period_end_shares`); Flag `marktkapitalisierung_aus_kurs` bei B1/B2. Mehrere Aktiengattungen: erkannt an gleicher CIK im Universum (`inputs.profile.cik`, Runner-Feld `multiClassIssuer`); da die Stückzahl je Gattung fehlt, gelten B1/B2 dann als „nicht geprüft“, solange die Marktkapitalisierung selbst gebildet ist. Grenze: Gattungen, die nicht im Universum stehen (z. B. BRK-A neben BRK-B), werden so nicht erkannt → Stichprobe nötig. Anbieterwert (Bezahltarif) hat Vorrang und ersetzt die Näherung. Parameter `marketCapFromPrice`, auf der Methodik-Seite unter „Daten und ihre Grenzen“ vermerkt.
 
