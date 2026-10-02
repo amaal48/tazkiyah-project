@@ -1,7 +1,7 @@
 // src/screening/runner.test.js — ausführen mit: node --test src/screening/runner.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runScreening, needsFreshData, needsRescreen, CALLS_PER_TITLE } from "./runner.js";
+import { runScreening, needsFreshData, needsRescreen, CALLS_PER_TITLE, INPUT_DATA_VERSION } from "./runner.js";
 import { emptySnapshot } from "./providers/model.js";
 import { germanVenuesFromMapping } from "./providers/openfigi.js";
 import { STATUS } from "./engine.js";
@@ -153,7 +153,7 @@ test("dryRun speichert nichts", async () => {
 });
 
 test("Fälligkeit neuer Daten: erst ca. 45 Tage nach erwartetem Quartalsende", () => {
-  const run = { quarter_period_end: "2026-06-30", inputs: { fetchedAt: "2026-08-20T00:00:00Z" } };
+  const run = { quarter_period_end: "2026-06-30", inputs: { fetchedAt: "2026-08-20T00:00:00Z", dataVersion: INPUT_DATA_VERSION } };
   assert.equal(needsFreshData({}, run, Date.parse("2026-10-15T00:00:00Z")), false);
   assert.equal(needsFreshData({}, run, Date.parse("2026-11-20T00:00:00Z")), true);
   assert.equal(needsFreshData({}, null, NOW.getTime()), true);
@@ -334,4 +334,24 @@ test("Manueller Lauf für bestimmte Ticker: nur diese, mit force auch bei frisch
   const p2 = fakeProvider();
   await runScreening({ repo, provider: p2, now: next, dailyCallBudget: 400, onlyTickers: ["CCC"] });
   assert.equal(p2.calls.length, 0);
+});
+
+test("Eingangsdaten aus älterer Datenaufbereitung werden trotz frischem Abruf neu geholt", () => {
+  const now = Date.parse("2026-10-02T05:00:00Z");
+  const old = { quarter_period_end: "2026-06-30", inputs: { fetchedAt: "2026-09-30T20:00:00Z" } }; // vor Engine 1.2.0
+  assert.equal(needsFreshData({ data_fetched_at: "2026-09-30T20:00:00Z" }, old, now), true);
+  const current = { quarter_period_end: "2026-06-30", inputs: { fetchedAt: "2026-10-01T10:00:00Z", dataVersion: INPUT_DATA_VERSION } };
+  assert.equal(needsFreshData({}, current, now), false);
+  // Läufe von Engine 1.2.0 ohne eigene Versionsnummer gelten als aktuell
+  const v12 = { quarter_period_end: "2026-06-30", inputs: { fetchedAt: "2026-10-02T10:00:00Z", multiClassIssuer: false } };
+  assert.equal(needsFreshData({}, v12, now), false);
+});
+
+test("Neu abgerufene Titel tragen die Datenversion; ein zweiter Lauf ruft sie nicht erneut ab", async () => {
+  const repo = memoryRepo(stocks.slice(0, 1));
+  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 200 });
+  assert.equal(repo.db.runs[0].inputs.dataVersion, INPUT_DATA_VERSION);
+  const p = fakeProvider();
+  await runScreening({ repo, provider: p, now: new Date(NOW.getTime() + 10 * DAY_MS), dailyCallBudget: 200 });
+  assert.equal(p.calls.length, 0);
 });

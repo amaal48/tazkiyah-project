@@ -34,6 +34,10 @@ import { PARAMETERS_VERSION } from "./parameters.js";
 
 // Profil (1) + Bilanz/GuV/Cashflow je Jahr und Quartal (6) + Kursverlauf (1)
 export const CALLS_PER_TITLE = 8;
+// Stand der Datenaufbereitung im Adapter. Ergebnisse mit älterem Stand werden einmal neu abgerufen,
+// auch wenn die Daten jünger als 7 Tage sind (z. B. 30.09.: Ergebnisse ohne Marktkapitalisierung).
+// Bei jeder Änderung, die gespeicherte Eingangsdaten unbrauchbar macht, hochzählen.
+export const INPUT_DATA_VERSION = 2;
 const DAY = 86400000;
 const REFETCH_MIN_DAYS = 7; // frühestens nach 7 Tagen erneut abrufen
 const FILING_LAG_DAYS = 45; // neues Quartal ca. 45 Tage nach Quartalsende veröffentlicht
@@ -63,6 +67,12 @@ function addMonths(iso, months) {
 
 /** Braucht diese Aktie neue Finanzdaten? */
 export function needsFreshData(security, run, now) {
+  // Eingangsdaten aus älterer Datenaufbereitung: sofort neu abrufen. Läufe ab Engine 1.2.0 tragen
+  // das Feld multiClassIssuer und gelten ohne eigene Versionsnummer als Version 2.
+  if (run?.inputs) {
+    const version = run.inputs.dataVersion ?? (run.inputs.multiClassIssuer !== undefined ? 2 : 1);
+    if (version < INPUT_DATA_VERSION) return true;
+  }
   const lastFetch = Math.max(
     run?.inputs?.fetchedAt ? Date.parse(run.inputs.fetchedAt) : 0,
     security.data_fetched_at ? Date.parse(security.data_fetched_at) : 0
@@ -344,6 +354,7 @@ async function runScreeningUnlocked({
         const inputs = {
           provider: provider.id,
           fetchedAt: now.toISOString(),
+          dataVersion: INPUT_DATA_VERSION,
           profile,
           annual: periods.annual,
           quarters: periods.quarters,
