@@ -1,6 +1,25 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 01.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions, um sofort produktiv weiterzumachen.
+Stand: 02.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+
+---
+
+## 0. Aktueller Stand und nächster Schritt (02.10.2026, abends)
+
+**Wo wir stehen:** Datenbasis und Screening-Engine stehen und sind an Apple und Microsoft gegen Börsenkurs und 10-K geprüft. Die Oberfläche ist auf den Screener umgebaut (Branch `ui-screening`, Vorschau-Adresse bei Vercel, **noch nicht auf `main` gemergt**). Die Seite ist **nicht offiziell gestartet**, sie ist nur per Link erreichbar. Fast jede Aktie steht auf „nicht geprüft“, weil die Handprüfungen A2 (Satzung) und B3 (Umsatzsegmente) fehlen. Roadmap als Dokument: https://claude.ai/code/artifact/9740a04f-6d82-4c70-8fc2-c5bf2e8dac92
+
+**Nächster Schritt (ab 03.10.):** A2/B3-Prüfung mit KI-Vorprüfung und Kontrolle durch die Nutzerin: erst ein Pilot mit zehn Aktien, dann der große Lauf, dann Stichproben. Briefing für den neuen Chat: `docs/BRIEFING-A2-B3.md`.
+
+**Zuerst prüfen oder erledigen:**
+1. Vorschau von `ui-screening` ansehen (Apple-Chart, Microsoft ohne „Leasing geschätzt“, Handy, Klick auf eine Quelle) und danach auf `main` mergen.
+2. `CRON_SECRET` erneuern (der alte Wert stand im Chat), `SCREENING_DAILY_CALL_BUDGET` auf 200 prüfen. Nach Änderungen an Vercel-Variablen manuell neu deployen.
+3. Cron-Fortschritt ansehen (Abfrage der Titel mit Ergebnis in `screening_current`), damit klar ist, wie viele Titel schon Kandidaten für A2/B3 sind.
+
+**Regeln, die immer gelten:**
+- Geheimwörter und Schlüssel nie in einen Chat oder in Claude Code einfügen, nur in Vercel und im Terminal (`read -s CRON_SECRET`).
+- Auslegungsfragen entscheidet die Nutzerin. Wortlaut des Standards zuerst, bei Spielraum die vorsichtigere Variante.
+- Ein falsches „konform“ ist der teure Fehler, ein unnötiges „nicht geprüft“ nicht.
+- Drei Status, kein Score, kein „Grenzwertig“; zu jeder Aussage Erklärung und Quelle.
 
 ---
 
@@ -14,33 +33,35 @@ Stand: 01.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ### Kernfunktionen — umgesetzt
 
-- **Screener, Aktien-/ETF-Detailseiten, Watchlist, Portfolio-Reinheit, Reinheits-Rechner, Vergleichsfunktion, Sektor-Explorer, Akademie, Termin-Kalender mit iCal-Export, deutscher Handelskalender, PDF-Berichte/Marktbericht, Sidebar-Navigation** — siehe README.md. Achtung: Diese Oberflächen lesen noch aus der statischen `src/data/stocks.js` mit dem alten Statusmodell (Halal/Grenzwertig/Nicht Halal, Score). Umstellung auf die neue Engine steht aus (siehe "Geplant / offen").
+- **Screener, Aktien-/ETF-Detailseiten, Watchlist, Portfolio-Reinheit, Reinheits-Rechner, Vergleichsfunktion, Sektor-Explorer, Akademie, Termin-Kalender mit iCal-Export, deutscher Handelskalender, PDF-Berichte/Marktbericht, Sidebar-Navigation** — siehe README.md. Seit 02.10. kommt der **Status** dieser Oberflächen aus Supabase (Screener, Branch `ui-screening`). `src/data/stocks.js` enthält nur noch Stammdaten und Platzhalter (Kurse, `eckdaten` sind Beispielwerte aus einem alten Lauf und werden als solche gekennzeichnet).
 - **Nutzerkonten** (unverändert zum Stand 17.09.): Registrierung mit Autosave, Login, Passwort-Reset, Kontobereich mit 4 Unterseiten (`ProfilePage`, `SecurityPage`, `SettingsPage`, `PrivacyPage`), `profiles`-Tabelle mit Trigger und RLS, `watchlist_items`-Tabelle.
 - **NEU: Screening-Engine nach AAOIFI** (`src/screening/`), siehe Abschnitt 4.
 - **NEU: Täglicher Screening-Cron** (`api/run-screening.js`), siehe Abschnitt 4.
 - **NEU: Methodik-Seite** (`src/components/MethodikPage.jsx`), öffentlich über die Sidebar ("Methodik"). Liest alle Inhalte direkt aus `parameters.js` und `industryRules.js`, jeder Parameter hat einen Anker `#methodik-<schlüssel>` für spätere Info-Symbole im Screener (`goTo("methodik", "methodik-debtMaxPct")`).
+- **NEU: Oberfläche auf den Screener umgestellt** (Branch `ui-screening`): Startseite (`StartPage.jsx`), Screener-Seite mit Filtern und Liste (`components/screening/ScreenerPage.jsx`, `ScreeningList.jsx`), Detailseite (`ScreeningDetail.jsx`), **Erklärseite je Prüfung** (`CriterionPage.jsx`, Adresse `#/kriterium/b1`), Quellenangaben als Links (`SourceLink.jsx`), Prüfstufen-Grafik (`StageDiagram.jsx`), Hash-Adressen (`lib/hashRoute.js`), Laden der Ergebnisse (`lib/screeningData.js`). Portfolio-Seite (`PortfolioPage.jsx`) mit Hinweis, dass eigene Portfolios folgen.
 - **NEU: ETF-Holdings-Import** (`scripts/import-etf-holdings.mjs`): wandelt die iShares-Holdings-CSV (englisch oder deutsch) in eine SQL-Datei für den SQL Editor.
 
-### Stand der Daten in Supabase (30.09.2026)
+### Stand der Daten in Supabase (02.10.2026)
 
 - Schema `supabase_schema_screening.sql` und Seed `supabase_seed_securities.sql` (503 Aktien aus dem S&P 500 + ETF ISWD) eingespielt.
 - ETF ISWD: `fund_annual_report_date = 2025-10-31`; manuelle Prüfungen G2, G3, G4 und G5_FUND_INCOME eingetragen (alle bestanden, Quelle: Jahresbericht iShares II plc zum 31.10.2025, Seitenangaben in `manual_reviews`).
 - ETF-Holdings zum 29.09.2026 importiert: 387 Aktienpositionen, 99,80 % Aktiengewicht. Nur 66,97 % des Gewichts (121 US-Titel) liegen im eigenen Universum, 266 vor allem ausländische Titel (32,83 %) nicht.
 - **Entscheidung:** ISWD bleibt vorerst "nicht geprüft". Das Universum wird erst später um die ausländischen Titel erweitert, zusammen mit dem Wechsel auf einen FMP-Bezahltarif.
 - Manuelle Prüfungen A2 (Satzung) und B3 (Umsatzsegmente) für Aktien: noch keine. Bis dahin sind alle Aktien "nicht geprüft" oder "nicht konform".
+- Der Cron holt seit 02.10. täglich ca. 24 Titel (Budget 200, 8 Abrufe je Titel). Die 28 Titel vom 30.09. (ohne Marktkapitalisierung) werden über die Datenversion einmal neu abgerufen. Ein Volldurchlauf dauert ca. 3 Wochen.
+- **Stichprobe 02.10. bestätigt (Kurs, Aktienzahl, Leasing, B1, B2, C1 gegen Börsenkurs und 10-K):** AAPL B1 2,94 % (Jahr) und 2,35 % (Quartal), B2 3,47 % / 3,51 %, C1 63,14 % / 61,77 %; MSFT B1 4,65 %, B2 4,08 %, C1 69,3 %. Beide Titel stehen wegen fehlender A2/B3-Prüfung auf „nicht geprüft“.
 
 ### Geplant / offen
 
-**Screener (nächste Schritte):**
-- Commit/Push der Screening-Dateien und erster Cron-Lauf (Vercel → Settings → Cron Jobs → "Run")
-- Nach dem ersten Lauf an 2–3 Titeln gegen die Jahresberichte prüfen (Hinweise oben in `src/screening/providers/fmp.js`): Enthalten FMPs Schuldenfelder bereits Leasing? Liefert FMP 0 statt "unbekannt" bei nicht ausgewiesenen Zinserträgen? Bildet der Saldo `nonOperatingIncomeExcludingInterest` die sonstigen Erträge ausreichend ab?
-- OpenFIGI-Börsenkennungen (`src/screening/providers/openfigi.js`) gegen die Dokumentation und an bekannten Titeln prüfen
-- Erste manuelle Prüfungen A2/B3 für eine Auswahl von 10–20 Aktien (Claude bereitet Entwürfe mit Seitenangaben vor, Nutzerin bestätigt)
-- Eingabemaske für manuelle Prüfungen statt Eintragen im Supabase Table Editor
-- Oberfläche auf die Engine umstellen: drei Status überall (Screener, Detailseite, Glossar, Akademie, Filter, Portfolio), "Grenzwertig" und Score entfernen, optional "Abstand zum Grenzwert" als reine Info, Info-Symbole mit Link zur Methodik-Seite, Hinweis bei Statuswechsel auf der Watchlist (Tabelle `user_notifications`)
-- `api/fundamentals.js` ist veraltet (alte Logik mit eigener Grenzwertprüfung) und sollte nach der Umstellung entfernt oder auf die Engine umgebaut werden
-- Universum später um die ausländischen ISWD-Bestandteile erweitern (mit Bezahltarif)
-- AAOIFI J5: prüfen, ob es neuere Fassungen von SS 21/27/35 als die in der Gesamtausgabe 2017 enthaltenen gibt (2004/2006/2008)
+**Screener (nächste Schritte, Stand 02.10. abends):**
+1. `ui-screening` prüfen (Vorschau) und auf `main` mergen. Die Seite ist nicht gestartet.
+2. `CRON_SECRET` erneuern, `SCREENING_DAILY_CALL_BUDGET` = 200 prüfen, Redeploy.
+3. **A2/B3-Pilot** mit zehn Aktien (NVDA, JNJ, AAPL, AMZN, GOOGL, DIS, BRK-B, MSFT, KO, HD): KI liest Satzung und Segmentangaben, liefert Entwurf mit wörtlichem Zitat und Link, die Nutzerin kontrolliert alle zehn. Details: `docs/BRIEFING-A2-B3.md`.
+4. Großer Lauf für alle Aktien, die nicht schon an A1/B1/B2/C1 scheitern, danach Stichproben alle paar Tage (5–10 Aktien, gezielt). Kontrollseite für Entwürfe (Zitat, Link, „bestätigt/korrigieren“) statt Eintragen per SQL. Methodik-Seite: „KI-gestützte Prüfung mit Stichprobenkontrolle“, Prüfer-Angabe „KI-Entwurf (Claude), kontrolliert von …“.
+5. Kleinigkeiten: `todo`-Felder in `src/screening/explanations.js` (D2 Tamattu'-Aktien, C3/SS 59), alle Fundstellen gegen den Standardtext prüfen, SS 21, 3/4/8 zur Prüffrequenz nachlesen, Feld `metrics` im Ergebnis (Sortierung nach B1/B2 ohne Positionszugriff), OpenFIGI-Börsenkennungen prüfen (`providers/openfigi.js`), AAOIFI J5 (neuere Fassungen von SS 21/27/35?), `api/fundamentals.js` entfernen oder auf die Engine umbauen (wird von der Oberfläche nicht mehr benutzt).
+6. **Vor dem Launch:** echte Kurse (Twelve Data) statt Beispielwerten, FMP-Tarif und Display-Lizenz klären, Free/Pro-Umfang, Transparenz (KI-gestützte Prüfung nennen), A2/B3 für die gefragtesten Titel.
+7. **Danach (Schritt 3):** Portfolio mit eigenen Positionen und Reinheit, Watchlist-Hinweise bei Statuswechsel (Tabelle `user_notifications`), Vergleich/Sektoren/Kalender auf den neuen Stand, Reinigung und Zakat anzeigen (brauchen B3), ISWD vollständig (Universum um ausländische Titel erweitern, mit Bezahltarif).
+- Offene Auslegungsfragen: B3-Prüffrequenz (jährlich oder pro Quartalsbericht), Behandlung unklarer Segmente (aktuell „nicht geprüft“), Operating-Leasing als Schuld (aktuell ja), Gültigkeit von A2 (aktuell jährlich).
 
 **Übrige offene Punkte (unverändert):**
 - Backup-Strategie (Supabase Free vs. Pro / `pg_dump`)
@@ -52,7 +73,7 @@ Stand: 01.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 **Design (beim Design-Überarbeiten mit angehen):**
 - `src/index.css` ist noch die Vorlage aus dem Vite-Starter: zentriert Text (`#root { text-align: center }`), setzt Absatzabstände auf null und färbt `h1`/`h2` im hellen Systemmodus fast schwarz. Diese Regeln liegen außerhalb der Tailwind-Layer und überschreiben Tailwind-Klassen. Die Methodik-Seite ist dagegen abgesichert (Inline-Stile für Überschriften, `pt-*` statt `mt-*` bei Absätzen), andere Seiten vermutlich nicht.
-- Auf dem Handy ist die Sidebar standardmäßig ausgeklappt und verdeckt den Inhalt.
+- Auf dem Handy startet die Sidebar seit 02.10. eingeklappt (erledigt). Offen: Zeitraum-Knöpfe des Kurs-Charts stehen bei 375 px Breite 5 px über; weniger „KI-Look“ im Gesamtdesign.
 - In `stocks.js` wurde beim ETF die Replikation korrigiert ("Physisch (laut Jahresbericht 2025: optimierte Auswahl)"). Der Jahresbericht führt den Fonds als "non-replicating"; die iShares-Produktseite sagt "Replicated".
 
 ---
@@ -92,10 +113,22 @@ src/
       fmp.js             — FMP-Adapter
       openfigi.js        — Handelsplätze per ISIN
     *.test.js            — Tests (engine, runner, holdingsCsv)
+    explanations.js      — Erklärtexte in einfachen Worten je Prüfung, Prüfstufen, Kennzeichnungstexte
   components/
-    MethodikPage.jsx     — öffentliche Methodik-Seite
+    MethodikPage.jsx     — Methodik-Seite (Prüfstufen-Grafik, alle Regeln, „Daten und ihre Grenzen“)
+    StartPage.jsx        — Startseite (Überblick mit Karten)
+    PortfolioPage.jsx    — Portfolio-Seite (Hinweis „folgt“)
+    screening/           — ScreenerPage, ScreeningList, ScreeningDetail, CriterionPage, SourceLink,
+                            StageDiagram, StatusBadge, StatusLegend, BasisLine, format.js
+  lib/
+    screeningData.js     — lädt Liste, Detail und Verlauf aus Supabase (nie die Spalte inputs laden)
+    hashRoute.js         — Hash-Adressen: #/  #/screener  #/aktie/AAPL  #/kriterium/b1  #/methodik
+docs/
+  UI-UMBAU-SCHRITT-1.md  — Anweisung Oberfläche (Status, Detailseite, Erklärseiten)
+  UI-STARTSEITE.md       — Anweisung Startseite/Screener/Methodik (Schritt 1b)
+  BRIEFING-A2-B3.md      — Briefing für die A2/B3-Prüfung (neuer Chat)
 api/
-  run-screening.js       — täglicher Screening-Cron (manuell: ?limit=2&dryRun=1, nur mit CRON_SECRET)
+  run-screening.js       — täglicher Screening-Cron (manuell: ?limit=2&dryRun=1 oder ?tickers=AAPL,MSFT&force=1, nur mit CRON_SECRET)
 scripts/
   import-etf-holdings.mjs — node scripts/import-etf-holdings.mjs <csv> [ETF-Ticker] [Stichtag]
 supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
@@ -124,7 +157,11 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 - Jede gelieferte Datei wird vor Auslieferung syntaktisch geprüft und, wo möglich, getestet.
 - SQL (Schema, Seeds, Importe, manuelle Prüfungen) läuft **nicht** über Claude Code, sondern manuell im Supabase SQL Editor. In SQL-Beispielen keine Platzhalter wie `JJJJ-MM-TT`, sondern echte Werte.
 - Git commit/push führt die Nutzerin selbst aus bzw. lässt Claude Code es tun, wenn explizit darum gebeten.
-- Manuelle Prüfungen: Claude kann Entwürfe aus Jahresberichten vorbereiten (hochgeladene PDFs werden vollständig durchsucht), die Entscheidung trifft die Nutzerin.
+- Manuelle Prüfungen: Claude kann Entwürfe aus Jahresberichten vorbereiten (hochgeladene PDFs werden vollständig durchsucht), die Entscheidung trifft die Nutzerin. Ab 02.10. geplant: KI-Vorprüfung mit Quelle und wörtlichem Zitat, Stichprobenkontrolle (siehe `docs/BRIEFING-A2-B3.md`).
+- Seit 02.10. läuft der Umbau der Oberfläche direkt in Claude Code auf einem Branch (`ui-screening`) mit Vercel-Vorschau; Anweisungen stehen in `docs/UI-*.md`. Gemergt wird erst nach der Prüfung der Vorschau.
+- Anweisungen für Claude Code immer als kopierfertige Codeblöcke geben. Die Nutzerin ist keine Entwicklerin: einfache Worte, nummerierte Schritte, erklären, was ein Befehl tut.
+- Befehle mit Geheimwörtern nur in der normalen Terminal-App ausführen (nicht in Claude Code, nicht im Chat), z. B. `read -s CRON_SECRET`, dann `curl -s -H "Authorization: Bearer $CRON_SECRET" "https://tazkiyah-project-kohl.vercel.app/api/run-screening?..."`.
+- Wenn die Nutzerin einen Satz wie „alles klar, mach das“ schreibt, ist das die Freigabe für den zuletzt besprochenen Vorschlag, nicht für mehr.
 
 ---
 
@@ -149,13 +186,15 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 
 **Universum Aktien:** nur Titel mit mindestens einem deutschen Handelsplatz (Prüfung per ISIN über OpenFIGI), gespeichert mit ISIN, Handelsplätzen und Prüfdatum.
 
-**Manuelle Prüfungen:** Tabelle `manual_reviews` (Kriterien A1, A2, A3, B3_SEGMENTS, G2, G3, G4, G5_FUND_INCOME) mit Ergebnis, Quelle, Prüfer, Datum und `basis_annual_period_end`. Sie laufen ab, sobald ein neuer Jahresabschluss vorliegt (ETFs: neuer Fonds-Jahresbericht in `securities.fund_annual_report_date`). Arbeitsliste: View `manual_reviews_due`. B3-Beträge in `details.prohibitedRevenueByPeriod` mit Schlüsseln `"annual:JJJJ-MM-TT"` bzw. `"quarter:JJJJ-MM-TT"` und Kategorien aus `PROHIBITED_INCOME_CATEGORIES`; Zinserträge aus der GuV-Zeile nicht eintragen (zählt die Engine selbst).
+**Manuelle Prüfungen:** Tabelle `manual_reviews` (Kriterien A1, A2, A3, **B1_LEASE**, B3_SEGMENTS, G2, G3, G4, G5_FUND_INCOME) mit `result` (`pass`/`fail`/`unclear`), `details` (jsonb), `source_url` oder `source_note` (mindestens eins), `reviewer`, `reviewed_at` und `basis_annual_period_end`. **Eine Prüfung gilt nur, wenn `basis_annual_period_end` genau dem aktuellen Jahresabschluss der Aktie entspricht** (`screening_current.annual_period_end`); sonst gilt sie als abgelaufen. Sie laufen ab, sobald ein neuer Jahresabschluss vorliegt (ETFs: neuer Fonds-Jahresbericht in `securities.fund_annual_report_date`). Arbeitsliste: View `manual_reviews_due`. B3-Beträge in `details.prohibitedRevenueByPeriod` mit Schlüsseln `"annual:JJJJ-MM-TT"` bzw. `"quarter:JJJJ-MM-TT"` und Kategorien aus `PROHIBITED_INCOME_CATEGORIES`; Zinserträge aus der GuV-Zeile nicht eintragen (zählt die Engine selbst). **B3-Ergebnis:** `pass` = keine verbotenen Segmente (Beträge 0), `fail` = Beträge je Periode für den Jahresabschluss und jedes der letzten vier Quartale müssen vorliegen, `unclear` = Aktie bleibt „nicht geprüft“ (gemischte oder unklare Segmente, so festgelegt in `prohibitedIncomeSources`). **A2-Ergebnis:** `pass`, `fail` oder `unclear` (unklar oder fehlend = „nicht geprüft“). `B1_LEASE`: `details {quarterPeriodEnd, leaseLiabilities}`, nur nötig wenn B1 wegen einer Leasing-Schätzung „nicht geprüft“ ist.
 
 **Cron-Ablauf (`api/run-screening.js`):** täglich. Holt Finanzdaten für nie geprüfte Titel bzw. wenn ein neues Quartal zu erwarten ist (8 Abrufe je Titel: Profil, 6 Abschlüsse, Kursverlauf; Tagesbudget 200 → ca. 25 Titel/Tag, erster Volldurchlauf ca. 3 Wochen). Bis 01.10. war CALLS_PER_TITLE fälschlich 7 → Budget wurde um 1 Abruf je Titel unterschätzt.. Rechnet nach neuen manuellen Prüfungen oder Parameter-/Engine-Änderungen aus gespeicherten Daten neu (0 Abrufe). Speichert nur geänderte Ergebnisse (`screening_runs`, Historie; Statuswechsel per Trigger in `screening_status_changes`, Hinweise an Watchlist-Nutzer in `user_notifications`).
 
 **Schutz des Crons (01.10.):** Sperre gegen gleichzeitige Läufe (Tabelle `screening_lock`, Funktionen `acquire_screening_lock`/`release_screening_lock`), Abrufe werden vor jedem Titel atomar über `add_api_usage` reserviert, FMP-Fehler haben eine Art (`limit`/`premium`/`other`). Bei „Limit Reach“ bricht der Abruf ab, ohne Titel als fehlerhaft zu markieren. Sind Quartale oder der Kursverlauf im Tarif gesperrt, wird mit den Jahreswerten weitergerechnet (betroffene Prüfungen „nicht geprüft“), und der Titel wird erst nach dem nächsten erwarteten Jahresabschluss erneut abgerufen.
 
-**Oberfläche (Entscheidungen 02.10.):** Statt der alten Bewertung drei Status (konform / nicht konform / nicht geprüft), kein Score, kein Stern, kein „Grenzwertig“, keine Zählung „x von y bestanden“; bei „nicht geprüft“ steht in Worten, was fehlt. Ein vierter Status „noch nicht bearbeitet“ entfällt (zeigt „Wird demnächst geprüft“). Hauptseite: Kopf mit Grundlage AAOIFI SS 21/27/35 (kein AAOIFI-Logo, Satz zur fehlenden Verbindung), Prüfstufen-Grafik, Legende, Filter, Liste mit Begründungszeile. Detailseite: Kriterien mit Werten, Abstand zur Grenze, Kennzeichnungen, Quellen. **Jede Quelle ist ein Link auf eine eigene Erklärseite je Prüfung** (`#/kriterium/b1`), Texte zentral in `src/screening/explanations.js` und `parameters.js`. Free/Pro-Abgrenzung später. Arbeitsanweisung für Claude Code: `docs/UI-UMBAU-SCHRITT-1.md`, Umbau auf Branch `ui-screening`. Engine 1.3.0 liefert `result.headline` (Kurzfassung für die Liste). Offen: `todo`-Felder in explanations.js (D2 Tamattu', C3 SS 59), Fundstellen gegen den Standardtext prüfen.
+**Oberfläche (Entscheidungen 02.10.):** Statt der alten Bewertung drei Status (konform / nicht konform / nicht geprüft), kein Score, kein Stern, kein „Grenzwertig“, keine Zählung „x von y bestanden“; bei „nicht geprüft“ steht in Worten, was fehlt. Ein vierter Status „noch nicht bearbeitet“ entfällt (zeigt „Wird demnächst geprüft“). Hauptseite: Kopf mit Grundlage AAOIFI SS 21/27/35 (kein AAOIFI-Logo, Satz zur fehlenden Verbindung), Prüfstufen-Grafik, Legende, Filter, Liste mit Begründungszeile. Detailseite: Kriterien mit Werten, Abstand zur Grenze, Kennzeichnungen, Quellen. **Jede Quelle ist ein Link auf eine eigene Erklärseite je Prüfung** (`#/kriterium/b1`), Texte zentral in `src/screening/explanations.js` und `parameters.js`. Free/Pro-Abgrenzung später. Arbeitsanweisung für Claude Code: `docs/UI-UMBAU-SCHRITT-1.md`, Umbau auf Branch `ui-screening` (umgesetzt, noch nicht auf `main`). Texte in Akademie, FAQ und Glossar sind auf die drei Status umgestellt; `stocks.js` ist von der alten Bewertung bereinigt. Engine 1.3.0 liefert `result.headline` (Kurzfassung für die Liste). Offen: `todo`-Felder in explanations.js (D2 Tamattu', C3 SS 59), Fundstellen gegen den Standardtext prüfen.
+
+**Seitenstruktur (Schritt 1b, 02.10.):** Die Seite hat drei Adressen: `#/` (Startseite), `#/screener` (Filter und Liste) und `#/methodik`. Die Startseite stellt Tazkiyah kurz vor und verlinkt auf Screener, Portfolio, Berichte, Watchlist, Akademie und Methodik; „So wird geprüft“ (Prüfstufen-Grafik und die drei Status) steht in der Methodik. Die AAOIFI-Grundlage (SS 21, 27, 35) bleibt als eine Zeile auf der Startseite, mit Link zur Methodik, „nicht mit der AAOIFI verbunden“ und „keine Anlageberatung, kein Rechtsgutachten (Fatwa)“. Arbeitsanweisung: `docs/UI-STARTSEITE.md`.
 
 **A2/B3-Prüfung (Planung):** Vorprüfung durch KI mit Quelle und wörtlicher Textstelle, Stichproben durch die Nutzerin (gezielt: Grenzfälle, Mischkonzerne, Zufallsanteil; die ersten ca. 20 komplett), Grenzfälle werden gelistet und von ihr separat geprüft. A2 jährlich, B3 geplant nach jedem Quartalsbericht (Fundstelle SS 21, 3/4/8 noch prüfen). Methodik-Seite und Prüfer-Angabe müssen dann „KI-gestützt, mit Stichprobenkontrolle“ ausweisen. Nur Titel prüfen, die nicht schon an A1/B1/B2/C1 scheitern. Kontrollseite statt reiner Eingabemaske (Entwurf, Quelle, Textstelle, „bestätigt/korrigieren“).
 
@@ -167,7 +206,7 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 
 **Leasing im Quartal (02.10., von der Nutzerin bestätigt):** Weist ein Quartal Leasing nicht gesondert aus (Feld 0 oder fehlt), übernimmt `applyLeaseEstimate` (fmp.js) den Wert des letzten Jahresabschlusses (`balance.leaseEstimate`), Flag `leasing_geschaetzt`. Keine Ergänzung bei Leasing im Quartal > 0, bei `debtFieldsIncludeLeases` oder wenn der Jahresabschluss Leasing erkennbar in den Schuldenposten enthält (`totalDebt` ≠ Schulden + Leasing → Doppelzählung vermeiden). Entscheidet die Schätzung (B1 mit Leasing > 30 %, ohne ≤ 30 %), ist B1 „nicht geprüft“ (`leasing_schaetzung_entscheidend`) und der 10-Q wird von Hand geprüft: manuelle Prüfung `B1_LEASE` mit `details {quarterPeriodEnd, leaseLiabilities}`, gültig nur für dieses Quartal und den aktuellen Jahresabschluss (Constraint im Schema ergänzt; Eingabemaske folgt). Parameter `leaseQuarterEstimate` (abschaltbar).
 
-Offen: FMP-Tarifwahl und Display-Lizenz vor Launch; Stichprobe gegen 10-K/10-Q (Apple, eine Mehrgattungs-Firma, BRK-B).
+Offen: FMP-Tarifwahl und Display-Lizenz vor Launch. Stichprobe gegen 10-K/10-Q: Apple und Microsoft erledigt (Kurs, Aktienzahl, Leasing, B1, B2, C1 stimmen); offen sind eine Mehrgattungs-Firma (GOOGL/GOOG) und BRK-B. Hinweis: Microsofts Leasing (88,5 Mrd. $) besteht zu zwei Dritteln aus Finanzierungs-Leasing; die Einstellung `leaseLiabilitiesAsDebt` zählt alle Leasingverbindlichkeiten als Schuld (vorsichtige Lesart, Auslegungsfrage bei Operating-Leasing).
 
 **Supabase-Tabellen des Screeners:** `securities`, `screening_lock`, `screening_runs` (+ View `screening_current`), `screening_status_changes`, `user_notifications`, `manual_reviews` (+ View `manual_reviews_due`), `etf_holdings`, `purification_amounts`, `screening_api_usage`.
 

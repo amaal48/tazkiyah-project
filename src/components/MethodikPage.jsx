@@ -17,6 +17,11 @@ import {
   USER_NOTICES,
 } from "../screening/parameters.js";
 import { INDUSTRY_GROUPS, PROHIBITED_INCOME_CATEGORIES } from "../screening/industryRules.js";
+import { ETF_STAGE, EXPLANATIONS, STAGES } from "../screening/explanations.js";
+import { routes } from "../lib/hashRoute.js";
+import StageDiagram from "./screening/StageDiagram.jsx";
+import StatusLegend from "./screening/StatusLegend.jsx";
+import { H1_STYLE, NOTICE_NO_ADVICE, shortExplanation } from "./screening/format.js";
 
 // Kurztitel je Parameter (Überschrift des Eintrags)
 const TITLES = {
@@ -55,6 +60,15 @@ const TITLES = {
   etfPurificationMinCoveragePct: "Mindestabdeckung",
   etfPurificationUncovered: "Fehlende Bestandteile",
 };
+
+// Auch für die Erklärseiten je Prüfung (CriterionPage)
+export { TITLES as PARAMETER_TITLES };
+
+// Parameter → Prüfungen, deren parameterRefs ihn enthalten („Verwendet bei:“)
+const USED_BY = {};
+for (const [cid, e] of Object.entries(EXPLANATIONS)) {
+  for (const k of e.parameterRefs) (USED_BY[k] ||= []).push(cid);
+}
 
 const SECTIONS = [
   {
@@ -107,8 +121,7 @@ const SECTIONS = [
 
 // Überschriften-Stile inline: src/index.css (Vite-Vorlage) setzt globale
 // h1/h2-Regeln außerhalb der Tailwind-Layer, die Tailwind-Klassen sonst
-// überschreiben würden (Farbe, Größe, Abstände).
-const H1_STYLE = { fontSize: "0.875rem", color: "var(--muted)", margin: 0, letterSpacing: 0, fontWeight: 400, lineHeight: 1.4 };
+// überschreiben würden (Farbe, Größe, Abstände). H1 kommt aus screening/format.js.
 const H2_STYLE = { fontSize: "1.5rem", color: "var(--text)", margin: 0, letterSpacing: 0, fontWeight: 500, lineHeight: 1.25 };
 
 const PRODUCT_LABELS = {
@@ -187,12 +200,24 @@ function ParameterEntry({ id, def, showLimit }) {
         <dd className="leading-relaxed text-[var(--text-soft)]">{nb(def.alternative)}</dd>
         <dt className="text-[var(--muted)]">Quelle</dt>
         <dd className="text-[var(--text-soft)]">{def.source}</dd>
+        {USED_BY[id] && (
+          <>
+            <dt className="text-[var(--muted)]">Verwendet bei</dt>
+            <dd className="flex flex-wrap gap-x-3 gap-y-1">
+              {USED_BY[id].map((cid) => (
+                <a key={cid} href={routes.criterion(cid)} className="text-[var(--gold-soft)] underline decoration-[var(--gold)]/40 underline-offset-2">
+                  {EXPLANATIONS[cid].name} ({cid})
+                </a>
+              ))}
+            </dd>
+          </>
+        )}
       </dl>
     </article>
   );
 }
 
-function IndustryGroups() {
+export function IndustryGroups() {
   return (
     <div id="methodik-industryGroups" className="scroll-mt-24 mt-8">
       <h3 className="font-display text-lg text-[var(--text)]">Branchen</h3>
@@ -281,7 +306,7 @@ export default function MethodikPage({ onBack, anchor }) {
 
   return (
     <div className="font-body text-left">
-      <header className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-6 text-sm text-[var(--muted)]">
+      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <button onClick={onBack} className="hover:text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold)]">
           Tazkiyah
         </button>
@@ -289,16 +314,55 @@ export default function MethodikPage({ onBack, anchor }) {
         <span className="text-[var(--text)]">Methodik</span>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 pb-28">
-        <section className="max-w-[46rem] pb-14 pt-4">
-          <h1 style={H1_STYLE}>So prüft Tazkiyah</h1>
-          <p className="pt-5 font-display text-[1.75rem] leading-snug text-[var(--text)] sm:text-[2.125rem]">{nb(PRINCIPLE)}</p>
-          <p className="pt-6 max-w-[62ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-            Grundlage sind die Sharia-Standards der AAOIFI: Nr. 21 (Wertpapiere), Nr. 27 (Indizes) und Nr. 35 (Zakat).
-            Jede Entscheidung, die der Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative
-            und Abschnittsnummer. {USER_NOTICES.noFatwa}
+      <div className="page pb-28">
+        <section className="pb-12 pt-4">
+          <h1 className="font-display" style={H1_STYLE}>So prüft Tazkiyah</h1>
+          <p className="pt-4 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
+            Tazkiyah prüft Aktien und ETFs in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der
+            Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative und Fundstelle.
+          </p>
+          <p className="pt-4 max-w-[68ch] text-sm leading-relaxed text-[var(--muted)]">
+            Grundlage: AAOIFI Shari'ah Standards Nr. 21 (Wertpapiere), Nr. 27 (Indizes) und Nr. 35 (Zakat). Tazkiyah prüft
+            nach den Standards der AAOIFI und ist nicht mit der AAOIFI verbunden. {NOTICE_NO_ADVICE}
+          </p>
+          <p className="pt-4 max-w-[68ch] border-l-2 border-[var(--gold)] pl-4 text-sm leading-relaxed text-[var(--text-soft)]">
+            Grundsatz: {nb(PRINCIPLE)}
           </p>
           <p className="pt-4 text-xs text-[var(--muted)]">Stand der Parameter: {formatDate(PARAMETERS_VERSION.slice(0, 10))}</p>
+        </section>
+
+        <section id="pruefungen" aria-labelledby="so-wird-geprueft" className="scroll-mt-24 pb-16">
+          <h2 id="so-wird-geprueft" className="font-display" style={H2_STYLE}>So wird geprüft</h2>
+          <div className="mt-6">
+            <StageDiagram />
+          </div>
+          <div className="mt-6">
+            <StatusLegend />
+          </div>
+          <h2 className="font-display mt-14" style={H2_STYLE}>Alle Prüfungen</h2>
+          <div className="mt-6 grid gap-x-10 gap-y-8 md:grid-cols-2">
+            {[...STAGES, ETF_STAGE].map((stage) => (
+              <div key={stage.id}>
+                <p className="text-sm text-[var(--text)]">
+                  Stufe {stage.id} · {stage.title}
+                  {stage.id === ETF_STAGE.id && <span className="text-[var(--muted)]"> (nur ETFs)</span>}
+                </p>
+                <ul className="mt-2 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+                  {stage.criteria.map((cid) => (
+                    <li key={cid} className="py-2.5">
+                      <a href={routes.criterion(cid)} className="group block">
+                        <span className="flex items-baseline gap-2">
+                          <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{cid}</span>
+                          <span className="text-sm text-[var(--text)] group-hover:underline">{EXPLANATIONS[cid].name}</span>
+                        </span>
+                        <span className="block pl-8 pt-0.5 text-sm leading-relaxed text-[var(--text-soft)]">{nb(shortExplanation(cid))}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </section>
 
         <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:gap-14">
@@ -306,7 +370,15 @@ export default function MethodikPage({ onBack, anchor }) {
             <ul className="sticky top-8 space-y-2 border-l border-[var(--border)] pl-4 text-sm">
               {toc.map((t) => (
                 <li key={t.id}>
-                  <a href={`#${t.id}`} className="text-[var(--muted)] hover:text-[var(--text)] focus-visible:text-[var(--text)]">
+                  <a
+                    href={`#${t.id}`}
+                    onClick={(e) => {
+                      // Hash-Adresse (#/methodik) behalten, nur scrollen
+                      e.preventDefault();
+                      document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    className="text-[var(--muted)] hover:text-[var(--text)] focus-visible:text-[var(--text)]"
+                  >
                     {t.title}
                   </a>
                 </li>
@@ -343,7 +415,7 @@ export default function MethodikPage({ onBack, anchor }) {
                   erfüllt. Das gilt auch dann, wenn andere Daten noch fehlen.
                 </p>
                 <p>
-                  <span className="text-[var(--amber-soft)]">Nicht geprüft</span>: Nichts ist durchgefallen, aber mindestens
+                  <span className="text-[var(--text)]">Nicht geprüft</span>: Nichts ist durchgefallen, aber mindestens
                   eine Angabe fehlt oder ist unklar. Fehlende Daten führen nie zu „konform“.
                 </p>
                 <p>
