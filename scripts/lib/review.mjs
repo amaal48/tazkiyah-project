@@ -379,11 +379,11 @@ export function normalizeForQuote(s) {
  */
 export function findQuote(quote, texts) {
   const q = normalizeForQuote(quote);
-  if (!q) return { found: false, file: null };
-  for (const [file, text] of Object.entries(texts)) {
-    if (normalizeForQuote(text).includes(q)) return { found: true, file };
-  }
-  return { found: false, file: null };
+  if (!q) return { found: false, file: null, files: [] };
+  const files = Object.entries(texts)
+    .filter(([, text]) => normalizeForQuote(text).includes(q))
+    .map(([file]) => file);
+  return { found: files.length > 0, file: files[0] ?? null, files };
 }
 
 // ------------------------------------------------------------------ SQL

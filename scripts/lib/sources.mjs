@@ -11,7 +11,10 @@ export async function loadSources(dir) {
     return { A2: {}, B3: {} };
   }
   const read = async (n) => [n, await readFile(path.join(dir, n), "utf8")];
-  const charter = names.filter((n) => n === "charter.txt" || /^charter-weitere-\d+\.txt$/.test(n));
+  // Hauptsatzung zuerst, danach die weiteren Dokumente in Zahlenreihenfolge
+  const charter = names
+    .filter((n) => n === "charter.txt" || /^charter-weitere-\d+\.txt$/.test(n))
+    .sort((a, b) => (a === "charter.txt" ? -1 : b === "charter.txt" ? 1 : parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10)));
   const tenK = names.filter((n) => n === "10k.txt");
   return {
     A2: Object.fromEntries(await Promise.all(charter.map(read))),

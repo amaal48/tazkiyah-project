@@ -15,6 +15,7 @@ const OUT = "review-work";
 const want = process.argv.slice(2).map((a) => a.toUpperCase());
 const dirs = (await readdir(OUT, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name).sort();
 let missing = 0;
+let warned = 0;
 let checked = 0;
 for (const name of dirs) {
   if (want.length && !want.includes(name)) continue;
@@ -35,8 +36,11 @@ for (const name of dirs) {
     checked++;
     const r = findQuote(c.quote, sources[key] || {});
     if (!r.found) missing++;
-    console.log(`${r.found ? "OK  " : "FEHLT"} ${name} ${key} (${c.result})${r.found ? ` in ${r.file}` : ": Zitat nicht in den Quelldateien gefunden"}`);
+    // A2: Das Zitat soll in der Hauptsatzung (charter.txt) stehen, nicht nur in einem weiteren Dokument (z. B. einer Tochtergesellschaft)
+    const onlyElsewhere = r.found && key === "A2" && !r.files.includes("charter.txt");
+    if (onlyElsewhere) warned++;
+    console.log(`${r.found ? (onlyElsewhere ? "WARN" : "OK  ") : "FEHLT"} ${name} ${key} (${c.result})${r.found ? ` in ${r.files.join(", ")}${onlyElsewhere ? "  <- NICHT in charter.txt: prüfen, ob das Dokument zum börsennotierten Unternehmen gehört" : ""}` : ": Zitat nicht in den Quelldateien gefunden"}`);
   }
 }
-console.log(`\n${checked} Zitat(e) geprüft, ${missing} nicht gefunden.`);
+console.log(`\n${checked} Zitat(e) geprüft, ${missing} nicht gefunden, ${warned} Warnung(en).`);
 process.exit(missing ? 1 : 0);

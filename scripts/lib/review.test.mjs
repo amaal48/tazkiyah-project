@@ -190,6 +190,9 @@ test("findQuote: Umbrüche, Leerraum und typografische Zeichen egal, Wortlaut ni
   assert.equal(findQuote("to engage in any lawful act or activity for which a corporation may be organized under the Company's Act.", src).found, true);
   assert.equal(findQuote("to engage in any lawful act or activity for which a corporation may be organised", src).found, false);
   assert.equal(findQuote("", src).found, false);
+  // mehrere Fundorte werden alle genannt
+  const two = findQuote("to engage in any lawful act", { "charter.txt": "x to engage in any lawful act y", "charter-weitere-2.txt": "to engage in any lawful act" });
+  assert.deepEqual(two.files, ["charter.txt", "charter-weitere-2.txt"]);
   assert.equal(normalizeForQuote("“a” – b"), '"a" - b');
 });
 
