@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, buildSlicesMarkdown, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -78,13 +78,24 @@ test("segmentSlices: nimmt die Stelle mit Zahlen in der zweiten Texthälfte", ()
   const wins = segmentSlices(text);
   assert.equal(wins.length, 1);
   assert.match(wins[0].text, /Segment Information and Geographic Data/);
-  assert.ok(revenueSlices("Net sales by category: iPhone 201,183 Services 96,169").length >= 1);
+  const rev = "Revenue by end market: Data Center 115,186 Gaming 11,350 Professional Visualization 1,878 Automotive 1,694 OEM and Other 389 ".repeat(2);
+  assert.ok(revenueSlices(rev).length >= 1);
+  // Steuertabelle mit „disaggregation“ darf nicht als Umsatz durchgehen
+  const tax = "Disaggregation of income taxes: Federal 1,234 State 2,345 Foreign 3,456 Total 7,035 8,000 9,000 ";
+  assert.equal(revenueSlices(tax).length, 0);
 });
 
 test("buildSlicesMarkdown: Abschnitte vorhanden, Satzung fehlt → klarer Hinweis", () => {
   const withCharter = buildSlicesMarkdown({ ticker: "AAPL", meta: { tenK: { url: "https://x/10k.htm" } }, tenK: "Item 1. Business Foo. ".repeat(5), charter: { url: "https://x/c.htm", text: CHARTER } });
   assert.match(withCharter, /## A2: Satzung/);
   assert.match(withCharter, /any lawful act or activity/);
+  const amend = "CERTIFICATE OF AMENDMENT. Article IV is amended to increase the authorized shares to 8,000,000,000. ARTICLE III remains unchanged.";
+  assert.equal(amendmentSlices(amend).mentionsPurpose, true);
+  const withOthers = buildSlicesMarkdown({ ticker: "NVDA", meta: {}, tenK: "x", charter: { url: "https://x/c.htm", text: CHARTER }, others: [{ file: "charter-weitere-1.txt", url: "https://x/a.htm", label: "Certificate of Amendment 2024", text: amend }] });
+  assert.match(withOthers, /Weitere Satzungsdokumente/);
+  assert.match(withOthers, /Certificate of Amendment 2024/);
+  assert.match(withOthers, /Erwähnt „purpose“ oder „Article III“: ja/);
+  assert.match(buildSlicesMarkdown({ ticker: "AAPL", meta: {}, tenK: "x", charter: { url: "u", text: CHARTER } }), /Keine weiteren Satzungsdokumente/);
   const without = buildSlicesMarkdown({ ticker: "ZZZ", meta: {}, tenK: "", charter: null });
   assert.match(without, /Satzung nicht gefunden/);
 });
@@ -92,7 +103,7 @@ test("buildSlicesMarkdown: Abschnitte vorhanden, Satzung fehlt → klarer Hinwei
 const good = () => ({
   ticker: "AAPL",
   annualPeriodEnd: "2025-09-27",
-  A2: { result: "pass", quote: "to engage in any lawful act or activity", sourceUrl: "https://x/c.htm", sourceNote: "Art. III", confidence: "high", confirmed: true },
+  A2: { result: "pass", quote: "to engage in any lawful act or activity.", sourceUrl: "https://x/c.htm", sourceNote: "Art. III", confidence: "high", confirmed: true },
   B3: { result: "unclear", quote: "", sourceUrl: "https://x/10k.htm", confidence: "low", needsHumanReview: true, reasonForReview: "Dienstleistungen enthalten Musik, nicht getrennt ausgewiesen" },
 });
 
@@ -101,8 +112,16 @@ test("validateDraft: Zitat und Quelle sind Pflicht, B3 fail braucht alle Periode
   const d = good();
   d.A2.quote = "";
   assert.ok(validateDraft(d).some((p) => /ohne wörtliches Zitat/.test(p)));
+  // Zitat mitten im Satz abgeschnitten (wie im Apple-Entwurf) wird gemeldet, gewollte Kürzung nicht
+  const cut = good();
+  cut.A2.quote = "to engage in any lawful act or activity other than the practice of a profession permitted to";
+  assert.ok(validateDraft(cut).some((p) => /mitten im Satz/.test(p)));
+  cut.A2.quoteIsPartial = true;
+  assert.deepEqual(validateDraft(cut), []);
+  cut.A2.quote = "x ".repeat(300);
+  assert.ok(validateDraft(cut).some((p) => /zu lang/.test(p)));
   const f = good();
-  f.B3 = { result: "fail", quote: "q", sourceUrl: "u", prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
+  f.B3 = { result: "fail", quote: "q.", sourceUrl: "u", prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
   assert.ok(validateDraft(f).some((p) => /vier Quartale/.test(p)));
   f.B3.prohibitedRevenueByPeriod = { "annual:2025-09-27": { music: 5 }, "quarter:2025-12-27": 1, "quarter:2026-03-28": 1, "quarter:2026-06-27": 1, "quarter:2025-09-27": 1 };
   assert.deepEqual(validateDraft(f), []);
@@ -126,7 +145,7 @@ test("draftToSql: nur Bestätigtes, Apostrophe doppelt, Wiederholung fügt nicht
   d.B3.confirmed = true;
   assert.ok(draftToSql(d, { reviewer: "x" }).skipped.some((x) => /unklar/.test(x)));
   // B3 fail ohne vollständige Beträge wird nicht ausgegeben
-  d.B3 = { result: "fail", quote: "q", sourceUrl: "u", confirmed: true, prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
+  d.B3 = { result: "fail", quote: "q.", sourceUrl: "u", confirmed: true, prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
   const r = draftToSql(d, { reviewer: "x" });
   assert.equal(r.statements.length, 1); // nur A2
   assert.ok(r.skipped.some((x) => /B3/.test(x) && /Quartale/.test(x)));
@@ -139,7 +158,7 @@ test("verificationSql und reviewSheet", () => {
   assert.match(verificationSql(["AAPL", "AAPL", "MSFT"]), /in \('AAPL', 'MSFT'\)/);
   const sheet = reviewSheet([good()]);
   assert.match(sheet, /## AAPL/);
-  assert.match(sheet, /> to engage in any lawful act or activity/);
+  assert.match(sheet, /> to engage in any lawful act or activity\./);
   assert.match(sheet, /Grenzfall-Liste/);
   assert.match(sheet, /Dienstleistungen enthalten Musik/);
   assert.match(sheet, /- \[ \] bestätigt/);

@@ -13,6 +13,7 @@
 //   meta.json        CIK, 10-K (Datum, Link), Kandidaten für die Satzung
 //   10k.txt          Volltext des 10-K
 //   charter.txt      Volltext der Satzung (falls gefunden), charter-source.json mit Link
+//   charter-weitere-N.txt  weitere Satzungsdokumente (meist Änderungsurkunden)
 //   slices.md        Textausschnitte für A2 und B3 (hier fängt die Prüfung an)
 //   fetch-log.txt    was nicht geklappt hat
 // Es werden keine Geheimwörter gebraucht und nichts in die Datenbank geschrieben.
@@ -82,33 +83,43 @@ async function processTicker(t, tickersJson) {
 
   const candidates = findCharterLinks(html, base);
   meta.charterCandidates = candidates;
-  let charter = null;
   if (!candidates.length) log.push("Im Exhibit-Index des 10-K wurde keine Zeile zur Satzung gefunden.");
-  for (const c of candidates.slice(0, 3)) {
+  // Alle Kandidaten (höchstens fünf) holen: der beste ist die Satzung, die übrigen meist Änderungsurkunden
+  let charter = null;
+  const others = [];
+  meta.charterDocs = [];
+  for (const c of candidates.slice(0, 5)) {
     try {
       const text = htmlToText(await get(c.href));
-      if (text.length < 500) {
-        log.push(`Satzungskandidat zu kurz (${text.length} Zeichen): ${c.href}`);
+      if (text.length < 300) {
+        log.push(`Satzungsdokument zu kurz (${text.length} Zeichen): ${c.href}`);
         continue;
       }
-      charter = { url: c.href, label: c.label, text };
-      break;
+      if (!charter) {
+        charter = { url: c.href, label: c.label, text };
+        meta.charterDocs.push({ file: "charter.txt", url: c.href, label: c.label, chars: text.length, role: "satzung" });
+      } else {
+        const file = `charter-weitere-${others.length + 1}.txt`;
+        await writeFile(path.join(dir, file), text);
+        others.push({ file, url: c.href, label: c.label, text });
+        meta.charterDocs.push({ file, url: c.href, label: c.label, chars: text.length, role: "weiteres" });
+      }
     } catch (e) {
-      log.push(`Satzungskandidat nicht abrufbar: ${e.message}`);
+      log.push(`Satzungsdokument nicht abrufbar: ${e.message}`);
     }
   }
   if (charter) {
     await writeFile(path.join(dir, "charter.txt"), charter.text);
     await writeFile(path.join(dir, "charter-source.json"), JSON.stringify({ url: charter.url, label: charter.label }, null, 2));
   }
-  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter }));
+  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter, others }));
   await writeFile(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
   await writeFile(path.join(dir, "fetch-log.txt"), log.join("\n") + (log.length ? "\n" : ""));
   return {
     ticker: t,
     status: "ok",
     tenK: `${meta.tenK.filingDate} (Berichtsjahr bis ${meta.tenK.reportDate})`,
-    satzung: charter ? "gefunden" : "NICHT gefunden",
+    satzung: charter ? `gefunden${others.length ? `, ${others.length} weitere Dokument(e)` : ""}` : "NICHT gefunden",
     zeichen: tenK.length,
   };
 }

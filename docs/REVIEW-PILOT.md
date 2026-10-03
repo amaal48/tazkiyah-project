@@ -51,14 +51,16 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
 
 ### Regeln für die Vorprüfung (gelten für Claude Code)
 
-- **Jedes `pass` und `fail` braucht ein wörtliches Zitat**, kurz (ein bis drei Sätze), **aus der Quelldatei kopiert**. Prüfe jedes Zitat mit `grep -F` gegen `charter.txt` bzw. `10k.txt`. Wird es nicht gefunden, darf es nicht im Entwurf stehen und das Ergebnis ist `unclear`.
+- **Jedes `pass` und `fail` braucht ein wörtliches Zitat**, kurz (höchstens 450 Zeichen), **aus der Quelldatei kopiert**. Das Zitat muss **vollständig** sein und mit einem Satzzeichen enden, nicht mitten im Satz abbrechen. Muss es gekürzt werden, bei einem Satzende schneiden. Prüfe jedes Zitat mit `grep -F` gegen `charter.txt` bzw. `10k.txt`. Wird es nicht gefunden, darf es nicht im Entwurf stehen und das Ergebnis ist `unclear`.
 - **Ein falsches „konform“ ist der teure Fehler.** Im Zweifel `unclear`.
 - **A2:**
   - `pass` nur bei eindeutiger Zweckklausel (z. B. „jede rechtmäßige Tätigkeit“ oder gleichwertig).
   - `fail`, wenn der Zweck verbotene Geschäfte oder Zinsgeschäfte nennt.
   - Satzung nicht gefunden, nur Änderungsurkunde ohne Zweckklausel oder nur per Verweis ohne Text: `unclear`.
+  - **Weitere Satzungsdokumente** (`charter-weitere-N.txt`, in `slices.md` unter „Weitere Satzungsdokumente“): Prüfe, ob sie den Zweck-Artikel ändern. Ändern sie ihn nicht (z. B. nur Aktienzahl oder Aktiensplit), schreibe das in `reasoning`. Kannst du es nicht beurteilen, setze `needsHumanReview: true`.
+  - Prüfe in `meta.json` (`charterDocs`), ob `charter.txt` die vollständige Satzung ist (nicht nur eine Änderungsurkunde), und nenne die Zeichenzahl in `reasoning`.
 - **B3 (Pilot):**
-  - `pass` nur, wenn aus den ausgewiesenen Segmenten und Produktlinien kein verbotener Anteil erkennbar ist. Alle Segmente in `segments` auflisten (Name, Umsatz, Währung, `category` = `null`).
+  - `pass` nur, wenn aus den ausgewiesenen Segmenten und Produktlinien kein verbotener Anteil erkennbar ist. Alle Segmente in `segments` auflisten (Name, `dimension`, Umsatz, Währung, `category` = `null`). Geografische Segmente, Produktkategorien und Endmärkte sind verschiedene Aufteilungen derselben Umsätze: Gib bei jedem die `dimension` an und zähle nie verschiedene Dimensionen zusammen.
   - Sieht ein Segment nach einer verbotenen Kategorie aus oder ist gemischt oder nicht aufgeschlüsselt (Beispiel Apple: Musik steckt in den Dienstleistungen): **`unclear`** mit `reasonForReview` und der vermuteten Kategorie. **Im Pilot kein B3 `fail`**, denn dafür bräuchte es Beträge für den Jahresabschluss und vier Quartale, und die klären wir bei den Grenzfällen gemeinsam.
   - Zinserträge nicht prüfen, die zählt die Engine selbst.
 - Kategorien verbotener Einnahmen: `interest_in_revenue`, `riba_other`, `derivatives`, `securities_lending`, `conventional_fund_fees`, `alcohol`, `pork`, `gambling`, `adult`, `drugs`, `tobacco`, `weapons`, `music`, `other` (siehe `src/screening/industryRules.js`).
@@ -86,7 +88,7 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
   },
   "B3": {
     "result": "pass | unclear",
-    "segments": [ { "name": "…", "revenue": 0, "currency": "USD", "category": null, "note": "" } ],
+    "segments": [ { "name": "…", "dimension": "Berichtssegment | geografisch | Produkt | Endmarkt", "revenue": 0, "currency": "USD", "category": null, "note": "" } ],
     "quote": "wörtliche Stelle zur Segmentbeschreibung",
     "sourceUrl": "Link zum 10-K",
     "sourceNote": "z. B. 10-K FY2025, Note 13, S. 52",
@@ -98,6 +100,8 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
   }
 }
 ```
+
+Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht mit einem Satzende schließt.
 
 `annualPeriodEnd` ist das Ende des Berichtsjahres des 10-K (`meta.json` → `tenK.reportDate`). In der Datenbank gilt später das Datum aus dem letzten Ergebnis der Aktie; das Skript nimmt dieses automatisch und das Datum aus dem Entwurf nur als Ersatz.
 

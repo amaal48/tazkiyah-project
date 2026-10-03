@@ -196,16 +196,37 @@ export function segmentSlices(tenK, { max = 3, length = 5000 } = {}) {
     .map((w) => ({ from: w.from, to: w.to, text: tenK.slice(w.from, w.to) }));
 }
 
-/** Umsatz nach Produkten oder Diensten (Aufschlüsselung der Erlöse). */
+/**
+ * Umsatz nach Produkten, Diensten, Endmärkten oder Segmenten. Nur Stellen mit mehreren Zahlen zählen,
+ * und „disaggregation“ nur im Zusammenhang mit Umsatz (sonst landet man bei Steuertabellen).
+ */
 export function revenueSlices(tenK, { max = 3, length = 3000 } = {}) {
-  const hits = findAll(tenK, /disaggregat\w*|net sales by (category|product)|revenues? by (product|service|type|segment)/i, 40);
-  return mergeWindows(hits.map((h) => ({ from: h.index, to: Math.min(tenK.length, h.index + length) })))
+  const hits = findAll(
+    tenK,
+    /disaggregat\w*\s+of\s+(revenues?|net\s+sales|sales)|revenues?\s+by\s+(end\s+market|market|product|service|type|segment|category)|net\s+sales\s+by\s+(category|product|segment)|segment\s+revenues?/i,
+    60
+  );
+  const wins = [];
+  for (const h of hits) {
+    const w = tenK.slice(h.index, h.index + length);
+    if ((w.match(/\d[\d,]{2,}/g) || []).length >= 5) wins.push({ from: h.index, to: Math.min(tenK.length, h.index + length) });
+  }
+  return mergeWindows(wins)
     .slice(0, max)
     .map((w) => ({ from: w.from, to: w.to, text: tenK.slice(w.from, w.to) }));
 }
 
+/** Kurzfassung eines weiteren Satzungsdokuments (meist Änderungsurkunde): Anfang und Stellen zum Zweck. */
+export function amendmentSlices(text, { head = 1200 } = {}) {
+  const hits = findAll(text, /purposes?\b|article\s+(iii|3)\b/i, 10);
+  const windows = mergeWindows(hits.map((h) => windowAt(text, h.index, 200, 500)))
+    .slice(0, 3)
+    .map((w) => ({ from: w.from, to: w.to, text: text.slice(w.from, w.to) }));
+  return { chars: text.length, head: text.slice(0, head), mentionsPurpose: hits.length > 0, windows };
+}
+
 /** Markdown mit allen Ausschnitten; die Zeichenpositionen verweisen auf die Textdateien. */
-export function buildSlicesMarkdown({ ticker, meta, tenK, charter }) {
+export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [] }) {
   const parts = [`# ${ticker}: Textausschnitte für A2 und B3`, "", `10-K: ${meta?.tenK?.url || "(nicht gefunden)"}`, ""];
   parts.push("## A2: Satzung (Zweckklausel)", "");
   if (charter?.text) {
@@ -213,6 +234,16 @@ export function buildSlicesMarkdown({ ticker, meta, tenK, charter }) {
     const wins = charterSlices(charter.text);
     if (!wins.length) parts.push("Kein Treffer für „purpose“ oder „any lawful act“ in der Satzung. Volltext: charter.txt", "");
     wins.forEach((w, i) => parts.push(`### Ausschnitt ${i + 1} (Zeichen ${w.from}–${w.to} in charter.txt)`, "", w.text, ""));
+    if (others.length) {
+      parts.push("### Weitere Satzungsdokumente (Änderungsurkunden)", "", "Prüfe, ob eines davon den Zweck-Artikel ändert. Wenn du es nicht beurteilen kannst: needsHumanReview.", "");
+      others.forEach((o, i) => {
+        const a = amendmentSlices(o.text);
+        parts.push(`#### ${i + 1}. ${o.label}`, "", `Datei: ${o.file} (${a.chars} Zeichen), Quelle: ${o.url}`, `Erwähnt „purpose“ oder „Article III“: ${a.mentionsPurpose ? "ja" : "nein"}`, "", "Anfang:", "", a.head, "");
+        a.windows.forEach((w) => parts.push(`Stelle (Zeichen ${w.from}–${w.to}):`, "", w.text, ""));
+      });
+    } else {
+      parts.push("Keine weiteren Satzungsdokumente gefunden (Änderungsurkunden sind im Exhibit-Index des 10-K nicht verlinkt).", "");
+    }
   } else {
     parts.push("Satzung nicht gefunden. Kandidaten stehen in meta.json (charterCandidates). A2 dann `unclear`.", "");
   }
@@ -255,6 +286,8 @@ export function validateDraft(d) {
     if (c.confidence && !CONFIDENCE.includes(c.confidence)) problems.push(`${key}.confidence ungültig`);
     if (c.result === "pass" || c.result === "fail") {
       if (!isText(c.quote)) problems.push(`${key}: ohne wörtliches Zitat kein ${c.result}`);
+      else if (c.quote.length > 450) problems.push(`${key}: Zitat zu lang (${c.quote.length} Zeichen, höchstens 450)`);
+      else if (!/[.!?;:”"')]\s*$/.test(c.quote.trim()) && !c.quoteIsPartial) problems.push(`${key}: Zitat endet mitten im Satz (kürzen oder vollständig zitieren; bei gewollter Kürzung quoteIsPartial: true)`);
       if (!isText(c.sourceUrl) && !isText(c.sourceNote)) problems.push(`${key}: Quelle (Link oder Fundstelle) fehlt`);
     }
   }
@@ -366,8 +399,8 @@ export function reviewSheet(drafts) {
       out.push(`Quelle: ${c.sourceUrl ?? "–"}${c.sourceNote ? ` (${c.sourceNote})` : ""}`, "");
       if (c.reasoning) out.push(`Begründung: ${c.reasoning}`, "");
       if (key === "B3" && Array.isArray(c.segments) && c.segments.length) {
-        out.push("| Segment | Umsatz | Währung | Kategorie | Hinweis |", "| --- | --- | --- | --- | --- |");
-        for (const s of c.segments) out.push(`| ${s.name ?? ""} | ${s.revenue ?? ""} | ${s.currency ?? ""} | ${s.category ?? "–"} | ${s.note ?? ""} |`);
+        out.push("| Segment | Art | Umsatz | Währung | Kategorie | Hinweis |", "| --- | --- | --- | --- | --- | --- |");
+        for (const s of c.segments) out.push(`| ${s.name ?? ""} | ${s.dimension ?? ""} | ${s.revenue ?? ""} | ${s.currency ?? ""} | ${s.category ?? "–"} | ${s.note ?? ""} |`);
         out.push("");
       }
       if (c.needsHumanReview || c.result === "unclear") {
