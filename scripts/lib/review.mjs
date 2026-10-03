@@ -31,6 +31,53 @@ function safeChar(code) {
   }
 }
 
+// Ältere EDGAR-Dokumente schreiben Anführungszeichen als &#147; und &#148; (Windows-1252). Als Unicode sind das
+// Steuerzeichen (U+0080 bis U+009F); hier werden sie in die richtigen Zeichen zurückübersetzt.
+const CP1252 = {
+  0x80: "€", 0x82: "‚", 0x83: "ƒ", 0x84: "„", 0x85: "…", 0x86: "†", 0x87: "‡", 0x88: "ˆ", 0x89: "‰", 0x8a: "Š", 0x8b: "‹", 0x8c: "Œ",
+  0x8e: "Ž", 0x91: "‘", 0x92: "’", 0x93: "“", 0x94: "”", 0x95: "•", 0x96: "–", 0x97: "—", 0x98: "˜", 0x99: "™", 0x9a: "š", 0x9b: "›",
+  0x9c: "œ", 0x9e: "ž", 0x9f: "Ÿ",
+};
+
+export function fixControlChars(t) {
+  return String(t).replace(/[\u0080-\u009f]/g, (c) => CP1252[c.charCodeAt(0)] ?? " ");
+}
+
+/** Bytes einer SEC-Datei in Text umwandeln: UTF-8, sonst Windows-1252 (oder der im Header genannte Zeichensatz). */
+export function decodeBytes(buf, contentType = "") {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  const decode = (label, fatal) => {
+    try {
+      return new TextDecoder(label, { fatal }).decode(bytes);
+    } catch {
+      return null;
+    }
+  };
+  const m = /charset=([^;\s]+)/i.exec(contentType);
+  const declared = m ? m[1].toLowerCase().replace(/^iso-8859-1$/, "windows-1252") : null;
+  if (declared && declared !== "utf-8" && declared !== "utf8") {
+    const t = decode(declared, false);
+    if (t) return t;
+  }
+  return decode("utf-8", true) ?? decode("windows-1252", false) ?? "";
+}
+
+/** Harte Zeilenumbrüche in reinem Text (z. B. 80-Zeichen-Zeilen älterer Satzungen) zu Absätzen zusammenziehen. */
+export function unwrapParagraphs(text) {
+  return String(text)
+    .replace(/\r/g, "")
+    .split(/\n[ \t]*\n+/)
+    .map((p) => p.replace(/[ \t]*\n[ \t]*/g, " ").replace(/ {2,}/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/** Ist das Dokument reiner Text mit harten Zeilenumbrüchen (kein HTML-Absatzaufbau oder <pre>)? */
+export function isHardWrapped(raw) {
+  const s = String(raw);
+  return /<pre\b/i.test(s) || !/<\s*(p|div|br|table|tr)\b/i.test(s);
+}
+
 /** HTML aus EDGAR (auch Inline-XBRL) in lesbaren Text umwandeln; Tabellenzellen werden mit " | " getrennt. */
 export function htmlToText(html) {
   let t = String(html);
@@ -40,7 +87,7 @@ export function htmlToText(html) {
   t = t.replace(/<\/(p|div|tr|li|h[1-6]|table|section)>/gi, "\n");
   t = t.replace(/<\/(td|th)>/gi, " | ");
   t = t.replace(/<[^>]+>/g, "");
-  t = decodeEntities(t);
+  t = fixControlChars(decodeEntities(t));
   t = t.replace(/[ \t\u00a0\u2009\u200b]+/g, " ");
   t = t.replace(/(\s*\|\s*){2,}/g, " | ");
   t = t
@@ -314,6 +361,31 @@ export function validateDraft(d) {
   return problems;
 }
 
+// ------------------------------------------------------------------ Zitate gegen die Quelle prüfen
+
+/** Für den Vergleich: Anführungszeichen und Striche vereinheitlichen, Leerraum zu einem Leerzeichen. */
+export function normalizeForQuote(s) {
+  return String(s)
+    .replace(/[\u2018\u2019\u02bc\u0060\u00b4]/g, "'")
+    .replace(/[\u201c\u201d\u201e]/g, '"')
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Steht das Zitat wörtlich in einer der Quellen? Zeilenumbrüche, Leerraum, Anführungszeichen und Striche
+ * werden vorher vereinheitlicht, der Wortlaut selbst muss gleich sein. `texts` = { Dateiname: Text }.
+ */
+export function findQuote(quote, texts) {
+  const q = normalizeForQuote(quote);
+  if (!q) return { found: false, file: null };
+  for (const [file, text] of Object.entries(texts)) {
+    if (normalizeForQuote(text).includes(q)) return { found: true, file };
+  }
+  return { found: false, file: null };
+}
+
 // ------------------------------------------------------------------ SQL
 
 export const sqlString = (s) => (s == null ? "null" : `'${String(s).replace(/'/g, "''")}'`);
@@ -323,7 +395,7 @@ export const sqlString = (s) => (s == null ? "null" : `'${String(s).replace(/'/g
  * Setzt die Jahresbasis automatisch aus dem letzten Ergebnis der Aktie ein; gibt es noch keins,
  * gilt das Datum aus dem Entwurf. Ein zweites Ausführen fügt nichts doppelt ein.
  */
-export function draftToSql(draft, { reviewer }) {
+export function draftToSql(draft, { reviewer, sources = null }) {
   if (!isText(reviewer)) throw new Error("reviewer fehlt");
   const problems = validateDraft(draft);
   const statements = [];
@@ -343,6 +415,13 @@ export function draftToSql(draft, { reviewer }) {
     if (own.length || !["pass", "fail"].includes(c.result)) {
       skipped.push(`${draft.ticker} ${key}: ${own.join("; ") || "ungültiges Ergebnis"}`);
       continue;
+    }
+    if (sources) {
+      const texts = sources[key] || {};
+      if (!findQuote(c.quote, texts).found) {
+        skipped.push(`${draft.ticker} ${key}: Zitat steht nicht wörtlich in den Quelldateien (check-quotes ausführen)`);
+        continue;
+      }
     }
     const details = { kiDraft: true, quote: c.quote, reasoning: c.reasoning ?? null, confidence: c.confidence ?? null };
     if (key === "B3" && c.result === "fail") details.prohibitedRevenueByPeriod = c.prohibitedRevenueByPeriod;

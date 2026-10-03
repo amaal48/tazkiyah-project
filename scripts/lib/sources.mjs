@@ -1,0 +1,20 @@
+// scripts/lib/sources.mjs — lädt die Quelltexte eines Ordners review-work/<TICKER>/ (für die Zitatprüfung)
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+
+/** A2 prüft gegen die Satzung (charter.txt, charter-weitere-N.txt), B3 gegen das 10-K (10k.txt). */
+export async function loadSources(dir) {
+  let names = [];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return { A2: {}, B3: {} };
+  }
+  const read = async (n) => [n, await readFile(path.join(dir, n), "utf8")];
+  const charter = names.filter((n) => n === "charter.txt" || /^charter-weitere-\d+\.txt$/.test(n));
+  const tenK = names.filter((n) => n === "10k.txt");
+  return {
+    A2: Object.fromEntries(await Promise.all(charter.map(read))),
+    B3: Object.fromEntries(await Promise.all(tenK.map(read))),
+  };
+}

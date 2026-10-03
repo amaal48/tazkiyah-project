@@ -3,10 +3,11 @@
 //   node scripts/review-to-sql.mjs --reviewer "KI-Entwurf (Claude), kontrolliert von <Name>"
 //   node scripts/review-to-sql.mjs --reviewer "…" AAPL MSFT      (nur diese)
 // Schreibt review-work/insert-reviews.sql. Die Datei führst du selbst im Supabase SQL Editor aus.
-// Übernommen wird nur, was in draft.json mit "confirmed": true bestätigt ist und das Ergebnis
-// pass oder fail hat. Unklares bleibt draußen (Grenzfall-Liste).
+// Übernommen wird nur, was in draft.json mit "confirmed": true bestätigt ist, das Ergebnis
+// pass oder fail hat und dessen Zitat wörtlich in den Quelldateien steht. Unklares bleibt draußen.
 
 import { readdir, readFile, writeFile } from "node:fs/promises";
+import { loadSources } from "./lib/sources.mjs";
 import path from "node:path";
 import { draftToSql, verificationSql } from "./lib/review.mjs";
 
@@ -33,7 +34,7 @@ for (const name of dirs) {
     if (e.code !== "ENOENT") skipped.push(`${name}: draft.json nicht lesbar (${e.message})`);
     continue;
   }
-  const r = draftToSql(draft, { reviewer });
+  const r = draftToSql(draft, { reviewer, sources: await loadSources(path.join(OUT, name)) });
   statements.push(...r.statements);
   skipped.push(...r.skipped);
   if (r.statements.length) tickers.push(draft.ticker);

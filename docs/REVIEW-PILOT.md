@@ -10,9 +10,10 @@ Was gebaut ist (alles in `scripts/`):
 |---|---|
 | `sec-fetch.mjs` | holt das jüngste 10-K und die Satzung von der SEC, schreibt Texte und `slices.md` nach `review-work/<TICKER>/` |
 | (Claude Code) | liest die Ausschnitte und schreibt `review-work/<TICKER>/draft.json` |
+| `check-quotes.mjs` | prüft **unabhängig von der KI**, ob jedes Zitat wörtlich in der Quelldatei steht |
 | `review-sheet.mjs` | erzeugt den Kontrollbogen `review-work/kontrollbogen.md` |
 | `review-to-sql.mjs` | erzeugt aus bestätigten Entwürfen `review-work/insert-reviews.sql` für den Supabase SQL Editor |
-| `lib/review.mjs`, `lib/review.test.mjs` | gemeinsame Funktionen und ihre Tests |
+| `lib/review.mjs`, `lib/sources.mjs`, `lib/review.test.mjs` | gemeinsame Funktionen und ihre Tests |
 
 Der Ordner `review-work/` ist nur lokal und kommt nicht nach GitHub.
 
@@ -107,13 +108,14 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
 
 ## 5. Kontrollieren
 
-1. Kontrollbogen erzeugen: `node scripts/review-sheet.mjs`
-2. `review-work/kontrollbogen.md` öffnen. Je Aktie und Prüfung:
+1. Zitate automatisch prüfen: `node scripts/check-quotes.mjs`. Jede Zeile muss mit `OK` beginnen. Bei `FEHLT` steht das Zitat nicht wörtlich in der Quelldatei, dann darf dieses Ergebnis nicht übernommen werden. Das ist eine zweite, unabhängige Prüfung neben der der KI. Zeilenumbrüche, Leerraum und typografische Anführungszeichen spielen dabei keine Rolle, der Wortlaut schon.
+2. Kontrollbogen erzeugen: `node scripts/review-sheet.mjs`
+3. `review-work/kontrollbogen.md` öffnen. Je Aktie und Prüfung:
    - Link öffnen, das Zitat im Dokument suchen (Strg+F bzw. Cmd+F).
    - Passt das Ergebnis zum Zitat? Bei B3: stimmen die Segmente mit dem Anhang des 10-K überein?
    - Grenzfälle stehen unten in einer eigenen Liste.
-3. Notiere pro Aktie die **Zeit**, die du gebraucht hast, und **jeden Fehler**, den du findest (siehe Abschnitt 7).
-4. Was du bestätigst, bekommt in `draft.json` bei der jeweiligen Prüfung `"confirmed": true`. Korrigierst du das Ergebnis, ändere `result` und notiere den Grund. Du kannst Claude Code bitten, das für dich einzutragen („Setze confirmed auf true für A2 bei NVDA, JNJ, KO“).
+4. Notiere pro Aktie die **Zeit**, die du gebraucht hast, und **jeden Fehler**, den du findest (siehe Abschnitt 7).
+5. Was du bestätigst, bekommt in `draft.json` bei der jeweiligen Prüfung `"confirmed": true`. Korrigierst du das Ergebnis, ändere `result` und notiere den Grund. Du kannst Claude Code bitten, das für dich einzutragen („Setze confirmed auf true für A2 bei NVDA, JNJ, KO“).
 
 ## 6. In die Datenbank übernehmen
 
@@ -121,7 +123,7 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
    ```
    node scripts/review-to-sql.mjs --reviewer "KI-Entwurf (Claude), kontrolliert von Vorname Nachname"
    ```
-   Übernommen wird nur Bestätigtes mit `pass` oder `fail`. Unklares bleibt draußen, die Ausgabe nennt jeden übersprungenen Eintrag.
+   Übernommen wird nur Bestätigtes mit `pass` oder `fail`, dessen Zitat wörtlich in der Quelldatei steht (dieselbe Prüfung wie `check-quotes`). Unklares und Unbelegtes bleibt draußen, die Ausgabe nennt jeden übersprungenen Eintrag.
 2. `review-work/insert-reviews.sql` öffnen, den Inhalt in den **Supabase SQL Editor** einfügen und ausführen. Ein zweites Ausführen fügt nichts doppelt ein.
 3. Die Kontrollabfrage am Ende der Datei zeigt, welche Zeilen wirklich gelandet sind. Fehlt eine Aktie, gibt es ihren Ticker in `securities` nicht (z. B. `BRK-B` gegen `BRK.B`).
 4. Status neu rechnen lassen, ohne FMP-Abrufe (im Terminal, mit dem Geheimwort aus `read -s CRON_SECRET`):

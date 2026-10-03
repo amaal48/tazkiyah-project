@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -162,4 +162,44 @@ test("verificationSql und reviewSheet", () => {
   assert.match(sheet, /Grenzfall-Liste/);
   assert.match(sheet, /Dienstleistungen enthalten Musik/);
   assert.match(sheet, /- \[ \] bestätigt/);
+});
+
+// ------------------------------------------------ Kodierung, Zeilenumbrüche, Zitatprüfung
+
+test("htmlToText: &#147; und &#148; werden zu echten Anführungszeichen", () => {
+  assert.equal(htmlToText("<p>the General Corporation Law, as amended (the &#147;Act&#148;)</p>"), "the General Corporation Law, as amended (the “Act”)");
+  assert.equal(fixControlChars("\u0093x\u0094 \u0092s \u0096"), "“x” ’s –");
+});
+
+test("decodeBytes: UTF-8, Windows-1252 und Header-Zeichensatz", () => {
+  assert.equal(decodeBytes(new TextEncoder().encode("“A” – ü")), "“A” – ü");
+  assert.equal(decodeBytes(Uint8Array.from([0x93, 0x41, 0x94, 0x20, 0x96])), "“A” –"); // ungültiges UTF-8 → Windows-1252
+  assert.equal(decodeBytes(Uint8Array.from([0x93, 0x41]), "text/html; charset=ISO-8859-1"), "“A");
+});
+
+test("unwrapParagraphs: harte Umbrüche weg, Absätze bleiben", () => {
+  const raw = "ARTICLE II. The purpose of the corporation is to engage in any\nlawful act or activity for which a corporation\nmay be organized.\n\nARTICLE III. Shares.";
+  assert.equal(unwrapParagraphs(raw), "ARTICLE II. The purpose of the corporation is to engage in any lawful act or activity for which a corporation may be organized.\n\nARTICLE III. Shares.");
+  assert.equal(isHardWrapped("plain text\nwith lines"), true);
+  assert.equal(isHardWrapped("<p>Absatz</p><p>zwei</p>"), false);
+  assert.equal(isHardWrapped("<html><pre>harte\nZeilen</pre></html>"), true);
+});
+
+test("findQuote: Umbrüche, Leerraum und typografische Zeichen egal, Wortlaut nicht", () => {
+  const src = { "charter.txt": "The purpose of this corporation is to engage in any\nlawful act or activity for which a corporation may be organized under the Company’s Act." };
+  assert.equal(findQuote("to engage in any lawful act or activity for which a corporation may be organized under the Company's Act.", src).found, true);
+  assert.equal(findQuote("to engage in any lawful act or activity for which a corporation may be organised", src).found, false);
+  assert.equal(findQuote("", src).found, false);
+  assert.equal(normalizeForQuote("“a” – b"), '"a" - b');
+});
+
+test("draftToSql mit Quellen: Zitat muss in der Quelldatei stehen", () => {
+  const d = good();
+  d.B3 = { result: "pass", quote: "Our segments are Cloud and Devices.", sourceUrl: "u", confirmed: true };
+  const sources = { A2: { "charter.txt": "ARTICLE III to engage in any lawful act or activity." }, B3: { "10k.txt": "unrelated text only" } };
+  const r = draftToSql(d, { reviewer: "x", sources });
+  assert.equal(r.statements.length, 1); // A2 ja, B3 nein
+  assert.ok(r.skipped.some((x) => /B3: Zitat steht nicht wörtlich/.test(x)));
+  sources.B3["10k.txt"] = "Note 13. Our segments are Cloud\nand Devices.";
+  assert.equal(draftToSql(d, { reviewer: "x", sources }).statements.length, 2);
 });

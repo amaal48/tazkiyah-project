@@ -20,7 +20,7 @@
 
 import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
-import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, htmlToText, buildSlicesMarkdown } from "./lib/review.mjs";
+import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, htmlToText, buildSlicesMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
 
 const UA = process.env.SEC_USER_AGENT || "";
 const args = process.argv.slice(2);
@@ -48,7 +48,10 @@ async function get(url, asJson = false) {
     if (wait) await sleep(wait);
     last = Date.now();
     const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "*/*" } });
-    if (res.ok) return asJson ? res.json() : res.text();
+    if (res.ok) {
+      if (asJson) return res.json();
+      return decodeBytes(await res.arrayBuffer(), res.headers.get("content-type") || "");
+    }
     if ((res.status === 429 || res.status >= 500) && attempt < 3) {
       await sleep(2000 * attempt);
       continue;
@@ -90,7 +93,9 @@ async function processTicker(t, tickersJson) {
   meta.charterDocs = [];
   for (const c of candidates.slice(0, 5)) {
     try {
-      const text = htmlToText(await get(c.href));
+      const raw = await get(c.href);
+      let text = htmlToText(raw);
+      if (isHardWrapped(raw)) text = unwrapParagraphs(text); // alte Satzungen: harte Zeilenumbrüche zu Absätzen
       if (text.length < 300) {
         log.push(`Satzungsdokument zu kurz (${text.length} Zeichen): ${c.href}`);
         continue;
