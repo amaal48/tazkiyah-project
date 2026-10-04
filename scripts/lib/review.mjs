@@ -129,6 +129,25 @@ export function pickLatest10K(submissions) {
   return best;
 }
 
+/** 8-K-Meldungen mit Item 5.03 (Änderung der Satzung) nach einem Stichtag, jüngste zuerst. */
+export function findLaterCharterChanges(submissions, afterDate) {
+  const r = submissions?.filings?.recent;
+  if (!r || !Array.isArray(r.form) || !Array.isArray(r.items)) return [];
+  const out = [];
+  for (let i = 0; i < r.form.length; i++) {
+    if (!String(r.form[i]).startsWith("8-K")) continue;
+    if (!/(^|,)\s*5\.03\s*(,|$)/.test(String(r.items[i] ?? ""))) continue;
+    if (!(r.filingDate[i] > afterDate)) continue;
+    out.push({
+      accession: r.accessionNumber[i],
+      accessionNoDashes: String(r.accessionNumber[i]).replace(/-/g, ""),
+      filingDate: r.filingDate[i],
+      primaryDocument: r.primaryDocument[i],
+    });
+  }
+  return out.sort((a, b) => (a.filingDate < b.filingDate ? 1 : -1));
+}
+
 export function filingBaseUrl(cik, accessionNoDashes) {
   return `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accessionNoDashes}/`;
 }
@@ -273,7 +292,7 @@ export function amendmentSlices(text, { head = 1200 } = {}) {
 }
 
 /** Markdown mit allen Ausschnitten; die Zeichenpositionen verweisen auf die Textdateien. */
-export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [] }) {
+export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [], laterChanges = [] }) {
   const parts = [`# ${ticker}: Textausschnitte für A2 und B3`, "", `10-K: ${meta?.tenK?.url || "(nicht gefunden)"}`, ""];
   parts.push("## A2: Satzung (Zweckklausel)", "");
   if (charter?.text) {
@@ -293,6 +312,26 @@ export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [] }
     }
   } else {
     parts.push("Satzung nicht gefunden. Kandidaten stehen in meta.json (charterCandidates). A2 dann `unclear`.", "");
+  }
+  if (laterChanges.length) {
+    parts.push(
+      "### ACHTUNG: Satzungsänderungen NACH dem 10-K (8-K, Item 5.03)",
+      "",
+      "Die oben gezeigte Satzung kann veraltet sein. Lies diese Meldungen und prüfe, ob der Zweck-Artikel berührt wird. Gilt die neuere Satzung, zitiere aus ihr und nenne sie als Quelle. Kannst du es nicht beurteilen: needsHumanReview.",
+      ""
+    );
+    laterChanges.forEach((c, i) => {
+      parts.push(`#### ${i + 1}. Eingereicht am ${c.filingDate}`, "", `Datei: ${c.file}, Quelle: ${c.url}`, "");
+      const m = /item\s*5\.03/i.exec(c.text || "");
+      if (m) parts.push("Text zu Item 5.03:", "", c.text.slice(m.index, m.index + 1200), "");
+      if (c.exhibit) {
+        parts.push(`Anlage (Satzung bzw. Änderungsurkunde): ${c.exhibit.file}, Quelle: ${c.exhibit.url}`, "");
+        const wins = charterSlices(c.exhibit.text, { max: 3 });
+        wins.forEach((w) => parts.push(w.text, ""));
+      }
+    });
+  } else if (charter?.text) {
+    parts.push("Keine Satzungsänderung nach dem 10-K gemeldet (8-K Item 5.03).", "");
   }
   parts.push("## B3: Geschäftsbeschreibung (Item 1)", "");
   const biz = tenK ? businessSlice(tenK) : null;
@@ -361,6 +400,28 @@ export function validateDraft(d) {
   return problems;
 }
 
+// ------------------------------------------------------------------ Summenprüfung der Segmente
+
+/**
+ * Jede vollständig erfasste Aufteilung (Berichtssegment, Produkt, Endmarkt, geografisch) muss zusammen den
+ * Gesamtumsatz ergeben. Stimmen zwei vollständige Aufteilungen auf 1 % überein, ist die Tabelle sehr
+ * wahrscheinlich richtig gelesen. status: ok | mismatch | insufficient (weniger als zwei vollständige Aufteilungen).
+ */
+export function checkSegmentSums(draft, tolerance = 0.01) {
+  const segs = draft?.B3?.segments;
+  if (!Array.isArray(segs) || !segs.length) return { status: "insufficient", groups: [] };
+  const by = {};
+  for (const sg of segs) (by[sg.dimension || "unbekannt"] ||= []).push(sg);
+  const groups = Object.entries(by)
+    .filter(([, items]) => items.length >= 2 && items.every((i) => typeof i.revenue === "number"))
+    .map(([dimension, items]) => ({ dimension, sum: items.reduce((a, i) => a + i.revenue, 0) }));
+  if (groups.length < 2) return { status: "insufficient", groups };
+  const ref = Math.max(...groups.map((g) => Math.abs(g.sum)));
+  const deviations = groups.map((g) => ({ dimension: g.dimension, deviation: ref ? Math.abs(g.sum - ref) / ref : 0 }));
+  const bad = deviations.filter((d) => d.deviation > tolerance);
+  return { status: bad.length ? "mismatch" : "ok", groups, deviations };
+}
+
 // ------------------------------------------------------------------ Zitate gegen die Quelle prüfen
 
 /** Für den Vergleich: Anführungszeichen und Striche vereinheitlichen, Leerraum zu einem Leerzeichen. */
@@ -414,6 +475,10 @@ export function draftToSql(draft, { reviewer, sources = null }) {
     const own = problems.filter((p) => p.startsWith(key));
     if (own.length || !["pass", "fail"].includes(c.result)) {
       skipped.push(`${draft.ticker} ${key}: ${own.join("; ") || "ungültiges Ergebnis"}`);
+      continue;
+    }
+    if (key === "B3" && c.result === "pass" && checkSegmentSums(draft).status === "mismatch") {
+      skipped.push(`${draft.ticker} B3: Segmentsummen stimmen nicht überein (check-quotes zeigt Einzelheiten)`);
       continue;
     }
     if (sources) {

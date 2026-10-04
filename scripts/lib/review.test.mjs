@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -205,4 +205,47 @@ test("draftToSql mit Quellen: Zitat muss in der Quelldatei stehen", () => {
   assert.ok(r.skipped.some((x) => /B3: Zitat steht nicht wörtlich/.test(x)));
   sources.B3["10k.txt"] = "Note 13. Our segments are Cloud\nand Devices.";
   assert.equal(draftToSql(d, { reviewer: "x", sources }).statements.length, 2);
+});
+
+// ------------------------------------------------ spätere Satzungsänderungen, Summenprüfung
+
+test("findLaterCharterChanges: nur 8-K mit Item 5.03 nach dem Stichtag", () => {
+  const subs = { filings: { recent: {
+    form: ["8-K", "8-K", "10-K", "8-K/A", "8-K"],
+    items: ["5.03,9.01", "2.02", "", "5.03", "5.07,5.03"],
+    accessionNumber: ["0000354950-26-000105", "0000354950-26-000090", "0001628280-26-019436", "0000354950-26-000110", "0000354950-25-000050"],
+    filingDate: ["2026-05-22", "2026-05-01", "2026-03-18", "2026-06-02", "2025-06-01"],
+    primaryDocument: ["a.htm", "b.htm", "k.htm", "c.htm", "d.htm"],
+  } } };
+  const r = findLaterCharterChanges(subs, "2026-03-18");
+  assert.deepEqual(r.map((x) => x.filingDate), ["2026-06-02", "2026-05-22"]); // jüngste zuerst; 2.02 und alte Meldung draußen
+  assert.deepEqual(findLaterCharterChanges({ filings: { recent: { form: ["8-K"] } } }, "2026-01-01"), []);
+  const md = buildSlicesMarkdown({ ticker: "HD", meta: {}, tenK: "x", charter: { url: "u", text: CHARTER }, laterChanges: [{ filingDate: "2026-05-22", url: "https://x/8k.htm", file: "charter-spaeter-1.txt", text: "Item 5.03 Amendments to Articles. The Restated Certificate was filed.", exhibit: { url: "https://x/ex.htm", file: "charter-spaeter-1-anlage.txt", text: CHARTER } }] });
+  assert.match(md, /ACHTUNG: Satzungsänderungen NACH dem 10-K/);
+  assert.match(md, /Restated Certificate was filed/);
+  assert.match(md, /any lawful act or activity/);
+});
+
+test("checkSegmentSums: gleiche Summen ok, Abweichung und Lücken erkannt", () => {
+  const mk = (a, b) => ({ B3: { segments: [
+    { name: "A", dimension: "Berichtssegment", revenue: a[0] }, { name: "B", dimension: "Berichtssegment", revenue: a[1] },
+    { name: "X", dimension: "Endmarkt", revenue: b[0] }, { name: "Y", dimension: "Endmarkt", revenue: b[1] },
+  ] } });
+  assert.equal(checkSegmentSums(mk([193479, 22459], [193737, 22201])).status, "ok");  // 215938 = 215938
+  assert.equal(checkSegmentSums(mk([100, 50], [100, 20])).status, "mismatch");
+  assert.equal(checkSegmentSums(mk([100, 50], [100, 49.9])).status, "ok");             // innerhalb 1 %
+  // Berichtssegmente ohne Umsatz (wie bei BRK-B) zählen nicht
+  const gap = mk([null, null], [100, 50]);
+  assert.equal(checkSegmentSums(gap).status, "insufficient");
+  assert.equal(checkSegmentSums({}).status, "insufficient");
+});
+
+test("draftToSql: B3 pass mit falschen Segmentsummen wird nicht übernommen", () => {
+  const d = good();
+  d.B3 = { result: "pass", quote: "Segmente.", sourceUrl: "u", confirmed: true, segments: [
+    { name: "A", dimension: "Berichtssegment", revenue: 100 }, { name: "B", dimension: "Berichtssegment", revenue: 50 },
+    { name: "X", dimension: "Endmarkt", revenue: 100 }, { name: "Y", dimension: "Endmarkt", revenue: 20 } ] };
+  const r = draftToSql(d, { reviewer: "x" });
+  assert.equal(r.statements.length, 1);
+  assert.ok(r.skipped.some((x) => /Segmentsummen/.test(x)));
 });

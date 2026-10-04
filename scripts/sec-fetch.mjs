@@ -20,7 +20,7 @@
 
 import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
-import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, htmlToText, buildSlicesMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
+import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, findLaterCharterChanges, htmlToText, buildSlicesMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
 
 const UA = process.env.SEC_USER_AGENT || "";
 const args = process.argv.slice(2);
@@ -117,7 +117,30 @@ async function processTicker(t, tickersJson) {
     await writeFile(path.join(dir, "charter.txt"), charter.text);
     await writeFile(path.join(dir, "charter-source.json"), JSON.stringify({ url: charter.url, label: charter.label }, null, 2));
   }
-  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter, others }));
+  // Satzungsänderungen, die NACH dem 10-K gemeldet wurden (8-K Item 5.03): das 10-K kennt sie noch nicht
+  const laterChanges = [];
+  for (const c of findLaterCharterChanges(subs, k.filingDate).slice(0, 3)) {
+    const n = laterChanges.length + 1;
+    const url = filingBaseUrl(hit.cik, c.accessionNoDashes) + c.primaryDocument;
+    try {
+      const raw = await get(url);
+      const entry = { filingDate: c.filingDate, url, file: `charter-spaeter-${n}.txt`, text: htmlToText(raw) };
+      await writeFile(path.join(dir, entry.file), entry.text);
+      const ex = findCharterLinks(raw, filingBaseUrl(hit.cik, c.accessionNoDashes))[0];
+      if (ex) {
+        const exRaw = await get(ex.href);
+        let exText = htmlToText(exRaw);
+        if (isHardWrapped(exRaw)) exText = unwrapParagraphs(exText);
+        entry.exhibit = { url: ex.href, file: `charter-spaeter-${n}-anlage.txt`, text: exText };
+        await writeFile(path.join(dir, entry.exhibit.file), exText);
+      }
+      laterChanges.push(entry);
+    } catch (e) {
+      log.push(`Spätere Satzungsänderung (${c.filingDate}) nicht abrufbar: ${e.message}`);
+    }
+  }
+  meta.charterChangesAfter10K = laterChanges.map((c) => ({ filingDate: c.filingDate, url: c.url, exhibit: c.exhibit?.url ?? null }));
+  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter, others, laterChanges }));
   await writeFile(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
   await writeFile(path.join(dir, "fetch-log.txt"), log.join("\n") + (log.length ? "\n" : ""));
   return {
@@ -126,6 +149,7 @@ async function processTicker(t, tickersJson) {
     tenK: `${meta.tenK.filingDate} (Berichtsjahr bis ${meta.tenK.reportDate})`,
     satzung: charter ? `gefunden${others.length ? `, ${others.length} weitere Dokument(e)` : ""}` : "NICHT gefunden",
     zeichen: tenK.length,
+    spaeter: laterChanges.length,
   };
 }
 
@@ -143,5 +167,5 @@ for (const t of tickers) {
   }
 }
 console.log("\nZusammenfassung:");
-for (const r of rows) console.log(`- ${r.ticker}: ${r.status}${r.tenK ? `, 10-K ${r.tenK}, Satzung ${r.satzung}, ${r.zeichen} Zeichen` : ""}`);
+for (const r of rows) console.log(`- ${r.ticker}: ${r.status}${r.tenK ? `, 10-K ${r.tenK}, Satzung ${r.satzung}, ${r.zeichen} Zeichen${r.spaeter ? `, ACHTUNG: ${r.spaeter} Satzungsänderung(en) nach dem 10-K` : ""}` : ""}`);
 console.log(`\nDateien liegen in ${OUT}/<TICKER>/ (slices.md ist der Einstieg).`);
