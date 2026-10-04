@@ -70,6 +70,12 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
 - Den Standardtext der AAOIFI nicht abdrucken. Zitate nur aus den Unternehmensunterlagen.
 - `confirmed` bleibt `false` oder fehlt. Das setze ich nach meiner Kontrolle selbst (oder bitte Claude Code darum).
 
+### B3-Linie: strenge Auslegung (Stand 04.10.2026)
+- Entscheidung von Amaal Ibrahim. Auslegung, keine Fatwa.
+- Regel: Betreibt ein Unternehmen laut 10-K ein eigenes Geschäft, das verbotene Erträge enthalten kann (Kundenkredit, Finanzierungs- oder Kartenprogramme, Alkohol, Musik usw.), und werden diese Erträge nicht ausgewiesen, ist B3 unclear. Eigene Zinserträge aus Geldanlagen zählt die Engine selbst, sie führen nicht zu unclear.
+- Nicht eingeführt: eine Obergrenzen-Regel (Abschätzung aus ausgewiesenem Bestand mal Zinssatz). Sie bleibt als Option für die Gegenlesung durch eine fachkundige Person.
+- Folge im Pilot: HD, MSFT, KO, AAPL, AMZN, GOOGL und DIS stehen bei B3 auf unclear.
+
 ## 4. Format von `draft.json`
 
 ```json
@@ -143,7 +149,7 @@ Pro Aktie festhalten und mir schicken:
 | Ticker | A2 | B3 | Grenzfall? | Fehler der KI | Zeit (Min.) |
 |---|---|---|---|---|---|
 
-**Ergebnis (Stand 04.10.2026):** Pilot (10 Aktien, 20 Prüfungen): A2 ohne inhaltlichen Fehler, eine veraltete Quelle (HD, Satzung von 2026). B3: zwei falsche pass (KO: Alkoholgeschäft, HD: Kredit an Kunden), beide erst durch die Stichwort-Suche gefunden, auch die Zweitlesung hatte sie übersehen. Folge: Stichwort-Suche und Summenprüfung sind Pflicht vor jedem B3 pass.
+**Ergebnis (Stand 04.10.2026):** Pilot (10 Aktien, 20 Prüfungen): A2 ohne inhaltlichen Fehler, eine veraltete Quelle (HD, Satzung von 2026). B3: zwei falsche pass (KO: Alkoholgeschäft, HD: Kredit an Kunden), beide erst durch die Stichwort-Suche gefunden, auch die Zweitlesung hatte sie übersehen. Folge: Stichwort-Suche und Summenprüfung sind Pflicht vor jedem B3 pass. Stand nach der B3-Linie: Nur NVDA und JNJ sind bei A2 und B3 gelöst (je pass). Bei MSFT wurde das eigene Finanzierungsprogramm erst durch die Stichwort-Suche v3.4 sichtbar.
 
 Daraus entscheiden wir:
 - **Zeit pro Aktie** und damit der Aufwand für den großen Lauf.

@@ -210,7 +210,13 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 
 **B3-Regel Stichwort-Treffer (Entscheidung 04.10.2026):** Behaupte nie, etwas stehe nicht im 10-K, ohne es mit keyword-hits.md oder grep geprüft zu haben. Jeder Treffer in keyword-hits.md ist vor einem B3 pass zu bewerten; betrifft er ein eigenes Geschäft des Unternehmens, ist das Ergebnis unclear (oder fail, wenn die Beträge vorliegen). Fund aus dem Pilot: Der KO-Entwurf behauptete fälschlich, Alkohol werde im 10-K nicht erwähnt. Werkzeug: `node scripts/keyword-scan.mjs` schreibt je Aktie `review-work/<TICKER>/keyword-hits.md`.
 
-**A2/B3-Pilot, Ergebnis (04.10.2026):** Pilot (10 Aktien, 20 Prüfungen): A2 ohne inhaltlichen Fehler, eine veraltete Quelle (HD, Satzung von 2026). B3: zwei falsche pass (KO: Alkoholgeschäft, HD: Kredit an Kunden), beide erst durch die Stichwort-Suche gefunden, auch die Zweitlesung hatte sie übersehen. Folge: Stichwort-Suche und Summenprüfung sind Pflicht vor jedem B3 pass.
+### B3-Linie: strenge Auslegung (Stand 04.10.2026)
+- Entscheidung von Amaal Ibrahim. Auslegung, keine Fatwa.
+- Regel: Betreibt ein Unternehmen laut 10-K ein eigenes Geschäft, das verbotene Erträge enthalten kann (Kundenkredit, Finanzierungs- oder Kartenprogramme, Alkohol, Musik usw.), und werden diese Erträge nicht ausgewiesen, ist B3 unclear. Eigene Zinserträge aus Geldanlagen zählt die Engine selbst, sie führen nicht zu unclear.
+- Nicht eingeführt: eine Obergrenzen-Regel (Abschätzung aus ausgewiesenem Bestand mal Zinssatz). Sie bleibt als Option für die Gegenlesung durch eine fachkundige Person.
+- Folge im Pilot: HD, MSFT, KO, AAPL, AMZN, GOOGL und DIS stehen bei B3 auf unclear.
+
+**A2/B3-Pilot, Ergebnis (04.10.2026):** Pilot (10 Aktien, 20 Prüfungen): A2 ohne inhaltlichen Fehler, eine veraltete Quelle (HD, Satzung von 2026). B3: zwei falsche pass (KO: Alkoholgeschäft, HD: Kredit an Kunden), beide erst durch die Stichwort-Suche gefunden, auch die Zweitlesung hatte sie übersehen. Folge: Stichwort-Suche und Summenprüfung sind Pflicht vor jedem B3 pass. Stand nach der B3-Linie: Nur NVDA und JNJ sind bei A2 und B3 gelöst (je pass). Bei MSFT wurde das eigene Finanzierungsprogramm erst durch die Stichwort-Suche v3.4 sichtbar.
 
 **Datenversion (02.10.):** `INPUT_DATA_VERSION` (runner.js) = Stand der Datenaufbereitung; Ergebnisse mit älterem Stand (`inputs.dataVersion`, ersatzweise Feld `multiClassIssuer` = Version 2) werden einmal neu abgerufen, auch innerhalb der 7-Tage-Sperre. Grund: die 28 Titel vom 30.09. hatten keine Marktkapitalisierung und wären sonst bis ca. Mitte November nicht neu abgerufen worden. Bei Änderungen, die gespeicherte Eingangsdaten entwerten, hochzählen.
 
