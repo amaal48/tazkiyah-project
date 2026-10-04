@@ -274,3 +274,10 @@ test("reviewSheet und slices zeigen die Stichwort-Treffer", () => {
   assert.match(md, /Treffer: alcohol 9/);
   assert.match(md, /macht aus pass ein unclear/);
 });
+
+test("keywordHits: Procter & Gamble ist kein Glücksspiel, Kredit an Kunden und Zinserträge werden gefunden", () => {
+  const h = keywordHits("Director at Procter & Gamble. Customer receivables relate to credit extended directly to certain customers. Interest and dividends income was $2,000. We expect to expand our Pro Trade Credit program. Casino revenue grew.");
+  assert.equal(h.gambling.count, 1); // nur "Casino"
+  assert.ok(h.interest_financial.count >= 3); // customer receivables, credit extended, interest and dividends income, ...
+  assert.equal(keywordHits("Procter and Gamble and the gambling industry").gambling.count, 1);
+});

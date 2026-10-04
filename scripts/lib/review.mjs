@@ -420,11 +420,14 @@ export const KEYWORD_CATEGORIES = {
   music: /\b(music|record labels?|songs?)\b/gi,
   cannabis: /\b(cannabis|marijuana|hemp)\b/gi,
   weapons: /\b(firearms?|ammunition|weapons?)\b/gi,
-  interest_financial: /\b(interest income|credit cards?|co-brand\w*|finance charges|underwriting|reinsurance|insurance premiums?|consumer lending)\b/gi,
+  interest_financial: /\b(interest (?:and dividends? )?income|credit cards?|co-brand\w*|finance (?:charges?|receivables|income)|financing receivables|underwriting|reinsurance|insurance premiums?|consumer lending|trade credit|customer receivables|credit (?:extended|programs?)|buy now,? pay later|installment (?:loans?|plans?|contracts?))\b/gi,
 };
 
+// Bekannte Fehltreffer: Text direkt VOR dem Treffer, der ihn ausschließt (z. B. Procter & Gamble)
+const KEYWORD_EXCLUDE = { gambling: /procter\s*(?:&|&amp;|and)\s*$/i };
+
 /** Zählt Treffer je Kategorie und merkt sich einige Fundstellen mit Umgebung. */
-export function keywordHits(text, { maxContexts = 5, context = 160 } = {}) {
+export function keywordHits(text, { maxContexts = 10, context = 160 } = {}) {
   const t = String(text);
   const out = {};
   for (const [cat, re] of Object.entries(KEYWORD_CATEGORIES)) {
@@ -432,6 +435,7 @@ export function keywordHits(text, { maxContexts = 5, context = 160 } = {}) {
     let count = 0;
     let lastEnd = -1;
     for (const m of t.matchAll(new RegExp(re.source, re.flags))) {
+      if (KEYWORD_EXCLUDE[cat]?.test(t.slice(Math.max(0, m.index - 30), m.index))) continue;
       count++;
       if (contexts.length < maxContexts && m.index > lastEnd) {
         const from = Math.max(0, m.index - context);
