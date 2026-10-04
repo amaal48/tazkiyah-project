@@ -55,6 +55,7 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
 - **Jedes `pass` und `fail` braucht ein wörtliches Zitat**, kurz (höchstens 450 Zeichen), **aus der Quelldatei kopiert**. Das Zitat muss **vollständig** sein und mit einem Satzzeichen enden, nicht mitten im Satz abbrechen. Muss es gekürzt werden, bei einem Satzende schneiden. Prüfe jedes Zitat mit `grep -F` gegen `charter.txt` bzw. `10k.txt`. Wird es nicht gefunden, darf es nicht im Entwurf stehen und das Ergebnis ist `unclear`.
 - **Ein falsches „konform“ ist der teure Fehler.** Im Zweifel `unclear`.
 - **A2:**
+  - **Auslegungsregel (Stand 04.10.2026):** A2 prüft, ob die Satzung verbotene Geschäfte ausdrücklich zum Zweck macht (z. B. Bank-, Versicherungs-, Glücksspiel- oder Alkoholgeschäft als genannter Unternehmenszweck). Eine allgemeine Zweckklausel („jede rechtmäßige Tätigkeit“) oder eine Aufzählung allgemeiner Befugnisse (z. B. Wertpapiere halten, Schuldtitel ausgeben, Herstellungsverben wie „destillieren“ in einer allgemeinen Warenliste) gilt als pass. Ob das Geschäft selbst erlaubt ist, prüfen die anderen Kriterien.
   - `pass` nur bei eindeutiger Zweckklausel (z. B. „jede rechtmäßige Tätigkeit“ oder gleichwertig).
   - `fail`, wenn der Zweck verbotene Geschäfte oder Zinsgeschäfte nennt.
   - Satzung nicht gefunden, nur Änderungsurkunde ohne Zweckklausel oder nur per Verweis ohne Text: `unclear`.
