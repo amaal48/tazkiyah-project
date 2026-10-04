@@ -143,6 +143,8 @@ Pro Aktie festhalten und mir schicken:
 | Ticker | A2 | B3 | Grenzfall? | Fehler der KI | Zeit (Min.) |
 |---|---|---|---|---|---|
 
+**Ergebnis (Stand 04.10.2026):** Pilot (10 Aktien, 20 Prüfungen): A2 ohne inhaltlichen Fehler, eine veraltete Quelle (HD, Satzung von 2026). B3: zwei falsche pass (KO: Alkoholgeschäft, HD: Kredit an Kunden), beide erst durch die Stichwort-Suche gefunden, auch die Zweitlesung hatte sie übersehen. Folge: Stichwort-Suche und Summenprüfung sind Pflicht vor jedem B3 pass.
+
 Daraus entscheiden wir:
 - **Zeit pro Aktie** und damit der Aufwand für den großen Lauf.
 - **Anteil der Grenzfälle** (`unclear`).
