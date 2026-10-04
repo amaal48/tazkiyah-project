@@ -63,6 +63,12 @@ Stand: 02.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 7. **Danach (Schritt 3):** Portfolio mit eigenen Positionen und Reinheit, Watchlist-Hinweise bei Statuswechsel (Tabelle `user_notifications`), Vergleich/Sektoren/Kalender auf den neuen Stand, Reinigung und Zakat anzeigen (brauchen B3), ISWD vollständig (Universum um ausländische Titel erweitern, mit Bezahltarif).
 - Offene Auslegungsfragen: B3-Prüffrequenz (jährlich oder pro Quartalsbericht), Behandlung unklarer Segmente (aktuell „nicht geprüft“), Operating-Leasing als Schuld (aktuell ja), Gültigkeit von A2 (aktuell jährlich).
 
+**Vor dem öffentlichen Start:**
+1. Fundstellen (Abschnittsnummern der AAOIFI-Standards SS 21, 27, 35) gegen den Standardtext prüfen.
+2. Alle Auslegungsentscheidungen von einer fachkundigen Person gegenlesen lassen.
+3. Wortlaut auf der Seite prüfen: nicht „AAOIFI-konform“ oder „halal“, sondern „geprüft nach den Kriterien von AAOIFI SS 21, mit offengelegten Auslegungen“, dazu der Hinweis, dass es keine Fatwa und keine Anlageberatung ist.
+4. Methodik-Seite (`#/methodik`) nennt alle Auslegungen sichtbar.
+
 **Übrige offene Punkte (unverändert):**
 - Backup-Strategie (Supabase Free vs. Pro / `pg_dump`)
 - E-Mail ändern mit Bestätigung, Versand-Provider (Supabase vs. Resend/Postmark), gebrandete E-Mail-Templates
