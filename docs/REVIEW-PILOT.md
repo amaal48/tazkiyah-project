@@ -56,9 +56,9 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
 - **Ein falsches „konform“ ist der teure Fehler.** Im Zweifel `unclear`.
 - **A2:**
   - **Auslegungsregel (Stand 04.10.2026):** A2 prüft, ob die Satzung verbotene Geschäfte ausdrücklich zum Zweck macht (z. B. Bank-, Versicherungs-, Glücksspiel- oder Alkoholgeschäft als genannter Unternehmenszweck). Eine allgemeine Zweckklausel („jede rechtmäßige Tätigkeit“) oder eine Aufzählung allgemeiner Befugnisse (z. B. Wertpapiere halten, Schuldtitel ausgeben, Herstellungsverben wie „destillieren“ in einer allgemeinen Warenliste) gilt als pass. Ob das Geschäft selbst erlaubt ist, prüfen die anderen Kriterien.
-  - `pass` nur bei eindeutiger Zweckklausel (z. B. „jede rechtmäßige Tätigkeit“ oder gleichwertig).
-  - `fail`, wenn der Zweck verbotene Geschäfte oder Zinsgeschäfte nennt.
-  - Satzung nicht gefunden, nur Änderungsurkunde ohne Zweckklausel oder nur per Verweis ohne Text: `unclear`.
+  - `pass`, wenn die Satzung kein verbotenes Geschäft ausdrücklich zum Unternehmenszweck macht. Das gilt für eine allgemeine Zweckklausel („jede rechtmäßige Tätigkeit“ oder gleichwertig) ebenso wie für eine Aufzählung von Zwecken und allgemeinen Befugnissen (siehe Auslegungsregel).
+  - `fail`, wenn die Satzung ein verbotenes Geschäft (z. B. Bank-, Versicherungs-, Zins-, Glücksspiel- oder Alkoholgeschäft) ausdrücklich als Unternehmenszweck nennt.
+  - `unclear` nur, wenn die Satzung nicht gefunden wurde, nur eine Änderungsurkunde ohne Zweckklausel oder nur ein Verweis ohne Text vorliegt, oder wenn sich nicht erkennen lässt, ob ein verbotenes Geschäft als Unternehmenszweck oder nur als allgemeine Befugnis genannt ist. Für A2 ist das der Zweifelsfall im Sinne von „Im Zweifel `unclear`“.
   - **Weitere Satzungsdokumente** (`charter-weitere-N.txt`, in `slices.md` unter „Weitere Satzungsdokumente“): Prüfe, ob sie den Zweck-Artikel ändern. Ändern sie ihn nicht (z. B. nur Aktienzahl oder Aktiensplit), schreibe das in `reasoning`. Kannst du es nicht beurteilen, setze `needsHumanReview: true`.
   - Prüfe in `meta.json` (`charterDocs`), ob `charter.txt` die vollständige Satzung ist (nicht nur eine Änderungsurkunde), und nenne die Zeichenzahl in `reasoning`.
 - **B3 (Pilot):**
