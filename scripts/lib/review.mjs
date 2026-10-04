@@ -292,7 +292,7 @@ export function amendmentSlices(text, { head = 1200 } = {}) {
 }
 
 /** Markdown mit allen Ausschnitten; die Zeichenpositionen verweisen auf die Textdateien. */
-export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [], laterChanges = [] }) {
+export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [], laterChanges = [], keywordCounts: kc = null }) {
   const parts = [`# ${ticker}: Textausschnitte für A2 und B3`, "", `10-K: ${meta?.tenK?.url || "(nicht gefunden)"}`, ""];
   parts.push("## A2: Satzung (Zweckklausel)", "");
   if (charter?.text) {
@@ -344,6 +344,10 @@ export function buildSlicesMarkdown({ ticker, meta, tenK, charter, others = [], 
   const revs = tenK ? revenueSlices(tenK) : [];
   if (!revs.length) parts.push("Keine passende Stelle gefunden.", "");
   revs.forEach((w, i) => parts.push(`### Umsatzausschnitt ${i + 1} (Zeichen ${w.from}–${w.to} in 10k.txt)`, "", w.text, ""));
+  if (kc) {
+    const hit = Object.entries(kc).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`);
+    parts.push("## B3: Stichwort-Treffer zu verbotenen Kategorien", "", hit.length ? `Treffer: ${hit.join(", ")}. Einzelheiten mit Fundstellen: keyword-hits.md. Lies sie vor jedem B3 pass. Ein Treffer, der ein eigenes Geschäft des Unternehmens betrifft, macht aus pass ein unclear (oder fail, wenn die Beträge vorliegen).` : "Keine Treffer in keiner Kategorie.", "");
+  }
   return parts.join("\n");
 }
 
@@ -398,6 +402,71 @@ export function validateDraft(d) {
     }
   }
   return problems;
+}
+
+// ------------------------------------------------------------------ Stichwörter zu verbotenen Kategorien
+
+/**
+ * Suchwörter je Kategorie verbotener Einnahmen (englisch, wie im 10-K). „nonalcoholic“ zählt nicht.
+ * Die Treffer sind Hinweise, keine Urteile: oft stehen die Wörter in Risikofaktoren. Entscheidend ist,
+ * ob das Unternehmen selbst solche Geschäfte betreibt. Gedacht gegen die Behauptung „steht nicht im 10-K“.
+ */
+export const KEYWORD_CATEGORIES = {
+  alcohol: /\b(?<!non-)(alcohol\w*|beer|wine|spirits|liquor|whisk(?:e)?y|vodka|brew(?:ery|eries|ing)|distill\w*)\b/gi,
+  gambling: /\b(gambl\w*|casinos?|betting|sportsbooks?|wager\w*|lotter(?:y|ies)|igaming|slot machines?)\b/gi,
+  tobacco: /\b(tobacco|cigarettes?|cigars?|vaping|e-cigarettes?)\b/gi,
+  pork: /\b(pork|bacon|swine)\b/gi,
+  adult: /\b(adult entertainment|pornograph\w*|sexually explicit|adult content)\b/gi,
+  music: /\b(music|record labels?|songs?)\b/gi,
+  cannabis: /\b(cannabis|marijuana|hemp)\b/gi,
+  weapons: /\b(firearms?|ammunition|weapons?)\b/gi,
+  interest_financial: /\b(interest income|credit cards?|co-brand\w*|finance charges|underwriting|reinsurance|insurance premiums?|consumer lending)\b/gi,
+};
+
+/** Zählt Treffer je Kategorie und merkt sich einige Fundstellen mit Umgebung. */
+export function keywordHits(text, { maxContexts = 5, context = 160 } = {}) {
+  const t = String(text);
+  const out = {};
+  for (const [cat, re] of Object.entries(KEYWORD_CATEGORIES)) {
+    const contexts = [];
+    let count = 0;
+    let lastEnd = -1;
+    for (const m of t.matchAll(new RegExp(re.source, re.flags))) {
+      count++;
+      if (contexts.length < maxContexts && m.index > lastEnd) {
+        const from = Math.max(0, m.index - context);
+        const to = Math.min(t.length, m.index + m[0].length + context);
+        contexts.push({ index: m.index, text: t.slice(from, to).replace(/\s+/g, " ").trim() });
+        lastEnd = to;
+      }
+    }
+    out[cat] = { count, contexts };
+  }
+  return out;
+}
+
+export function keywordCounts(hits) {
+  return Object.fromEntries(Object.entries(hits).map(([k, v]) => [k, v.count]));
+}
+
+export function keywordHitsMarkdown(ticker, hits) {
+  const lines = [
+    `# ${ticker}: Stichwort-Treffer im 10-K (verbotene Kategorien)`,
+    "",
+    "Diese Treffer sind Hinweise, keine Urteile. Oft stehen die Wörter in Risikofaktoren oder allgemeinen Erklärungen. Entscheidend ist, ob das Unternehmen selbst solche Geschäfte betreibt. Behaupte bei B3 nie, etwas stehe nicht im 10-K, ohne diese Liste oder grep geprüft zu haben.",
+    "",
+    "| Kategorie | Treffer |",
+    "| --- | --- |",
+    ...Object.entries(hits).map(([k, v]) => `| ${k} | ${v.count} |`),
+    "",
+  ];
+  for (const [k, v] of Object.entries(hits)) {
+    if (!v.count) continue;
+    lines.push(`## ${k} (${v.count} Treffer, zeige ${v.contexts.length})`, "");
+    v.contexts.forEach((c) => lines.push(`- (Zeichen ${c.index}) …${c.text}…`));
+    lines.push("");
+  }
+  return lines.join("\n");
 }
 
 // ------------------------------------------------------------------ Summenprüfung der Segmente
@@ -528,7 +597,7 @@ export function verificationSql(tickers) {
 // ------------------------------------------------------------------ Kontrollbogen
 
 /** Markdown-Kontrollbogen: je Aktie Ergebnis, Zitat, Link und Kästchen zum Abhaken. */
-export function reviewSheet(drafts) {
+export function reviewSheet(drafts, { keywordCounts: kcs = {} } = {}) {
   const out = ["# Kontrollbogen A2/B3", "", "Je Aktie: Link öffnen, Zitat im Dokument suchen (Strg+F), Ergebnis bestätigen oder korrigieren.", ""];
   const open = [];
   for (const d of drafts) {
@@ -542,6 +611,10 @@ export function reviewSheet(drafts) {
       if (c.quote) out.push(`> ${String(c.quote).replace(/\n+/g, " ")}`, "");
       out.push(`Quelle: ${c.sourceUrl ?? "–"}${c.sourceNote ? ` (${c.sourceNote})` : ""}`, "");
       if (c.reasoning) out.push(`Begründung: ${c.reasoning}`, "");
+      if (key === "B3" && kcs[d.ticker]) {
+        const hit = Object.entries(kcs[d.ticker]).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`);
+        out.push(`Stichwort-Treffer im 10-K: ${hit.length ? hit.join(", ") : "keine"} (Fundstellen: review-work/${d.ticker}/keyword-hits.md)`, "");
+      }
       if (key === "B3" && Array.isArray(c.segments) && c.segments.length) {
         out.push("| Segment | Art | Umsatz | Währung | Kategorie | Hinweis |", "| --- | --- | --- | --- | --- | --- |");
         for (const s of c.segments) out.push(`| ${s.name ?? ""} | ${s.dimension ?? ""} | ${s.revenue ?? ""} | ${s.currency ?? ""} | ${s.category ?? "–"} | ${s.note ?? ""} |`);

@@ -20,5 +20,13 @@ for (const name of dirs) {
     if (e.code !== "ENOENT") console.error(`${name}: draft.json nicht lesbar (${e.message})`);
   }
 }
-await writeFile(path.join(OUT, "kontrollbogen.md"), reviewSheet(drafts));
+const keywordCounts = {};
+for (const d of drafts) {
+  try {
+    keywordCounts[d.ticker] = JSON.parse(await readFile(path.join(OUT, d.ticker, "keyword-hits.json"), "utf8"));
+  } catch {
+    /* kein keyword-hits.json: kein Hinweis im Bogen */
+  }
+}
+await writeFile(path.join(OUT, "kontrollbogen.md"), reviewSheet(drafts, { keywordCounts }));
 console.log(`Kontrollbogen für ${drafts.length} Aktie(n): ${OUT}/kontrollbogen.md`);

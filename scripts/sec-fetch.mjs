@@ -15,12 +15,13 @@
 //   charter.txt      Volltext der Satzung (falls gefunden), charter-source.json mit Link
 //   charter-weitere-N.txt  weitere Satzungsdokumente (meist Änderungsurkunden)
 //   slices.md        Textausschnitte für A2 und B3 (hier fängt die Prüfung an)
+//   keyword-hits.md  Stichwort-Treffer zu verbotenen Kategorien im 10-K (Alkohol, Glücksspiel, Musik …)
 //   fetch-log.txt    was nicht geklappt hat
 // Es werden keine Geheimwörter gebraucht und nichts in die Datenbank geschrieben.
 
 import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
-import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, findLaterCharterChanges, htmlToText, buildSlicesMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
+import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, findLaterCharterChanges, htmlToText, buildSlicesMarkdown, keywordHits, keywordCounts, keywordHitsMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
 
 const UA = process.env.SEC_USER_AGENT || "";
 const args = process.argv.slice(2);
@@ -83,6 +84,9 @@ async function processTicker(t, tickersJson) {
   const html = await get(meta.tenK.url);
   const tenK = htmlToText(html);
   await writeFile(path.join(dir, "10k.txt"), tenK);
+  const kHits = keywordHits(tenK);
+  await writeFile(path.join(dir, "keyword-hits.md"), keywordHitsMarkdown(t, kHits));
+  await writeFile(path.join(dir, "keyword-hits.json"), JSON.stringify(keywordCounts(kHits), null, 2));
 
   const candidates = findCharterLinks(html, base);
   meta.charterCandidates = candidates;
@@ -140,7 +144,7 @@ async function processTicker(t, tickersJson) {
     }
   }
   meta.charterChangesAfter10K = laterChanges.map((c) => ({ filingDate: c.filingDate, url: c.url, exhibit: c.exhibit?.url ?? null }));
-  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter, others, laterChanges }));
+  await writeFile(path.join(dir, "slices.md"), buildSlicesMarkdown({ ticker: t, meta, tenK, charter, others, laterChanges, keywordCounts: keywordCounts(kHits) }));
   await writeFile(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
   await writeFile(path.join(dir, "fetch-log.txt"), log.join("\n") + (log.length ? "\n" : ""));
   return {

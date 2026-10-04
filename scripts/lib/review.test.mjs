@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, keywordHits, keywordCounts, keywordHitsMarkdown, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -248,4 +248,29 @@ test("draftToSql: B3 pass mit falschen Segmentsummen wird nicht übernommen", ()
   const r = draftToSql(d, { reviewer: "x" });
   assert.equal(r.statements.length, 1);
   assert.ok(r.skipped.some((x) => /Segmentsummen/.test(x)));
+});
+
+// ------------------------------------------------ Stichwort-Treffer
+
+test("keywordHits: Alkohol gefunden, nonalcoholic nicht; Fundstellen mit Umgebung", () => {
+  const text = "We sell nonalcoholic and non-alcoholic beverages. In 2025 we entered the alcohol business through a subsidiary offering Jack Daniel's whiskey and hard seltzer. Music licensing and casino partners are described elsewhere. " + "filler ".repeat(400) + "Alcoholic beverages are regulated.";
+  const h = keywordHits(text);
+  assert.equal(h.alcohol.count, 3); // alcohol, whiskey, Alcoholic
+  assert.match(h.alcohol.contexts[0].text, /entered the alcohol business/);
+  assert.equal(h.gambling.count, 1);
+  assert.equal(h.music.count, 1);
+  assert.equal(h.tobacco.count, 0);
+  assert.equal(keywordCounts(h).alcohol, 3);
+  const md = keywordHitsMarkdown("KO", h);
+  assert.match(md, /KO: Stichwort-Treffer/);
+  assert.match(md, /## alcohol \(3 Treffer/);
+  assert.ok(!md.includes("## tobacco"));
+});
+
+test("reviewSheet und slices zeigen die Stichwort-Treffer", () => {
+  const sheet = reviewSheet([good()], { keywordCounts: { AAPL: { alcohol: 0, music: 12 } } });
+  assert.match(sheet, /Stichwort-Treffer im 10-K: music 12/);
+  const md = buildSlicesMarkdown({ ticker: "KO", meta: {}, tenK: "x", charter: null, keywordCounts: { alcohol: 9, gambling: 0 } });
+  assert.match(md, /Treffer: alcohol 9/);
+  assert.match(md, /macht aus pass ein unclear/);
 });
