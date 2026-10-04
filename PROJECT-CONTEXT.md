@@ -53,6 +53,8 @@ Stand: 02.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 
 ### Geplant / offen
 
+Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: siehe docs/UEBERGABE-2026-10-04.md
+
 **Screener (nächste Schritte, Stand 02.10. abends):**
 1. `ui-screening` prüfen (Vorschau) und auf `main` mergen. Die Seite ist nicht gestartet.
 2. `CRON_SECRET` erneuern, `SCREENING_DAILY_CALL_BUDGET` = 200 prüfen, Redeploy.
