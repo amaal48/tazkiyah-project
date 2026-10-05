@@ -2,7 +2,7 @@
 //
 // Gemeinsame Tab-Navigation für den Kontobereich. Wird oben auf allen drei
 // Unterseiten (ProfilePage, SecurityPage, SettingsPage) angezeigt, damit man
-// zwischen ihnen wechseln kann, ohne jedes Mal über das Sidebar-Dropdown zu
+// zwischen ihnen wechseln kann, ohne jedes Mal über das Kontomenü der Kopfleiste zu
 // gehen.
 
 const TABS = [

@@ -42,19 +42,19 @@ const ICON_BTN =
 export function ScreeningRow({ row, actions }) {
   const meta = [row.ticker, ASSET_TEXT[row.assetType], row.sector].filter(Boolean).join(" · ");
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-6 py-5 transition-colors hover:border-[var(--primary)]">
-      <a href={routes.stock(row.ticker)} className="group flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 text-left">
-        <span className="min-w-[12rem] flex-[1_1_14rem]">
+    <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-6 py-5 transition-colors hover:border-[var(--primary)]">
+      <a href={routes.stock(row.ticker)} className="group flex min-w-0 flex-[1_1_16rem] flex-wrap items-center gap-x-6 gap-y-2 text-left">
+        <span className="min-w-0 basis-full sm:basis-auto sm:flex-[1_1_14rem]">
           <span className="block text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{row.name}</span>
           <span className="mt-0.5 block font-[IBM_Plex_Mono] text-[13px] text-[var(--muted)]">{meta}</span>
         </span>
         <StatusBadge status={row.status} />
-        <span className="min-w-[14rem] flex-[2_1_18rem] text-[16px] leading-relaxed text-[var(--muted)]">{reasonLine(row)}</span>
+        <span className="min-w-0 basis-full text-[16px] sm:basis-auto sm:flex-[2_1_18rem] leading-relaxed text-[var(--muted)]">{reasonLine(row)}</span>
         <span aria-hidden="true" className="text-[20px] text-[var(--gold-soft)]">
           →
         </span>
       </a>
-      {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
+      {actions && <div className="ml-auto flex flex-shrink-0 items-center gap-2">{actions}</div>}
     </div>
   );
 }

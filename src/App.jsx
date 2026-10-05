@@ -19,6 +19,7 @@ import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
 import ScreenerPage from "./components/screening/ScreenerPage.jsx";
 import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
+import SiteHeader from "./components/SiteHeader.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
@@ -32,25 +33,6 @@ import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./components/screening/fo
    ============================================================ */
 
 /* ---------- Gemeinsame Bausteine ---------- */
-
-// Signatur-Element: achtzackiger Stern (Khatam) als Logo. Bewusst ohne Zahl und Ring,
-// damit er nicht wie eine Bewertung wirkt.
-function LogoMark({ size = 30 }) {
-  const c = size / 2;
-  const rOuter = size / 2 - 2;
-  const rInner = rOuter * 0.55;
-  const pts = [];
-  for (let i = 0; i < 16; i++) {
-    const r = i % 2 === 0 ? rOuter : rInner;
-    const a = (Math.PI / 8) * i - Math.PI / 2;
-    pts.push(`${c + r * Math.cos(a)},${c + r * Math.sin(a)}`);
-  }
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-      <path d={`M${pts.join("L")}Z`} fill="var(--bg)" stroke="var(--gold-soft)" strokeWidth="1.2" />
-    </svg>
-  );
-}
 
 /* ---------- Kurs-Chart mit Zeitfiltern ----------
    generateMockSeries() erzeugt Demo-Kursreihen. fetchPriceHistory() ist die
@@ -1406,7 +1388,7 @@ function ComparePage({ tickers, onBack }) {
   );
 }
 
-/* ---------- Sidebar-Navigation ---------- */
+/* ---------- Navigation (Kopfleiste, siehe components/SiteHeader.jsx) ---------- */
 
 const NAV_GROUPS = [
   {
@@ -1443,267 +1425,6 @@ const NAV_GROUPS = [
   },
 ];
 
-function NavIcon({ open }) {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" className={"transition-transform " + (open ? "rotate-90" : "")}>
-      <path d="M3 1L7 5L3 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watchlistMax, compareCount, collapsed, onToggleCollapse, session, onOpenAuth, onSignOut }) {
-  const [openGroups, setOpenGroups] = useState({ screener: true });
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-
-  const toggleGroup = (key) => setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  const isActive = (item) =>
-    item.page === page && (!item.anchor || item.anchor === activeAnchor);
-  const isFilterActive = (item) =>
-    activeFilter && item.filter && activeFilter.type === item.filter.type && activeFilter.value === item.filter.value;
-
-  return (
-    <aside
-      style={{ width: collapsed ? "4rem" : "15rem", transition: "width 200ms ease" }}
-      className="fixed left-0 top-0 z-30 flex h-screen flex-shrink-0 flex-col overflow-hidden border-r border-[var(--border)] bg-[var(--bg-deep)]"
-    >
-      <div className={"flex items-center py-6 " + (collapsed ? "justify-center px-0" : "justify-between px-5")}>
-        <a href={routes.home()} onClick={() => onGo("home")} className="flex items-center gap-3 overflow-hidden" aria-label="Tazkiyah, zur Startseite">
-          <LogoMark size={30} />
-          {!collapsed && <span className="font-display whitespace-nowrap text-base tracking-wide">Tazkiyah</span>}
-        </a>
-        {!collapsed && (
-          <button
-            onClick={onToggleCollapse}
-            aria-label="Sidebar einklappen"
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-[var(--faint)] hover:bg-[var(--surface)] hover:text-[var(--text)]"
-          >
-            <MenuIcon />
-          </button>
-        )}
-      </div>
-
-      {collapsed && (
-        <button
-          onClick={onToggleCollapse}
-          aria-label="Sidebar ausklappen"
-          className="mx-auto mb-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-[var(--faint)] hover:bg-[var(--surface)] hover:text-[var(--text)]"
-        >
-          <MenuIcon />
-        </button>
-      )}
-
-      {collapsed ? (
-        <div className="mt-2 flex flex-col items-center gap-1">
-          {[
-            { label: "Start", page: "home" },
-            { label: "Screener", page: "screener" },
-            { label: "Portfolio", page: "portfolio" },
-            { label: "Berichte", page: "reports" },
-            { label: "Watchlist", page: "watchlist", badge: watchlistCount },
-            { label: "Akademie", page: "faq" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => onGo(item.page, item.anchor)}
-              title={item.label}
-              className={
-                "relative flex h-9 w-9 items-center justify-center rounded-lg text-sm font-[IBM_Plex_Mono] " +
-                (isActive(item) ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-              }
-            >
-              {item.label.slice(0, 2)}
-              {item.badge > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[8px] leading-[14px] text-[var(--on-primary)]">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : (
-      <nav className="flex-1 overflow-y-auto px-3 pb-6">
-        <button
-          onClick={() => onGo("home")}
-          className={
-            "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "home" && !activeAnchor ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-          }
-        >
-          Start
-        </button>
-
-        {NAV_GROUPS.map((group) => (
-          <div key={group.key} className="mb-1">
-            <div className="flex items-center">
-              <button
-                onClick={() => onGo(group.page, group.anchor)}
-                className={
-                  "flex-1 rounded-lg px-3 py-2 text-left text-sm " +
-                  (isActive(group) ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-                }
-              >
-                {group.label}
-              </button>
-              <button
-                onClick={() => toggleGroup(group.key)}
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-[var(--faint)] hover:text-[var(--muted)]"
-                aria-label={`${group.label} aufklappen`}
-              >
-                <NavIcon open={!!openGroups[group.key]} />
-              </button>
-            </div>
-            {openGroups[group.key] && (
-              <div className="ml-3 space-y-0.5 border-l border-[var(--border)] pl-3">
-                {group.children.map((child, i) =>
-                  child.type === "heading" ? (
-                    <p key={i} className="px-3 pt-2 text-sm text-[var(--faint)] font-medium">
-                      {child.label}
-                    </p>
-                  ) : (
-                    <button
-                      key={child.label}
-                      onClick={() =>
-                        child.type === "filter"
-                          ? onGo("screener", null, child.filter)
-                          : onGo(child.page, child.anchor, child.reset ? { type: "all" } : undefined)
-                      }
-                      className={
-                        "block w-full truncate rounded-lg px-3 py-1.5 text-left text-[13px] " +
-                        (child.type === "filter"
-                          ? isFilterActive(child) ? "text-[var(--primary)]" : "text-[var(--muted)] hover:text-[var(--text)]"
-                          : isActive(child) ? "text-[var(--primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")
-                      }
-                    >
-                      {child.type === "filter" && "· "}
-                      {child.label}
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <button
-          onClick={() => onGo("watchlist")}
-          className={
-            "mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "watchlist" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-          }
-        >
-          Watchlist
-          {watchlistCount > 0 && (
-            <span className="rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] px-1.5 py-0.5 text-sm font-medium text-[var(--on-primary)]">
-              {watchlistCount}{watchlistMax ? `/${watchlistMax}` : ""}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => onGo("faq")}
-          className={
-            "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "faq" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-          }
-        >
-          Akademie
-        </button>
-
-        <button
-          onClick={() => onGo("methodik")}
-          className={
-            "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "methodik" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
-          }
-        >
-          Methodik
-        </button>
-
-        {compareCount > 0 && (
-          <button
-            onClick={() => onGo("compare")}
-            className={
-              "mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm " +
-              (page === "compare" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--emerald-soft)] hover:bg-[var(--surface)]")
-            }
-          >
-            Vergleich <span className="text-sm">({compareCount})</span>
-          </button>
-        )}
-      </nav>
-      )}
-
-      {!collapsed && (
-        <div className="border-t border-[var(--border)] px-5 py-4">
-          {session ? (
-            <div className="relative">
-              <button
-                onClick={() => setAccountMenuOpen((v) => !v)}
-                className="flex w-full items-center justify-between text-sm text-[var(--muted)] hover:text-[var(--text)]"
-              >
-                <span className="truncate" title={session.user.email}>{session.user.email}</span>
-                <span>{accountMenuOpen ? "▲" : "▼"}</span>
-              </button>
-              {accountMenuOpen && (
-                <div className="mt-2 space-y-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2">
-                  <button
-                    onClick={() => { onGo("profile"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
-                  >
-                    Profil
-                  </button>
-                  <button
-                    onClick={() => { onGo("security"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
-                  >
-                    Sicherheit
-                  </button>
-                  <button
-                    onClick={() => { onGo("settings"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
-                  >
-                    Einstellungen
-                  </button>
-                  <button
-                    onClick={() => { onGo("privacy"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
-                  >
-                    Datenschutz
-                  </button>
-                  <div className="my-1 border-t border-[var(--border)]" />
-                  <button
-                    onClick={onSignOut}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--red-soft)]"
-                  >
-                    Abmelden
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={onOpenAuth}
-              className="w-full rounded-full border border-[var(--border)] py-1.5 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            >
-              Anmelden / Registrieren
-            </button>
-          )}
-          <p className="mt-2 text-sm text-[var(--faint)]">Keine Anlageberatung</p>
-        </div>
-      )}
-    </aside>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
-}
-
 /* ---------- Root ---------- */
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
@@ -1736,15 +1457,6 @@ export default function TazkiyahPrototype() {
   const [activeAnchor, setActiveAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
   const [presetFilter, setPresetFilter] = useState(null);
-  // Auf schmalen Bildschirmen eingeklappt starten, sonst bleibt neben der Sidebar kaum Platz
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 767px)").matches);
-  // Wird das Fenster schmal, einklappen (z. B. Drehen des Telefons oder Verkleinern)
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const onChange = (e) => e.matches && setSidebarCollapsed(true);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   function toggleCompare(ticker) {
     setCompareTickers((prev) =>
@@ -1782,7 +1494,7 @@ export default function TazkiyahPrototype() {
     }
   }, [route]);
 
-  // Sidebar-Klick: zur Seite navigieren, optional zu einem Abschnitt scrollen
+  // Klick in der Navigation: zur Seite navigieren, optional zu einem Abschnitt scrollen
   // und/oder einen Status-/Sektor-Filter im Screener vorbelegen
   function goTo(targetPage, anchor, filter) {
     if (targetPage === "methodik") {
@@ -1806,7 +1518,7 @@ export default function TazkiyahPrototype() {
     }
   }
 
-  // Sidebar-Filter → Vorgabe für die Screener-Liste
+  // Filter aus der Navigation → Vorgabe für die Screener-Liste
   const screenerPreset = presetFilter
     ? {
         ts: presetFilter.ts,
@@ -1889,11 +1601,9 @@ export default function TazkiyahPrototype() {
         .app-root { font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
       `}</style>
 
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      <SiteHeader
         page={page}
-        activeAnchor={activeAnchor}
+        navGroups={NAV_GROUPS}
         activeFilter={activeFilter}
         onGo={goTo}
         watchlistCount={wl.watchlist.length}
@@ -1907,9 +1617,7 @@ export default function TazkiyahPrototype() {
       {showAuth && <AuthPanel onClose={() => setShowAuth(false)} />}
       {showResetPassword && <ResetPasswordPanel onDone={() => setShowResetPassword(false)} />}
 
-      <div
-        style={{ marginLeft: sidebarCollapsed ? "4rem" : "15rem", transition: "margin-left 200ms ease" }}
-      >
+      <div>
         {page === "home" && <StartPage onGo={goTo} />}
         {page === "screener" && (
           <ScreenerPage
