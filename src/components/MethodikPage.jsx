@@ -307,7 +307,7 @@ export default function MethodikPage({ onBack, anchor }) {
   return (
     <div className="font-body text-left">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button onClick={onBack} className="hover:text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]">
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">
           Tazkiyah
         </button>
         <span aria-hidden="true">/</span>
@@ -349,8 +349,8 @@ export default function MethodikPage({ onBack, anchor }) {
                 </p>
                 <ul className="mt-2 divide-y divide-[var(--border)] border-y border-[var(--border)]">
                   {stage.criteria.map((cid) => (
-                    <li key={cid} className="py-2.5">
-                      <a href={routes.criterion(cid)} className="group block">
+                    <li key={cid}>
+                      <a href={routes.criterion(cid)} className="group block py-2.5">
                         <span className="flex items-baseline gap-2">
                           <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{cid}</span>
                           <span className="text-sm text-[var(--text)] group-hover:underline">{EXPLANATIONS[cid].name}</span>

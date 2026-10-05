@@ -15,7 +15,7 @@ import { AccountNav } from "./AccountNav";
 
 const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
 const inputClass =
-  "w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none";
+  "w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]";
 const labelClass = "mb-1 block text-sm text-[var(--muted)]";
 
 function PersonalInfoCard({ session, onToast }) {

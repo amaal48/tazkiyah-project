@@ -52,7 +52,7 @@ export function ResetPasswordPanel({ onDone }) {
             placeholder="Neues Passwort (mind. 6 Zeichen)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
           />
           <input
             type="password"
@@ -61,7 +61,7 @@ export function ResetPasswordPanel({ onDone }) {
             placeholder="Neues Passwort bestätigen"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
           />
 
           {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}

@@ -116,7 +116,7 @@ export function AuthPanel({ onClose }) {
             placeholder="E-Mail-Adresse"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
           />
 
           {mode === "signup" && (
@@ -126,7 +126,7 @@ export function AuthPanel({ onClose }) {
               placeholder="Anzeigename *"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+              className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
             />
           )}
 
@@ -138,7 +138,7 @@ export function AuthPanel({ onClose }) {
               placeholder="Passwort (mind. 6 Zeichen)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+              className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
             />
           )}
 
@@ -151,7 +151,7 @@ export function AuthPanel({ onClose }) {
                 placeholder="Passwort bestätigen"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
-                className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+                className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
               />
 
               <div className="flex gap-2">
@@ -160,14 +160,14 @@ export function AuthPanel({ onClose }) {
                   placeholder="Vorname (optional)"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-1/2 rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+                  className="w-1/2 rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
                 />
                 <input
                   type="text"
                   placeholder="Nachname (optional)"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-1/2 rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+                  className="w-1/2 rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
                 />
               </div>
 

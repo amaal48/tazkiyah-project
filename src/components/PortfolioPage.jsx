@@ -14,7 +14,7 @@ export default function PortfolioPage({ onBack, anchor }) {
   return (
     <div className="font-body page pb-24 text-left">
       <header className="flex items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button type="button" onClick={onBack} className="hover:text-[var(--text)]">
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">
           Tazkiyah
         </button>
         <span aria-hidden="true">/</span>

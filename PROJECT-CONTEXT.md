@@ -236,4 +236,32 @@ Offen: FMP-Tarifwahl und Display-Lizenz vor Launch. Stichprobe gegen 10-K/10-Q: 
 
 ## 5. Konventionen & Design
 
-Unverändert: Dark Theme (kein Light Mode), CSS-Variablen (`--bg`, `--surface`, `--border`, `--text`, `--muted`, `--faint`, `--gold`, `--gold-soft`, `--emerald`, `--emerald-soft`, `--red`, `--red-soft`, `--amber`, `--amber-soft`) — keine generischen Tailwind-Farben wie `slate`/`zinc`. Fraunces (Überschriften), Inter (Fließtext), IBM Plex Mono (Zahlen). Kein "KI"-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten — fehlende/noch nicht gebaute Bereiche werden klar als "folgt später" gekennzeichnet. Neutrale Formulierungen im Screener (keine Fatwas, keine Handlungsanweisungen wie "musst verkaufen").
+Helles Theme (Design B, entschieden 05.10.2026), kein Dark Mode. Vorgabe und Begründung: `docs/UI-DESIGN-B.md`. Farben nur über CSS-Variablen im `<style>`-Block von `App.jsx` — keine generischen Tailwind-Farben wie `slate`/`zinc`, keine Hex-Werte außerhalb von `:root`. Fraunces (Überschriften), Source Sans 3 (Fließtext, 17 px), IBM Plex Mono (Zahlen, Ticker, Fundstellen). Kein Text in Großbuchstaben mit Sperrung, nichts unter 13 px. Kontrast mindestens 4,5:1 (3:1 ab 24 px), Tippflächen mindestens 44×44 px, Fokus immer sichtbar (2 px `--primary`). Navigation als Kopfleiste (`src/components/SiteHeader.jsx`) mit Menü fürs Handy, keine Seitenleiste. Kein "KI"-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten — fehlende/noch nicht gebaute Bereiche werden klar als "folgt später" gekennzeichnet. Neutrale Formulierungen im Screener (keine Fatwas, keine Handlungsanweisungen wie "musst verkaufen").
+
+**Farbtabelle (Design B)**
+
+| Variable | Wert | Verwendung |
+|---|---|---|
+| `--bg` | #F5F2E9 | Seitenhintergrund (Papierton) |
+| `--bg-deep` | #EFEADD | abgesetzte Flächen |
+| `--surface` | #FFFFFF | Karten |
+| `--track` | #EFEADD | Balken-Hintergrund, neutrale Flächen |
+| `--border` | #E2DBC9 | Ränder, Trennlinien |
+| `--text` | #1B241F | Haupttext |
+| `--text-soft` | #3A433D | Fließtext zweiter Ebene |
+| `--muted` | #4F5751 | Beschreibungen |
+| `--faint` | #656B66 | Platzhalter, Kleingedrucktes (nie kleiner als 13 px) |
+| `--gold` | #B08A3E | Grenzmarken, Linien, Icon-Akzente (nicht als Textfarbe) |
+| `--gold-soft` | #836527 | Gold als Textfarbe (Kicker, kleine Akzente) |
+| `--emerald` | #2E7A55 | Flächen „konform“ (mit Transparenz) |
+| `--emerald-soft` | #1D5E41 | Text „konform“ |
+| `--red` | #C0533F | Flächen „nicht konform“ (mit Transparenz) |
+| `--red-soft` | #9A3426 | Text „nicht konform“ |
+| `--amber` | #B07A1F | Hinweise, Auslegungsfragen (Flächen) |
+| `--amber-soft` | #7A5410 | Hinweise, Auslegungsfragen (Text) |
+| `--primary` | #1F5A43 | Hauptknöpfe, Links, aktive Navigation, Fokus |
+| `--primary-hover` | #123B2B | Hover von Knöpfen und Links |
+| `--on-primary` | #FFFFFF | Text auf `--primary` |
+| `--footer` | #13231C | Fußzeile (Text darauf `--footer-text` #CFD6CF, Links `--footer-link` #E2C27A) |
+
+Abweichung von der Vorgabe: `--faint` (#6B716C → #656B66) und `--gold-soft` (#8A6A2C → #836527) sind leicht abgedunkelt, weil die Vorgabewerte auf `--bg` nur 4,46:1 bzw. 4,49:1 erreichten. Weitere Hilfsvariablen für Status-Pillen, Kacheln und Formulare (`--ok-*`, `--bad-*`, `--none-*`, `--tile`, `--tile-gold`, `--note-*`, `--field`, `--control-border`, `--line`, `--header-border`, `--logo-dot`) stehen ebenfalls in `:root`.

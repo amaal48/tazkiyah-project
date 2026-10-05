@@ -181,7 +181,7 @@ function CriterionRow({ c, parameters }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <a href={routes.criterion(c.id)} className="font-semibold text-[var(--text)] hover:text-[var(--primary)] hover:underline">
+            <a href={routes.criterion(c.id)} className="-my-2.5 inline-flex min-h-[44px] items-center font-semibold text-[var(--text)] hover:text-[var(--primary)] hover:underline">
               {c.name}
             </a>
             <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{c.id}</span>

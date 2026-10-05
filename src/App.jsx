@@ -186,7 +186,7 @@ function StockChart({ stock }) {
               key={r.key}
               onClick={() => setRange(r.key)}
               className={
-                "rounded-full px-3 py-1 text-sm font-[IBM_Plex_Mono] " +
+                "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3 text-sm font-[IBM_Plex_Mono] " +
                 (range === r.key ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")
               }
             >
@@ -263,7 +263,7 @@ const SECTORS = [...new Set(sampleStocks.map((s) => s.sector))].sort();
 /* ---------- Aktien-Detailseite ---------- */
 
 const EVENT_TYPE_STYLE = {
-  Earnings: { dot: "bg-[#8B9EE8]", text: "text-[#8B9EE8]", bg: "bg-[#3B4C7C]/15", border: "border-[#3B4C7C]/40" },
+  Earnings: { dot: "bg-[var(--primary)]", text: "text-[var(--primary)]", bg: "bg-[var(--tile)]", border: "border-[var(--primary)]/40" },
   Dividende: { dot: "bg-[var(--emerald-soft)]", text: "text-[var(--emerald-soft)]", bg: "bg-[var(--emerald)]/15", border: "border-[var(--emerald)]/40" },
   HV: { dot: "bg-[var(--amber-soft)]", text: "text-[var(--amber-soft)]", bg: "bg-[var(--amber)]/15", border: "border-[var(--amber)]/40" },
 };
@@ -338,7 +338,7 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
   return (
     <div className="font-body text-left">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Watchlist</span>
       </header>
@@ -362,7 +362,7 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
               key={r.ticker}
               row={r}
               actions={
-                <button type="button" onClick={() => onToggleWatchlist(r.ticker)} className="text-[var(--red-soft)] hover:underline">
+                <button type="button" onClick={() => onToggleWatchlist(r.ticker)} className="inline-flex min-h-[44px] items-center px-2 text-[var(--red-soft)] hover:underline">
                   Entfernen
                 </button>
               }
@@ -429,7 +429,7 @@ function DayTile({ dateISO, count, isToday, isSelected, onClick }) {
     <button
       onClick={onClick}
       className={
-        "flex flex-shrink-0 flex-col items-center gap-1 rounded-xl border px-3.5 py-2.5 transition-colors " +
+        "flex min-w-[48px] flex-shrink-0 flex-col items-center gap-1 rounded-xl border px-3.5 py-2.5 transition-colors " +
         (isSelected
           ? "border-[var(--gold)] bg-[var(--gold)]/15"
           : isToday
@@ -443,9 +443,9 @@ function DayTile({ dateISO, count, isToday, isSelected, onClick }) {
       <span className={"font-[IBM_Plex_Mono] text-sm " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--text)]")}>
         {d.getDate()}
       </span>
-      <span className="flex h-3.5 items-center">
+      <span className="flex h-4 items-center">
         {count > 0 && (
-          <span className={"rounded-full px-1.5 text-[9px] " + (isSelected ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "bg-[var(--border)] text-[var(--faint)]")}>
+          <span className={"rounded-full px-1.5 text-[13px] leading-none " + (isSelected ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "bg-[var(--border)] text-[var(--faint)]")}>
             {count}
           </span>
         )}
@@ -566,7 +566,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Kalender</span>
       </header>
@@ -588,7 +588,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
               key={opt.key}
               onClick={() => { setScope(opt.key); setSelectedDay(null); }}
               className={
-                "rounded-full border px-4 py-1.5 text-sm " +
+                "inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm " +
                 (scope === opt.key
                   ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
                   : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]")
@@ -604,13 +604,13 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
           <div className="inline-flex rounded-full border border-[var(--border)] p-1">
             <button
               onClick={() => setShowPast(false)}
-              className={"rounded-full px-4 py-1.5 text-sm " + (!showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
+              className={"min-h-[44px] rounded-full px-4 text-sm " + (!showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
             >
               Anstehend ({upcoming.length})
             </button>
             <button
               onClick={() => setShowPast(true)}
-              className={"rounded-full px-4 py-1.5 text-sm " + (showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
+              className={"min-h-[44px] rounded-full px-4 text-sm " + (showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
             >
               Vergangen ({past.length})
             </button>
@@ -627,7 +627,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
                 downloadICS(`tazkiyah-termine-${scope}-${today}`, ics);
               }}
               disabled={upcoming.length === 0}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-1.5 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--border)] px-4 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
             >
               ⤓ Alle anstehenden Termine exportieren (.ics)
             </button>
@@ -643,7 +643,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
                   key={opt.key}
                   onClick={() => { setTimeframe(opt.key); setSelectedDay(null); }}
                   className={
-                    "rounded-full px-3 py-1 text-sm " +
+                    "min-h-[44px] rounded-full px-3 text-sm " +
                     (timeframe === opt.key ? "bg-[var(--surface)] text-[var(--text)]" : "text-[var(--faint)] hover:text-[var(--muted)]")
                   }
                 >
@@ -847,9 +847,9 @@ function ReportsPage({ onBack }) {
     return (
       <div className="font-body">
         <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-          <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+          <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
           <span>/</span>
-          <span onClick={() => setSelectedReport(null)} className="cursor-pointer hover:text-[var(--text)]">Berichte</span>
+          <button type="button" onClick={() => setSelectedReport(null)} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Berichte</button>
           <span>/</span>
           <span className="text-[var(--text)]">{r.title}</span>
         </header>
@@ -927,7 +927,7 @@ function ReportsPage({ onBack }) {
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Berichte</span>
       </header>
@@ -1105,7 +1105,7 @@ function AkademiePage({ onBack }) {
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Akademie</span>
       </header>
@@ -1121,7 +1121,7 @@ function AkademiePage({ onBack }) {
               key={t}
               onClick={() => setTab(t)}
               className={
-                "border-b-2 px-1 pb-3 text-sm -mb-px " +
+                "-mb-px min-h-[44px] border-b-2 px-1 text-sm " +
                 (tab === t ? "border-[var(--gold)] text-[var(--text)]" : "border-transparent text-[var(--muted)] hover:text-[var(--text)]")
               }
             >
@@ -1287,11 +1287,12 @@ function AskQuestionBox() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Frag nach…"
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
+            aria-label="Frage an die Akademie"
+            className="field w-full"
           />
           <button
             onClick={() => question.trim() && setSent(true)}
-            className="flex-shrink-0 rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+            className="btn-secondary flex-shrink-0"
           >
             Senden
           </button>
@@ -1311,7 +1312,7 @@ function SectorsPage({ onBack }) {
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Sektoren</span>
       </header>
@@ -1351,7 +1352,7 @@ function ComparePage({ tickers, onBack }) {
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <span onClick={onBack} className="cursor-pointer hover:text-[var(--text)]">Tazkiyah</span>
+        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
         <span className="text-[var(--text)]">Vergleichen</span>
       </header>
@@ -1543,9 +1544,9 @@ export default function TazkiyahPrototype() {
           --text: #1B241F;
           --text-soft: #3A433D;
           --muted: #4F5751;
-          --faint: #6B716C;
+          --faint: #656B66;      /* Vorgabe #6B716C, minimal dunkler für 4,5 : 1 auf --bg */
           --gold: #B08A3E;
-          --gold-soft: #8A6A2C;
+          --gold-soft: #836527;  /* Vorgabe #8A6A2C, minimal dunkler für 4,5 : 1 auf --bg */
           --emerald: #2E7A55;
           --emerald-soft: #1D5E41;
           --red: #C0533F;
@@ -1584,7 +1585,7 @@ export default function TazkiyahPrototype() {
           .btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 26px; border-radius: 10px; background: var(--surface); color: var(--text); border: 1px solid var(--control-border); font-weight: 600; font-size: 16px; line-height: 1.2; }
           .btn-secondary:hover { border-color: var(--primary); }
           .field { min-height: 50px; padding: 0 14px; border-radius: 10px; background: var(--field); border: 1px solid var(--control-border); color: var(--text); font-size: 16px; }
-          .field:focus { border-color: var(--primary); outline: none; }
+          .field:focus { border-color: var(--primary); }
           .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--surface); border: 1px solid var(--control-border); color: var(--text); font-size: 15px; font-weight: 500; }
           .chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
           .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
