@@ -69,7 +69,7 @@ function RatioCheck({ check }) {
   }
   return (
     <li className="py-2">
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-sm text-[var(--muted)]">
         {head}
         {check.label && <span className="text-[var(--faint)]"> · {check.label}</span>}
       </p>
@@ -88,9 +88,9 @@ function RatioCheck({ check }) {
       ) : (
         <p className="mt-0.5 text-sm text-[var(--text-soft)]">{check.reason || RESULT_LABELS[check.result]}</p>
       )}
-      {hasValue && check.reason && <p className="mt-1 text-xs text-[var(--text-soft)]">{check.reason}</p>}
+      {hasValue && check.reason && <p className="mt-1 text-sm text-[var(--text-soft)]">{check.reason}</p>}
       {check.leaseSource && (
-        <p className="mt-1 text-xs text-[var(--muted)]">
+        <p className="mt-1 text-sm text-[var(--muted)]">
           {LEASE_SOURCE[check.leaseSource] || "Leasing"}
           {typeof check.leaseAmount === "number" && `: ${fmtAmount(check.leaseAmount)}`}
         </p>
@@ -122,7 +122,7 @@ function Review({ review }) {
   if (!review) return null;
   const url = safeUrl(review.sourceUrl);
   return (
-    <div className="mt-3 rounded-lg border border-[var(--border)] px-3 py-2 text-xs leading-relaxed text-[var(--text-soft)]">
+    <div className="mt-3 rounded-lg border border-[var(--border)] px-3 py-2 text-sm leading-relaxed text-[var(--text-soft)]">
       <p>
         Manuelle Prüfung{review.reviewedAt && ` vom ${fmtDate(review.reviewedAt)}`}
         {review.result && `: ${REVIEW_RESULT[review.result] || review.result}`}
@@ -135,7 +135,7 @@ function Review({ review }) {
         <p className="mt-1 text-[var(--muted)]">
           Quelle:{" "}
           {url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--gold-soft)] underline underline-offset-2">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] underline underline-offset-2">
               {review.sourceNote || "Dokument öffnen"}
             </a>
           ) : (
@@ -156,11 +156,11 @@ function Flags({ flags, criterionId }) {
         // Bevorzugt auf die Prüfung verlinken, unter der die Kennzeichnung steht
         const target = EXPLANATIONS[criterionId] ? criterionId : FLAG_TEXTS[f].criterion;
         return (
-          <li key={f} className="flex items-start gap-2 text-xs leading-relaxed text-[var(--text-soft)]">
+          <li key={f} className="flex items-start gap-2 text-sm leading-relaxed text-[var(--text-soft)]">
             <span aria-hidden="true" className="mt-px text-[var(--gold-soft)]">ⓘ</span>
             <span>
               {FLAG_TEXTS[f].text}{" "}
-              <a href={routes.criterion(target)} className="whitespace-nowrap text-[var(--gold-soft)] underline underline-offset-2">
+              <a href={routes.criterion(target)} className="whitespace-nowrap text-[var(--primary)] underline underline-offset-2">
                 Erklärung
               </a>
             </span>
@@ -181,14 +181,14 @@ function CriterionResult({ c, parameters }) {
         <a href={routes.criterion(c.id)} className="text-[15px] text-[var(--text)] hover:underline">
           {c.name}
         </a>
-        <span className="font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{c.id}</span>
+        <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{c.id}</span>
         <span className={"ml-auto text-sm " + (RESULT_STYLE[c.result] || "")}>
           <span aria-hidden="true">{RESULT_MARK[c.result]} </span>
           {RESULT_LABELS[c.result] || c.result}
         </span>
       </div>
       {explanation && <p className="mt-1.5 max-w-[68ch] text-sm leading-relaxed text-[var(--text-soft)]">{explanation}</p>}
-      <p className="mt-1.5 text-xs">
+      <p className="mt-1.5 text-sm">
         <SourceLink source={c.source} criterion={c.id} />
       </p>
 
@@ -296,7 +296,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
         {notFound && (
           <div className="py-10">
             <p className="text-[var(--text)]">Zu „{ticker}“ gibt es keinen Titel in der Prüfliste.</p>
-            <a href={routes.screener()} className="mt-3 inline-block text-sm text-[var(--gold-soft)] underline underline-offset-2">
+            <a href={routes.screener()} className="mt-3 inline-block text-sm text-[var(--primary)] underline underline-offset-2">
               Zum Screener
             </a>
           </div>
@@ -309,7 +309,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
               <div className="flex flex-wrap items-center gap-3">
                 <span className="font-[IBM_Plex_Mono] text-lg tracking-wide text-[var(--text)]">{ticker}</span>
                 {assetType === "etf" && (
-                  <span className="rounded-full border border-[var(--gold)]/40 px-1.5 py-0.5 text-[10px] uppercase text-[var(--gold-soft)]">ETF</span>
+                  <span className="rounded-full border border-[var(--gold)]/40 px-1.5 py-0.5 text-sm text-[var(--gold-soft)] font-medium">ETF</span>
                 )}
                 <StatusBadge status={status} size="lg" />
               </div>
@@ -333,8 +333,8 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
                 className={
                   "mt-5 rounded-full px-5 py-2.5 text-sm " +
                   (saved
-                    ? "border border-[var(--gold)]/50 text-[var(--gold-soft)]"
-                    : "bg-[var(--gold)] font-medium text-[var(--bg)] hover:opacity-90")
+                    ? "border border-[var(--gold)]/50 text-[var(--primary)]"
+                    : "bg-[var(--primary)] font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)]")
                 }
               >
                 {saved ? "In der Watchlist ✓" : "Zur Watchlist hinzufügen"}
@@ -390,7 +390,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
                     <div key={g.id} className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 md:px-6">
                       <p className="flex flex-wrap items-baseline gap-x-3 border-b border-[var(--border)] py-4">
                         <span className="text-[var(--text)]">{g.title}</span>
-                        {g.id !== "weitere" && <span className="font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">Stufe {g.id}</span>}
+                        {g.id !== "weitere" && <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">Stufe {g.id}</span>}
                         {g.question && <span className="w-full text-sm text-[var(--muted)]">{g.question}</span>}
                       </p>
                       <ul>
@@ -415,7 +415,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
                 <ol className="mt-3 space-y-2 text-sm">
                   {history.map((h, i) => (
                     <li key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="w-24 font-[IBM_Plex_Mono] text-xs text-[var(--muted)]">{fmtDate(h.changed_at)}</span>
+                      <span className="w-24 font-[IBM_Plex_Mono] text-sm text-[var(--muted)]">{fmtDate(h.changed_at)}</span>
                       {h.from_status ? (
                         <span className="text-[var(--text-soft)]">
                           {STATUS_TEXT[h.from_status] || h.from_status} → {STATUS_TEXT[h.to_status] || h.to_status}
@@ -440,9 +440,9 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
             </section>
 
             {/* 5. Hinweis */}
-            <p className="mt-10 rounded-xl border border-[var(--border)] px-4 py-3 text-xs leading-relaxed text-[var(--muted)]">
+            <p className="mt-10 rounded-xl border border-[var(--border)] px-4 py-3 text-sm leading-relaxed text-[var(--muted)]">
               {NOTICE_NO_ADVICE}{" "}
-              <a href={routes.methodik()} className="text-[var(--gold-soft)] underline underline-offset-2">
+              <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2">
                 So prüft Tazkiyah
               </a>
             </p>

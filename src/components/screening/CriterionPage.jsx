@@ -33,7 +33,7 @@ function Tag({ tone, children }) {
     gold: "border-[var(--gold)]/50 text-[var(--gold-soft)]",
     neutral: "border-[var(--border)] text-[var(--text-soft)]",
   };
-  return <span className={"rounded-full border px-2 py-0.5 text-[11px] " + tones[tone]}>{children}</span>;
+  return <span className={"rounded-full border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
 }
 
 export default function CriterionPage({ id, onBack }) {
@@ -48,7 +48,7 @@ export default function CriterionPage({ id, onBack }) {
     return (
       <div className="font-body page py-16 text-left">
         <p className="text-[var(--text)]">Zu „{id}“ gibt es keine Erklärseite.</p>
-        <a href={routes.methodik()} className="mt-3 inline-block text-sm text-[var(--gold-soft)] underline underline-offset-2">
+        <a href={routes.methodik()} className="mt-3 inline-block text-sm text-[var(--primary)] underline underline-offset-2">
           Zur Methodik
         </a>
       </div>
@@ -79,7 +79,7 @@ export default function CriterionPage({ id, onBack }) {
 
       <main className="page pb-24">
         {/* 1. Titel und Stufe */}
-        <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+        <p className="text-sm text-[var(--muted)] font-medium">
           {stage ? `Stufe ${stage.id} · ${stage.title}` : "Prüfung"} · {id}
         </p>
         <h1 className="font-display mt-2" style={H1_STYLE}>
@@ -171,17 +171,17 @@ export default function CriterionPage({ id, onBack }) {
 
         {/* 7. Zurück */}
         <nav aria-label="Weitere Prüfungen" className="mt-14 border-t border-[var(--border)] pt-6 text-sm">
-          <a href={routes.methodik()} className="text-[var(--gold-soft)] underline underline-offset-2">
+          <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2">
             ← Zur Methodik
           </a>
           {neighbours.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)]">Weitere Prüfungen der Stufe {stage.id}</p>
+              <p className="text-sm text-[var(--muted)] font-medium">Weitere Prüfungen der Stufe {stage.id}</p>
               <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
                 {neighbours.map((n) => (
                   <li key={n}>
                     <a href={routes.criterion(n)} className="text-[var(--text-soft)] hover:text-[var(--text)] hover:underline">
-                      <span className="font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{n}</span> {EXPLANATIONS[n]?.name}
+                      <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{n}</span> {EXPLANATIONS[n]?.name}
                     </a>
                   </li>
                 ))}

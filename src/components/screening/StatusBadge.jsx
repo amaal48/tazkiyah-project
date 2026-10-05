@@ -1,28 +1,36 @@
 // src/components/screening/StatusBadge.jsx
 //
-// Die drei Status, immer Farbe plus Text. „Nicht geprüft“ ist bewusst neutral grau,
-// nicht Amber (Amber stand früher für „Grenzwertig“).
+// Die drei Status, immer Symbol plus Text (nie nur Farbe). „Nicht geprüft“ ist bewusst
+// neutral grau, nicht Amber (Amber stand früher für „Grenzwertig“).
 
 import { STATUS_TEXT } from "./format.js";
 
 const STYLES = {
-  konform: "border-[var(--emerald)]/50 bg-[var(--emerald)]/15 text-[var(--emerald-soft)]",
-  nicht_konform: "border-[var(--red)]/60 bg-[var(--red)]/15 text-[var(--red-soft)]",
-  nicht_geprueft: "border-[var(--border)] bg-[var(--track)] text-[var(--text-soft)]",
+  konform: "bg-[var(--ok-bg)] text-[var(--ok-text)]",
+  nicht_konform: "bg-[var(--bad-bg)] text-[var(--bad-text)]",
+  nicht_geprueft: "bg-[var(--none-bg)] text-[var(--none-text)]",
 };
 
-const DOTS = {
-  konform: "bg-[var(--emerald-soft)]",
-  nicht_konform: "bg-[var(--red-soft)]",
-  nicht_geprueft: "bg-[var(--muted)]",
-};
-
-export default function StatusBadge({ status, size = "sm" }) {
-  const key = STYLES[status] ? status : "nicht_geprueft";
-  const pad = size === "lg" ? "px-3 py-1.5 text-xs" : "px-2.5 py-1 text-[11px]";
+/** Kleines Strich-Symbol je Status (✓, ✕, –), auch für Legende und Prüfungszeilen. */
+export function StatusIcon({ status, size = 14, strokeWidth = 2.3 }) {
+  const paths = {
+    konform: <path d="M3.5 8.5l3 3 6-7" />,
+    nicht_konform: <path d="M4 4l8 8M12 4l-8 8" />,
+    nicht_geprueft: <path d="M4 8h8" />,
+  };
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border tracking-wide ${pad} ${STYLES[key]}`}>
-      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${DOTS[key]}`} />
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[status] || paths.nicht_geprueft}
+    </svg>
+  );
+}
+
+export default function StatusBadge({ status, size = "sm", className = "" }) {
+  const key = STYLES[status] ? status : "nicht_geprueft";
+  const pad = size === "lg" ? "px-[18px] py-[10px] text-[16px]" : "px-3 py-1.5 text-[14px]";
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-semibold leading-none ${pad} ${STYLES[key]} ${className}`}>
+      <StatusIcon status={key} size={size === "lg" ? 16 : 14} />
       {STATUS_TEXT[key]}
     </span>
   );

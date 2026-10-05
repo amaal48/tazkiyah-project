@@ -64,12 +64,12 @@ export function ResetPasswordPanel({ onDone }) {
             className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none"
           />
 
-          {error && <p className="text-xs text-[var(--red-soft)]">{error}</p>}
+          {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-[var(--gold)] px-4 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             {loading ? "…" : "Passwort speichern"}
           </button>

@@ -15,7 +15,7 @@ import { AccountNav } from "./AccountNav";
 const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
 const inputClass =
   "w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none";
-const labelClass = "mb-1 block text-xs text-[var(--muted)]";
+const labelClass = "mb-1 block text-sm text-[var(--muted)]";
 
 function passwordStrength(pw) {
   if (!pw) return { label: "", color: "" };
@@ -75,7 +75,7 @@ function PasswordCard({ onToast }) {
             className={inputClass}
           />
           {newPassword && (
-            <p className={"mt-1 text-[11px] " + strength.color}>Passwortstärke: {strength.label}</p>
+            <p className={"mt-1 text-sm " + strength.color}>Passwortstärke: {strength.label}</p>
           )}
         </div>
 
@@ -91,12 +91,12 @@ function PasswordCard({ onToast }) {
           />
         </div>
 
-        {error && <p className="text-xs text-[var(--red-soft)]">{error}</p>}
+        {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-[var(--gold)] px-5 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
         >
           {saving ? "…" : "Passwort speichern"}
         </button>

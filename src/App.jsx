@@ -19,6 +19,7 @@ import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
 import ScreenerPage from "./components/screening/ScreenerPage.jsx";
 import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
+import BasisLine from "./components/screening/BasisLine.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
 import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./components/screening/format.js";
@@ -191,7 +192,7 @@ function StockChart({ stock }) {
               <span className={"font-[IBM_Plex_Mono] text-lg " + (up ? "text-[var(--emerald-soft)]" : "text-[var(--red-soft)]")}>
                 {up ? "+" : ""}{changePct.toFixed(2)}%
               </span>
-              <span className="ml-2 text-xs text-[var(--muted)]">
+              <span className="ml-2 text-sm text-[var(--muted)]">
                 ({up ? "+" : ""}{changeAbs.toFixed(2).replace(".", ",")} €) im gewählten Zeitraum
               </span>
             </>
@@ -203,8 +204,8 @@ function StockChart({ stock }) {
               key={r.key}
               onClick={() => setRange(r.key)}
               className={
-                "rounded-full px-3 py-1 text-xs font-[IBM_Plex_Mono] " +
-                (range === r.key ? "bg-[var(--gold)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--text)]")
+                "rounded-full px-3 py-1 text-sm font-[IBM_Plex_Mono] " +
+                (range === r.key ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")
               }
             >
               {r.label}
@@ -214,7 +215,7 @@ function StockChart({ stock }) {
       </div>
 
       {loading ? (
-        <div className="flex h-56 items-center justify-center text-xs text-[var(--faint)]">Lade Kursdaten…</div>
+        <div className="flex h-56 items-center justify-center text-sm text-[var(--faint)]">Lade Kursdaten…</div>
       ) : (
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={seriesEUR} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
@@ -252,7 +253,7 @@ function StockChart({ stock }) {
         </ResponsiveContainer>
       )}
 
-      <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--faint)]">
+      <div className="mt-3 flex items-center justify-between text-sm text-[var(--faint)]">
         <span>Quelle: Demo-Daten (Platzhalter) · Anzeige in € umgerechnet, Original in $ (US-notiert)</span>
       </div>
     </div>
@@ -305,8 +306,8 @@ function PriceSection({ stock }) {
   return (
     <section className="mt-12 border-t border-[var(--border)] pt-8">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Kurs</p>
-        <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--text-soft)]">Beispielwerte</span>
+        <p className="text-sm text-[var(--muted)] font-medium">Kurs</p>
+        <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sm text-[var(--text-soft)]">Beispielwerte</span>
       </div>
       <div className="mt-3 flex flex-wrap items-baseline gap-3">
         <span className="font-[IBM_Plex_Mono] text-2xl text-[var(--text)]">{(priceNum * USD_EUR_RATE).toFixed(2).replace(".", ",")} €</span>
@@ -315,7 +316,7 @@ function PriceSection({ stock }) {
           {stock.up ? "+" : ""}{dayPct.toFixed(2)}% ({stock.up ? "+" : ""}{(dayAbs * USD_EUR_RATE).toFixed(2).replace(".", ",")} €) heute
         </span>
       </div>
-      <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+      <p className="mt-1.5 text-sm text-[var(--faint)]">
         Beispielwerte, keine echten Kurse. Euro-Wert über festen Näherungskurs (1 $ ≈ {USD_EUR_RATE} €).
       </p>
       <StockChart stock={stock} />
@@ -454,7 +455,7 @@ function DayTile({ dateISO, count, isToday, isSelected, onClick }) {
           : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--muted)]")
       }
     >
-      <span className={"text-[10px] uppercase tracking-[0.1em] " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--faint)]")}>
+      <span className={"text-sm font-medium " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--faint)]")}>
         {weekday}
       </span>
       <span className={"font-[IBM_Plex_Mono] text-sm " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--text)]")}>
@@ -462,7 +463,7 @@ function DayTile({ dateISO, count, isToday, isSelected, onClick }) {
       </span>
       <span className="flex h-3.5 items-center">
         {count > 0 && (
-          <span className={"rounded-full px-1.5 text-[9px] " + (isSelected ? "bg-[var(--gold)] text-[var(--bg)]" : "bg-[var(--border)] text-[var(--faint)]")}>
+          <span className={"rounded-full px-1.5 text-[9px] " + (isSelected ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "bg-[var(--border)] text-[var(--faint)]")}>
             {count}
           </span>
         )}
@@ -483,36 +484,36 @@ function EventCard({ e, showRelevance, onOpenStock }) {
   return (
     <div
       onClick={() => onOpenStock(e.ticker)}
-      className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 text-left transition-colors hover:border-[var(--gold)]/40 hover:bg-[var(--bg-deep)]"
+      className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex-shrink-0 rounded-lg bg-[var(--bg-deep)] px-2 py-1 font-[IBM_Plex_Mono] text-xs text-[var(--text)]">
+        <span className="flex-shrink-0 rounded-lg bg-[var(--bg-deep)] px-2 py-1 font-[IBM_Plex_Mono] text-sm text-[var(--text)]">
           {e.ticker}
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm text-[var(--text)]">{e.name}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className={"rounded-full border px-2 py-0.5 text-[10px] " + style.bg + " " + style.border + " " + style.text}>
+            <span className={"rounded-full border px-2 py-0.5 text-sm " + style.bg + " " + style.border + " " + style.text}>
               {e.type === "HV" ? "Hauptversammlung" : e.type}
             </span>
             {e.type === "Earnings" && (
-              <span className="text-[10px] text-[var(--faint)]">{demoEventTiming(e.ticker, e.date)}</span>
+              <span className="text-sm text-[var(--faint)]">{demoEventTiming(e.ticker, e.date)}</span>
             )}
             {showRelevance && e.inWatchlist && (
-              <span className="rounded-full border border-[var(--gold)]/40 px-2 py-0.5 text-[10px] text-[var(--gold-soft)]">★ Watchlist</span>
+              <span className="rounded-full border border-[var(--gold)]/40 px-2 py-0.5 text-sm text-[var(--gold-soft)]">★ Watchlist</span>
             )}
             {showRelevance && e.inPortfolio && (
-              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] text-[var(--muted)]">Portfolio</span>
+              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sm text-[var(--muted)]">Portfolio</span>
             )}
           </div>
         </div>
       </div>
       <div className="flex flex-shrink-0 items-center gap-3">
-        <span className="font-[IBM_Plex_Mono] text-xs text-[var(--faint)]">{formatEventDate(e.date)}</span>
+        <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{formatEventDate(e.date)}</span>
         <button
           onClick={handleExportSingle}
           title="Als .ics herunterladen (Apple/Google Kalender)"
-          className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-[var(--faint)] hover:border-[var(--gold)]/50 hover:text-[var(--gold-soft)]"
+          className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-[var(--faint)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
           aria-label="Termin exportieren"
         >
           ⤓
@@ -592,7 +593,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
         <p className="mt-1 text-sm text-[var(--muted)]">
           Hauptversammlungen, Earnings-Calls und Dividendenstichtage — alle Termine sind Demo-Daten.
         </p>
-        <p className="mt-2 text-xs text-[var(--faint)]">
+        <p className="mt-2 text-sm text-[var(--faint)]">
           Für den Kalender-Export empfehlen wir, ausschließlich Titel aus der Watchlist oder dem
           Portfolio auszuwählen — bei „Alle Titel" ist die Anzahl der Einträge für einen
           persönlichen Kalender nicht praktikabel.
@@ -607,7 +608,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
               className={
                 "rounded-full border px-4 py-1.5 text-sm " +
                 (scope === opt.key
-                  ? "border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold-soft)]"
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
                   : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]")
               }
             >
@@ -621,20 +622,20 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
           <div className="inline-flex rounded-full border border-[var(--border)] p-1">
             <button
               onClick={() => setShowPast(false)}
-              className={"rounded-full px-4 py-1.5 text-xs " + (!showPast ? "bg-[var(--gold)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
+              className={"rounded-full px-4 py-1.5 text-sm " + (!showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
             >
               Anstehend ({upcoming.length})
             </button>
             <button
               onClick={() => setShowPast(true)}
-              className={"rounded-full px-4 py-1.5 text-xs " + (showPast ? "bg-[var(--gold)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
+              className={"rounded-full px-4 py-1.5 text-sm " + (showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
             >
               Vergangen ({past.length})
             </button>
           </div>
 
           {scope === "alle" ? (
-            <p className="max-w-xs text-right text-[11px] text-[var(--faint)]">
+            <p className="max-w-xs text-right text-sm text-[var(--faint)]">
               Export ist auf Watchlist und Portfolio beschränkt. Bereich oben wechseln, um zu exportieren.
             </p>
           ) : (
@@ -644,7 +645,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
                 downloadICS(`tazkiyah-termine-${scope}-${today}`, ics);
               }}
               disabled={upcoming.length === 0}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-1.5 text-xs text-[var(--muted)] hover:border-[var(--gold)]/50 hover:text-[var(--gold-soft)] disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
+              className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-1.5 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
             >
               ⤓ Alle anstehenden Termine exportieren (.ics)
             </button>
@@ -660,7 +661,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
                   key={opt.key}
                   onClick={() => { setTimeframe(opt.key); setSelectedDay(null); }}
                   className={
-                    "rounded-full px-3 py-1 text-xs " +
+                    "rounded-full px-3 py-1 text-sm " +
                     (timeframe === opt.key ? "bg-[var(--surface)] text-[var(--text)]" : "text-[var(--faint)] hover:text-[var(--muted)]")
                   }
                 >
@@ -700,7 +701,7 @@ function CalendarPage({ watchlist, onBack, onOpenStock }) {
               .sort(([a], [b]) => (showPast ? b.localeCompare(a) : a.localeCompare(b)))
               .map(([date, events]) => (
                 <div key={date}>
-                  <p className="mb-2.5 text-xs uppercase tracking-[0.2em] text-[var(--faint)]">
+                  <p className="mb-2.5 text-sm text-[var(--faint)] font-medium">
                     {dateGroupLabel(date, showPast)}
                   </p>
                   <div className="space-y-2">
@@ -873,7 +874,7 @@ function ReportsPage({ onBack }) {
         <main className="page pb-24">
           <button
             onClick={() => setSelectedReport(null)}
-            className="mb-4 text-sm text-[var(--faint)] hover:text-[var(--gold-soft)]"
+            className="mb-4 text-sm text-[var(--faint)] hover:text-[var(--primary)]"
           >
             ← Alle Berichte
           </button>
@@ -899,12 +900,12 @@ function ReportsPage({ onBack }) {
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {r.indices.map((idx) => (
                 <div key={idx.name} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-4">
-                  <p className="text-xs text-[var(--muted)]">{idx.name}</p>
+                  <p className="text-sm text-[var(--muted)]">{idx.name}</p>
                   <p className="mt-2 font-[IBM_Plex_Mono] text-lg text-[var(--text)]">{idx.value}</p>
-                  <p className={"mt-1 font-[IBM_Plex_Mono] text-xs " + indexDirectionClasses[idx.direction]}>
+                  <p className={"mt-1 font-[IBM_Plex_Mono] text-sm " + indexDirectionClasses[idx.direction]}>
                     {idx.change}
                   </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-[var(--faint)]">{idx.note}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--faint)]">{idx.note}</p>
                 </div>
               ))}
             </div>
@@ -933,7 +934,7 @@ function ReportsPage({ onBack }) {
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.ausblick}</p>
           </section>
 
-          <p className="mt-8 text-xs text-[var(--faint)]">
+          <p className="mt-8 text-sm text-[var(--faint)]">
             {r.sourceNote || "Demo-Inhalt zu Illustrationszwecken"} · Keine Anlageberatung · Berichte bleiben 6 Monate abrufbar.
           </p>
         </main>
@@ -954,7 +955,7 @@ function ReportsPage({ onBack }) {
           Automatisch erstellt, jeden Montag aktualisiert · Berichte bleiben 6 Monate abrufbar.
         </p>
         {usingFallback && (
-          <p className="mt-2 text-xs text-[var(--faint)]">
+          <p className="mt-2 text-sm text-[var(--faint)]">
             Noch kein automatisch generierter Bericht vorhanden — die folgenden Berichte sind Demo-Inhalte.
           </p>
         )}
@@ -966,13 +967,13 @@ function ReportsPage({ onBack }) {
               <button
                 key={r.title}
                 onClick={() => setSelectedReport(r)}
-                className="flex w-full items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left transition-colors hover:border-[var(--gold)]/40 hover:bg-[var(--bg-deep)]"
+                className="flex w-full items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
               >
                 <div className="pr-6">
                   <p className="text-sm text-[var(--text)]">{r.title}</p>
-                  <p className="mt-1 line-clamp-1 text-xs text-[var(--muted)]">{r.tldr}</p>
+                  <p className="mt-1 line-clamp-1 text-sm text-[var(--muted)]">{r.tldr}</p>
                 </div>
-                <span className="shrink-0 text-xs text-[var(--faint)]">Lesen →</span>
+                <span className="shrink-0 text-sm text-[var(--faint)]">Lesen →</span>
               </button>
             ))}
           </div>
@@ -1152,7 +1153,7 @@ function AkademiePage({ onBack }) {
             {einstiegsSteps.map((s) => (
               <div key={s.title} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
                 <p className="text-sm text-[var(--text)]">{s.title}</p>
-                <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">{s.text}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{s.text}</p>
               </div>
             ))}
           </div>
@@ -1162,7 +1163,7 @@ function AkademiePage({ onBack }) {
           <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-[0.1em] text-[var(--muted)]">
+                <tr className="border-b border-[var(--border)] text-left text-sm text-[var(--muted)] font-medium">
                   <th className="px-5 py-3">Broker</th>
                   <th className="px-5 py-3">Sparplanfähig</th>
                   <th className="px-5 py-3">Teilaktien</th>
@@ -1182,7 +1183,7 @@ function AkademiePage({ onBack }) {
                 ))}
               </tbody>
             </table>
-            <p className="border-t border-[var(--border)] px-5 py-3 text-xs text-[var(--faint)]">
+            <p className="border-t border-[var(--border)] px-5 py-3 text-sm text-[var(--faint)]">
               Neutraler Vergleich — Tazkiyah erhält keine Provision und empfiehlt keinen Anbieter. „Swap-free" bedeutet: keine Zinsgutschrift/-belastung bei über Nacht gehaltenen Positionen.
             </p>
           </div>
@@ -1191,7 +1192,7 @@ function AkademiePage({ onBack }) {
         {tab === "Glossar" && (
           <div className="mt-6 space-y-10">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Top-Fragen</p>
+              <p className="mb-3 text-sm text-[var(--muted)] font-medium">Top-Fragen</p>
               <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--gold)]/30 bg-[var(--surface)]">
                 {topFragen.map((item, i) => (
                   <div key={i}>
@@ -1209,7 +1210,7 @@ function AkademiePage({ onBack }) {
             </div>
 
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">A–Z Glossar</p>
+              <p className="mb-3 text-sm text-[var(--muted)] font-medium">A–Z Glossar</p>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1">
                 {Object.entries(
                   glossarAZ.reduce((groups, item) => {
@@ -1219,12 +1220,12 @@ function AkademiePage({ onBack }) {
                   }, {})
                 ).map(([letter, items]) => (
                   <div key={letter} className="border-b border-[var(--border)] px-4 py-4 last:border-0">
-                    <p className="mb-2 font-[IBM_Plex_Mono] text-xs text-[var(--gold-soft)]">{letter}</p>
+                    <p className="mb-2 font-[IBM_Plex_Mono] text-sm text-[var(--gold-soft)]">{letter}</p>
                     <div className="space-y-3">
                       {items.map((item) => (
                         <div key={item.term}>
                           <p className="text-sm text-[var(--text)]">{item.term}</p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">{item.def}</p>
+                          <p className="mt-0.5 text-sm leading-relaxed text-[var(--muted)]">{item.def}</p>
                         </div>
                       ))}
                     </div>
@@ -1245,11 +1246,11 @@ function AkademiePage({ onBack }) {
               Produkte). Besteht eine Aktie alle Prüfungen, ist sie konform. Fällt eine durch, ist sie nicht konform. Steht
               noch eine Prüfung aus, ist sie nicht geprüft. Zu jeder Prüfung nennen wir die Fundstelle im Standard und
               erklären sie auf einer eigenen Seite.{" "}
-              <a href={routes.methodik()} className="text-[var(--gold-soft)] underline underline-offset-2">
+              <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2">
                 Alle Regeln im Überblick
               </a>
             </p>
-            <p className="mt-3 text-xs text-[var(--faint)]">Automatisch berechnet · Keine Anlageberatung</p>
+            <p className="mt-3 text-sm text-[var(--faint)]">Automatisch berechnet · Keine Anlageberatung</p>
           </div>
         )}
 
@@ -1259,23 +1260,23 @@ function AkademiePage({ onBack }) {
               {vertiefenItems.map((v) => (
                 <div key={v.title} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
                   <p className="text-sm text-[var(--text)]">{v.title}</p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">{v.text}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{v.text}</p>
                 </div>
               ))}
             </div>
 
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Literaturempfehlungen</p>
+              <p className="mb-3 text-sm text-[var(--muted)] font-medium">Literaturempfehlungen</p>
               <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
                 {literaturItems.map((b) => (
                   <div key={b.title} className="px-5 py-4">
                     <p className="text-sm text-[var(--text)]">{b.title}</p>
-                    <p className="text-xs text-[var(--muted)]">{b.author}</p>
-                    <p className="mt-1 text-xs text-[var(--faint)]">{b.note}</p>
+                    <p className="text-sm text-[var(--muted)]">{b.author}</p>
+                    <p className="mt-1 text-sm text-[var(--faint)]">{b.note}</p>
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-[var(--faint)]">
+              <p className="mt-2 text-sm text-[var(--faint)]">
                 Auswahl ohne Kooperation oder Provision — dient nur der Orientierung.
               </p>
             </div>
@@ -1295,7 +1296,7 @@ function AskQuestionBox() {
   const [sent, setSent] = useState(false);
   return (
     <div className="mt-10 border-t border-[var(--border)] pt-6">
-      <p className="text-xs text-[var(--faint)]">Frage nicht gefunden?</p>
+      <p className="text-sm text-[var(--faint)]">Frage nicht gefunden?</p>
       {sent ? (
         <p className="mt-2 text-sm text-[var(--muted)]">Danke — deine Frage wurde vermerkt.</p>
       ) : (
@@ -1308,7 +1309,7 @@ function AskQuestionBox() {
           />
           <button
             onClick={() => question.trim() && setSent(true)}
-            className="flex-shrink-0 rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:border-[var(--gold)]/50 hover:text-[var(--gold-soft)]"
+            className="flex-shrink-0 rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
           >
             Senden
           </button>
@@ -1381,7 +1382,7 @@ function ComparePage({ tickers, onBack }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)]">
-                  <th className="px-5 py-3 text-left text-xs uppercase tracking-[0.15em] text-[var(--muted)]"> </th>
+                  <th className="px-5 py-3 text-left text-sm text-[var(--muted)] font-medium"> </th>
                   {items.map((s) => (
                     <th key={s.ticker} className="px-5 py-3 text-left font-[IBM_Plex_Mono] text-[var(--text)]">{s.ticker}</th>
                   ))}
@@ -1390,7 +1391,7 @@ function ComparePage({ tickers, onBack }) {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.label} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-5 py-3 text-xs text-[var(--muted)]">{r.label}</td>
+                    <td className="px-5 py-3 text-sm text-[var(--muted)]">{r.label}</td>
                     {items.map((s) => (
                       <td key={s.ticker} className="px-5 py-3 text-[var(--text-soft)]">{r.get(s)}</td>
                     ))}
@@ -1507,13 +1508,13 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
               onClick={() => onGo(item.page, item.anchor)}
               title={item.label}
               className={
-                "relative flex h-9 w-9 items-center justify-center rounded-lg text-xs font-[IBM_Plex_Mono] " +
-                (isActive(item) ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+                "relative flex h-9 w-9 items-center justify-center rounded-lg text-sm font-[IBM_Plex_Mono] " +
+                (isActive(item) ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
               }
             >
               {item.label.slice(0, 2)}
               {item.badge > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-[var(--gold)] text-[8px] leading-[14px] text-[var(--bg)]">
+                <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[8px] leading-[14px] text-[var(--on-primary)]">
                   {item.badge}
                 </span>
               )}
@@ -1526,7 +1527,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           onClick={() => onGo("home")}
           className={
             "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "home" && !activeAnchor ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+            (page === "home" && !activeAnchor ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
           }
         >
           Start
@@ -1539,7 +1540,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
                 onClick={() => onGo(group.page, group.anchor)}
                 className={
                   "flex-1 rounded-lg px-3 py-2 text-left text-sm " +
-                  (isActive(group) ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+                  (isActive(group) ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
                 }
               >
                 {group.label}
@@ -1556,7 +1557,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
               <div className="ml-3 space-y-0.5 border-l border-[var(--border)] pl-3">
                 {group.children.map((child, i) =>
                   child.type === "heading" ? (
-                    <p key={i} className="px-3 pt-2 text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">
+                    <p key={i} className="px-3 pt-2 text-sm text-[var(--faint)] font-medium">
                       {child.label}
                     </p>
                   ) : (
@@ -1570,8 +1571,8 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
                       className={
                         "block w-full truncate rounded-lg px-3 py-1.5 text-left text-[13px] " +
                         (child.type === "filter"
-                          ? isFilterActive(child) ? "text-[var(--gold-soft)]" : "text-[var(--muted)] hover:text-[var(--text)]"
-                          : isActive(child) ? "text-[var(--gold-soft)]" : "text-[var(--muted)] hover:text-[var(--text)]")
+                          ? isFilterActive(child) ? "text-[var(--primary)]" : "text-[var(--muted)] hover:text-[var(--text)]"
+                          : isActive(child) ? "text-[var(--primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")
                       }
                     >
                       {child.type === "filter" && "· "}
@@ -1588,12 +1589,12 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           onClick={() => onGo("watchlist")}
           className={
             "mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "watchlist" ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+            (page === "watchlist" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
           }
         >
           Watchlist
           {watchlistCount > 0 && (
-            <span className="rounded-full bg-[var(--gold)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--bg)]">
+            <span className="rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] px-1.5 py-0.5 text-sm font-medium text-[var(--on-primary)]">
               {watchlistCount}{watchlistMax ? `/${watchlistMax}` : ""}
             </span>
           )}
@@ -1603,7 +1604,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           onClick={() => onGo("faq")}
           className={
             "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "faq" ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+            (page === "faq" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
           }
         >
           Akademie
@@ -1613,7 +1614,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           onClick={() => onGo("methodik")}
           className={
             "mb-1 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm " +
-            (page === "methodik" ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
+            (page === "methodik" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--text-soft)] hover:bg-[var(--surface)]")
           }
         >
           Methodik
@@ -1624,10 +1625,10 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
             onClick={() => onGo("compare")}
             className={
               "mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm " +
-              (page === "compare" ? "bg-[var(--gold)]/15 text-[var(--gold-soft)]" : "text-[var(--emerald-soft)] hover:bg-[var(--surface)]")
+              (page === "compare" ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--emerald-soft)] hover:bg-[var(--surface)]")
             }
           >
-            Vergleich <span className="text-xs">({compareCount})</span>
+            Vergleich <span className="text-sm">({compareCount})</span>
           </button>
         )}
       </nav>
@@ -1639,7 +1640,7 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
             <div className="relative">
               <button
                 onClick={() => setAccountMenuOpen((v) => !v)}
-                className="flex w-full items-center justify-between text-xs text-[var(--muted)] hover:text-[var(--text)]"
+                className="flex w-full items-center justify-between text-sm text-[var(--muted)] hover:text-[var(--text)]"
               >
                 <span className="truncate" title={session.user.email}>{session.user.email}</span>
                 <span>{accountMenuOpen ? "▲" : "▼"}</span>
@@ -1648,32 +1649,32 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
                 <div className="mt-2 space-y-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2">
                   <button
                     onClick={() => { onGo("profile"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--gold-soft)]"
+                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
                   >
                     Profil
                   </button>
                   <button
                     onClick={() => { onGo("security"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--gold-soft)]"
+                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
                   >
                     Sicherheit
                   </button>
                   <button
                     onClick={() => { onGo("settings"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--gold-soft)]"
+                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
                   >
                     Einstellungen
                   </button>
                   <button
                     onClick={() => { onGo("privacy"); setAccountMenuOpen(false); }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--gold-soft)]"
+                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--primary)]"
                   >
                     Datenschutz
                   </button>
                   <div className="my-1 border-t border-[var(--border)]" />
                   <button
                     onClick={onSignOut}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--red-soft)]"
+                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-[var(--faint)] hover:bg-[var(--bg-deep)] hover:text-[var(--red-soft)]"
                   >
                     Abmelden
                   </button>
@@ -1683,12 +1684,12 @@ function Sidebar({ page, activeAnchor, activeFilter, onGo, watchlistCount, watch
           ) : (
             <button
               onClick={onOpenAuth}
-              className="w-full rounded-full border border-[var(--border)] py-1.5 text-xs text-[var(--muted)] hover:border-[var(--gold)]/50 hover:text-[var(--gold-soft)]"
+              className="w-full rounded-full border border-[var(--border)] py-1.5 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
             >
               Anmelden / Registrieren
             </button>
           )}
-          <p className="mt-2 text-[10px] text-[var(--faint)]">Keine Anlageberatung</p>
+          <p className="mt-2 text-sm text-[var(--faint)]">Keine Anlageberatung</p>
         </div>
       )}
     </aside>
@@ -1815,44 +1816,77 @@ export default function TazkiyahPrototype() {
     : null;
 
   return (
-    <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
+    <div className="app-root min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-        /* Tazkiyah Dark Theme — einziges Theme */
+        /* Tazkiyah Design B „Hell und ruhig“ (entschieden 05.10.2026) — einziges Theme, kein Dark Mode */
         :root {
-          --bg: #0E1613;
-          --bg-deep: #0B100E;
-          --surface: #121B17;
-          --track: #1B2621;
-          --border: #26332C;
-          --text: #F2EFE9;
-          --text-soft: #C9CFC9;
-          --muted: #8B978F;
-          --faint: #5B6560;
-          --gold: #C9A66B;
-          --gold-soft: #E4C68A;
-          --emerald: #3E7C59;
-          --emerald-soft: #8FC9A6;
-          --red: #7C3E3E;
-          --red-soft: #D68F8F;
-          --amber: #8A6A2E;
-          --amber-soft: #E0B368;
-          --lattice-dot: rgba(201,166,107,0.14);
+          color-scheme: light;
+          --bg: #F5F2E9;
+          --bg-deep: #EFEADD;
+          --surface: #FFFFFF;
+          --track: #EFEADD;
+          --border: #E2DBC9;
+          --text: #1B241F;
+          --text-soft: #3A433D;
+          --muted: #4F5751;
+          --faint: #6B716C;
+          --gold: #B08A3E;
+          --gold-soft: #8A6A2C;
+          --emerald: #2E7A55;
+          --emerald-soft: #1D5E41;
+          --red: #C0533F;
+          --red-soft: #9A3426;
+          --amber: #B07A1F;
+          --amber-soft: #7A5410;
+          --primary: #1F5A43;
+          --primary-hover: #123B2B;
+          --on-primary: #FFFFFF;
+          --footer: #13231C;
+          --footer-text: #CFD6CF;
+          --footer-link: #E2C27A;
+          /* Feste Werte aus der Gestaltungsvorgabe, damit keine Farbe außerhalb der Variablen steht */
+          --line: #ECE6D6;          /* Trennlinien in Karten */
+          --control-border: #D6CEB9; /* Ränder von Feldern, Chips, Zweitknöpfen */
+          --field: #FBFAF6;          /* Hintergrund von Eingabefeldern */
+          --header-border: #DDD6C4;
+          --ok-bg: #E3F0E8;   --ok-text: #1D5E41;
+          --bad-bg: #F6E3DF;  --bad-text: #9A3426;  --bad-border: #E8C3BA; --bad-strong: #7A2A1F;
+          --none-bg: #ECECE8; --none-text: #555A55; --none-strong: #3A3F3B;
+          --on-primary-soft: #F2F5F1; --on-primary-muted: #C9D9CF;
+          --tile: #E6EFE9;    --tile-gold: #F4ECD9;
+          --note-bg: #FBF5E6; --note-border: #EADBB5;
+          --logo-dot: #D9B45F;
         }
 
-        /* Inhaltsbreite neben der Sidebar: linksbündig, höchstens 1280 px.
+        /* Inhaltsbreite: höchstens 1160 px, mittig, 40 px Innenabstand (Handy 20 px).
            In der Komponenten-Ebene, damit Utilities wie max-w-2xl (Formulare) sie übersteuern. */
         @layer components {
-          .page { width: 100%; max-width: 1280px; margin-inline: 0; padding-inline: clamp(16px, 3vw, 48px); box-sizing: border-box; }
+          .page { width: 100%; max-width: 1160px; margin-inline: auto; padding-inline: 40px; box-sizing: border-box; }
+          @media (max-width: 640px) { .page { padding-inline: 20px; } }
+
+          /* Grundbausteine */
+          .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 26px; border-radius: 10px; background: var(--primary); color: var(--on-primary); font-weight: 600; font-size: 16px; line-height: 1.2; }
+          .btn-primary:hover { background: var(--primary-hover); }
+          .btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 26px; border-radius: 10px; background: var(--surface); color: var(--text); border: 1px solid var(--control-border); font-weight: 600; font-size: 16px; line-height: 1.2; }
+          .btn-secondary:hover { border-color: var(--primary); }
+          .field { min-height: 50px; padding: 0 14px; border-radius: 10px; background: var(--field); border: 1px solid var(--control-border); color: var(--text); font-size: 16px; }
+          .field:focus { border-color: var(--primary); outline: none; }
+          .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--surface); border: 1px solid var(--control-border); color: var(--text); font-size: 15px; font-weight: 500; }
+          .chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+          .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+          .icon-tile { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: var(--tile); color: var(--primary); }
+          .icon-tile-gold { background: var(--tile-gold); color: var(--gold-soft); }
+          .sr-only-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
         }
 
+        /* Sichtbarer Fokus für alles Klickbare */
+        :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
         .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
-        .font-body { font-family: 'Inter', sans-serif; }
-        .bg-lattice {
-          background-image: radial-gradient(circle at 1px 1px, var(--lattice-dot) 1px, transparent 0);
-          background-size: 28px 28px;
-        }
+        .font-body { font-family: 'Source Sans 3', system-ui, sans-serif; }
+        .app-root { font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
       `}</style>
 
       <Sidebar
@@ -1916,6 +1950,13 @@ export default function TazkiyahPrototype() {
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
         {page === "privacy" && <PrivacyPage session={session} onGo={goTo} />}
+
+        {/* Fußzeile über die volle Breite */}
+        <footer className="mt-20 bg-[var(--footer)] py-8">
+          <div className="page">
+            <BasisLine variant="footer" />
+          </div>
+        </footer>
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />
@@ -1923,10 +1964,10 @@ export default function TazkiyahPrototype() {
       {/* Floating Vergleichs-Leiste */}
       {compareTickers.length > 0 && page !== "compare" && (
         <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-3 shadow-xl">
-          <span className="text-xs text-[var(--muted)]">{compareTickers.length} zum Vergleich ausgewählt</span>
+          <span className="text-sm text-[var(--muted)]">{compareTickers.length} zum Vergleich ausgewählt</span>
           <button
             onClick={() => goTo("compare")}
-            className="rounded-full bg-[var(--gold)] px-4 py-1.5 text-xs font-medium text-[var(--bg)] hover:opacity-90"
+            className="rounded-full bg-[var(--primary)] px-4 py-1.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)]"
           >
             Vergleichen ansehen
           </button>

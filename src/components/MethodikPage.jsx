@@ -172,7 +172,7 @@ function Tag({ tone, children }) {
     amber: "border-[var(--amber)]/50 text-[var(--amber-soft)]",
     gold: "border-[var(--gold)]/50 text-[var(--gold-soft)]",
   };
-  return <span className={"rounded-full border px-2 py-0.5 text-[11px] " + tones[tone]}>{children}</span>;
+  return <span className={"rounded-full border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
 }
 
 function ParameterEntry({ id, def, showLimit }) {
@@ -205,7 +205,7 @@ function ParameterEntry({ id, def, showLimit }) {
             <dt className="text-[var(--muted)]">Verwendet bei</dt>
             <dd className="flex flex-wrap gap-x-3 gap-y-1">
               {USED_BY[id].map((cid) => (
-                <a key={cid} href={routes.criterion(cid)} className="text-[var(--gold-soft)] underline decoration-[var(--gold)]/40 underline-offset-2">
+                <a key={cid} href={routes.criterion(cid)} className="text-[var(--primary)] underline decoration-[var(--gold)]/40 underline-offset-2">
                   {EXPLANATIONS[cid].name} ({cid})
                 </a>
               ))}
@@ -232,13 +232,13 @@ export function IndustryGroups() {
           <li key={g.id} className="py-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-2">
               <p className="text-sm text-[var(--text)]">{g.label}</p>
-              <p className={"text-xs " + (g.handling === "exclude" ? "text-[var(--red-soft)]" : g.handling === "review" ? "text-[var(--amber-soft)]" : "text-[var(--emerald-soft)]")}>
+              <p className={"text-sm " + (g.handling === "exclude" ? "text-[var(--red-soft)]" : g.handling === "review" ? "text-[var(--amber-soft)]" : "text-[var(--emerald-soft)]")}>
                 {HANDLING_LABELS[g.handling]}
               </p>
             </div>
             <div className="text-sm leading-relaxed text-[var(--text-soft)]">
               <p>{nb(g.rationale)}</p>
-              <p className="pt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+              <p className="pt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
                 <span>{g.basis}</span>
                 <span aria-hidden="true">/</span>
                 <span>{g.source}</span>
@@ -307,7 +307,7 @@ export default function MethodikPage({ onBack, anchor }) {
   return (
     <div className="font-body text-left">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button onClick={onBack} className="hover:text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold)]">
+        <button onClick={onBack} className="hover:text-[var(--text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]">
           Tazkiyah
         </button>
         <span aria-hidden="true">/</span>
@@ -328,7 +328,7 @@ export default function MethodikPage({ onBack, anchor }) {
           <p className="pt-4 max-w-[68ch] border-l-2 border-[var(--gold)] pl-4 text-sm leading-relaxed text-[var(--text-soft)]">
             Grundsatz: {nb(PRINCIPLE)}
           </p>
-          <p className="pt-4 text-xs text-[var(--muted)]">Stand der Parameter: {formatDate(PARAMETERS_VERSION.slice(0, 10))}</p>
+          <p className="pt-4 text-sm text-[var(--muted)]">Stand der Parameter: {formatDate(PARAMETERS_VERSION.slice(0, 10))}</p>
         </section>
 
         <section id="pruefungen" aria-labelledby="so-wird-geprueft" className="scroll-mt-24 pb-16">
@@ -352,7 +352,7 @@ export default function MethodikPage({ onBack, anchor }) {
                     <li key={cid} className="py-2.5">
                       <a href={routes.criterion(cid)} className="group block">
                         <span className="flex items-baseline gap-2">
-                          <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{cid}</span>
+                          <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{cid}</span>
                           <span className="text-sm text-[var(--text)] group-hover:underline">{EXPLANATIONS[cid].name}</span>
                         </span>
                         <span className="block pl-8 pt-0.5 text-sm leading-relaxed text-[var(--text-soft)]">{nb(shortExplanation(cid))}</span>
@@ -449,7 +449,7 @@ export default function MethodikPage({ onBack, anchor }) {
                 {Object.entries(EXCLUDED_PRODUCT_TYPES).map(([id, source]) => (
                   <li key={id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
                     <span className="text-[var(--text-soft)]">{PRODUCT_LABELS[id] || id}</span>
-                    <span className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                    <span className="flex items-center gap-2 text-sm text-[var(--muted)]">
                       {source.replace(" [Ableitung]", "")}
                       {source.includes("[Ableitung]") && <Tag tone="gold">Ableitung</Tag>}
                     </span>

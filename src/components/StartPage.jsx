@@ -60,7 +60,7 @@ function AreaCard({ area, onGo }) {
       </svg>
       <span className="mt-4 flex items-baseline justify-between gap-3">
         <span className="text-[15px] text-[var(--text)]">{area.title}</span>
-        <span aria-hidden="true" className="text-[var(--faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--gold-soft)]">
+        <span aria-hidden="true" className="text-[var(--faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--primary)]">
           →
         </span>
       </span>
@@ -68,7 +68,7 @@ function AreaCard({ area, onGo }) {
     </>
   );
   const cls =
-    "group flex h-full w-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-left transition-colors hover:border-[var(--gold)]/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold)]";
+    "group flex h-full w-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-left transition-colors hover:border-[var(--primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]";
   return area.href ? (
     <a href={area.href} className={cls}>
       {body}
@@ -86,7 +86,7 @@ export default function StartPage({ onGo }) {
       {/* A. Hero */}
       <section className="grid items-center gap-8 min-[1000px]:grid-cols-[1.4fr_1fr] min-[1000px]:gap-12">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Investieren nach islamischen Grundsätzen</p>
+          <p className="text-sm text-[var(--muted)] font-medium">Investieren nach islamischen Grundsätzen</p>
           <h1 className="font-display mt-4" style={{ ...H1_STYLE, fontSize: "clamp(1.75rem, 3.2vw, 2.75rem)", lineHeight: 1.15 }}>
             Aktien und ETFs, geprüft nach AAOIFI-Standards.
           </h1>
@@ -94,10 +94,10 @@ export default function StartPage({ onGo }) {
             Tazkiyah zeigt, ob eine Aktie oder ein ETF die Prüfungen nach den AAOIFI-Standards besteht. Zu jeder Regel nennen wir die Quelle.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href={routes.screener()} className="rounded-full bg-[var(--gold)] px-5 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90">
+            <a href={routes.screener()} className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)]">
               Zum Screener
             </a>
-            <a href={routes.methodik()} className="rounded-full border border-[var(--border)] px-5 py-2.5 text-sm text-[var(--text)] hover:border-[var(--gold)]/50">
+            <a href={routes.methodik()} className="rounded-full border border-[var(--border)] px-5 py-2.5 text-sm text-[var(--text)] hover:border-[var(--primary)]">
               So prüfen wir
             </a>
           </div>
@@ -110,7 +110,7 @@ export default function StartPage({ onGo }) {
 
       {/* B. Bereiche */}
       <section className="mt-12" aria-labelledby="bereiche">
-        <h2 id="bereiche" className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]" style={{ fontSize: "0.75rem", color: "var(--muted)", margin: 0, fontWeight: 400, letterSpacing: "0.25em" }}>
+        <h2 id="bereiche" className="text-sm text-[var(--muted)] font-medium" style={{ fontSize: "0.75rem", color: "var(--muted)", margin: 0, fontWeight: 400, letterSpacing: "0.25em" }}>
           Was es bei Tazkiyah gibt
         </h2>
         <ul className="mt-4 grid gap-3 min-[640px]:grid-cols-2 min-[1000px]:grid-cols-3">

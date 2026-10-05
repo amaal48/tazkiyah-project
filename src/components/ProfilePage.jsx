@@ -16,7 +16,7 @@ import { AccountNav } from "./AccountNav";
 const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
 const inputClass =
   "w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:outline-none";
-const labelClass = "mb-1 block text-xs text-[var(--muted)]";
+const labelClass = "mb-1 block text-sm text-[var(--muted)]";
 
 function PersonalInfoCard({ session, onToast }) {
   const meta = session?.user?.user_metadata || {};
@@ -121,7 +121,7 @@ function PersonalInfoCard({ session, onToast }) {
             <span className="flex-1 truncate text-sm text-[var(--text)]">{email}</span>
             <span
               className={
-                "rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                "rounded-full px-2 py-0.5 text-sm font-medium " +
                 (verified
                   ? "bg-[var(--emerald)]/20 text-[var(--emerald-soft)]"
                   : "bg-[var(--amber)]/20 text-[var(--amber-soft)]")
@@ -135,17 +135,17 @@ function PersonalInfoCard({ session, onToast }) {
               type="button"
               onClick={handleResend}
               disabled={resending}
-              className="mt-1 text-xs text-[var(--faint)] hover:text-[var(--gold-soft)] disabled:opacity-50"
+              className="mt-1 text-sm text-[var(--faint)] hover:text-[var(--primary)] disabled:opacity-50"
             >
               {resending ? "…" : "Bestätigungs-E-Mail erneut senden"}
             </button>
           )}
-          <p className="mt-1 text-[11px] text-[var(--faint)]">
+          <p className="mt-1 text-sm text-[var(--faint)]">
             E-Mail-Adresse ändern folgt in einem späteren Ausbauschritt.
           </p>
         </div>
 
-        <label className="flex items-start gap-2 text-xs text-[var(--muted)]">
+        <label className="flex items-start gap-2 text-sm text-[var(--muted)]">
           <input
             type="checkbox"
             checked={newsletterOptIn}
@@ -155,12 +155,12 @@ function PersonalInfoCard({ session, onToast }) {
           <span>Newsletter erhalten (jederzeit hier abbestellbar).</span>
         </label>
 
-        {error && <p className="text-xs text-[var(--red-soft)]">{error}</p>}
+        {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-[var(--gold)] px-5 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
         >
           {saving ? "…" : "Speichern"}
         </button>

@@ -97,20 +97,20 @@ function DataExportCard({ session, onToast }) {
         Lade eine Kopie deiner gespeicherten Daten herunter — Profilangaben und Watchlist.
       </p>
 
-      {error && <p className="mb-3 text-xs text-[var(--red-soft)]">{error}</p>}
+      {error && <p className="mb-3 text-sm text-[var(--red-soft)]">{error}</p>}
 
       <div className="flex flex-wrap gap-3">
         <button
           onClick={handleExportJson}
           disabled={exporting}
-          className="rounded-full bg-[var(--gold)] px-5 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
         >
           {exporting ? "…" : "Alle Daten als JSON"}
         </button>
         <button
           onClick={handleExportCsv}
           disabled={exporting}
-          className="rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--text)] hover:border-[var(--gold)]/50 disabled:opacity-50"
+          className="rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--text)] hover:border-[var(--primary)] disabled:opacity-50"
         >
           {exporting ? "…" : "Watchlist als CSV"}
         </button>

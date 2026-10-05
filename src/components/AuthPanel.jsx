@@ -171,7 +171,7 @@ export function AuthPanel({ onClose }) {
                 />
               </div>
 
-              <label className="flex items-start gap-2 text-xs text-[var(--muted)]">
+              <label className="flex items-start gap-2 text-sm text-[var(--muted)]">
                 <input
                   type="checkbox"
                   checked={newsletterOptIn}
@@ -181,7 +181,7 @@ export function AuthPanel({ onClose }) {
                 Ich möchte den wöchentlichen Marktbericht per E-Mail erhalten (optional).
               </label>
 
-              <label className="flex items-start gap-2 text-xs text-[var(--muted)]">
+              <label className="flex items-start gap-2 text-sm text-[var(--muted)]">
                 <input
                   type="checkbox"
                   required
@@ -192,7 +192,7 @@ export function AuthPanel({ onClose }) {
                 Ich bestätige, dass ich mindestens 18 Jahre alt bin. *
               </label>
 
-              <label className="flex items-start gap-2 text-xs text-[var(--muted)]">
+              <label className="flex items-start gap-2 text-sm text-[var(--muted)]">
                 <input
                   type="checkbox"
                   required
@@ -201,9 +201,9 @@ export function AuthPanel({ onClose }) {
                   className="mt-0.5 accent-[var(--gold)]"
                 />
                 Ich akzeptiere die{" "}
-                <a href="#" className="text-[var(--gold-soft)] hover:underline" onClick={(e) => e.stopPropagation()}>AGB</a>{" "}
+                <a href="#" className="text-[var(--primary)] hover:underline" onClick={(e) => e.stopPropagation()}>AGB</a>{" "}
                 und{" "}
-                <a href="#" className="text-[var(--gold-soft)] hover:underline" onClick={(e) => e.stopPropagation()}>Datenschutzerklärung</a>. *
+                <a href="#" className="text-[var(--primary)] hover:underline" onClick={(e) => e.stopPropagation()}>Datenschutzerklärung</a>. *
               </label>
             </>
           )}
@@ -212,19 +212,19 @@ export function AuthPanel({ onClose }) {
             <button
               type="button"
               onClick={() => { setMode("forgot"); resetMessages(); }}
-              className="block text-xs text-[var(--faint)] hover:text-[var(--gold-soft)]"
+              className="block text-sm text-[var(--faint)] hover:text-[var(--primary)]"
             >
               Passwort vergessen?
             </button>
           )}
 
-          {error && <p className="text-xs text-[var(--red-soft)]">{error}</p>}
-          {info && <p className="text-xs text-[var(--emerald-soft)]">{info}</p>}
+          {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}
+          {info && <p className="text-sm text-[var(--emerald-soft)]">{info}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-[var(--gold)] px-4 py-2.5 text-sm font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             {loading ? "…" : mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Link zusenden"}
           </button>
@@ -235,7 +235,7 @@ export function AuthPanel({ onClose }) {
             setMode(mode === "login" ? "signup" : "login");
             resetMessages();
           }}
-          className="mt-4 w-full text-center text-xs text-[var(--muted)] hover:text-[var(--gold-soft)]"
+          className="mt-4 w-full text-center text-sm text-[var(--muted)] hover:text-[var(--primary)]"
         >
           {mode === "signup" ? "Schon ein Konto? Anmelden" : mode === "forgot" ? "Zurück zur Anmeldung" : "Noch kein Konto? Registrieren"}
         </button>

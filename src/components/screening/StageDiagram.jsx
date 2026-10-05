@@ -17,10 +17,10 @@ function CriterionLink({ id, parameters }) {
   return (
     <li>
       <a href={routes.criterion(id)} className="group grid grid-cols-[1.75rem_1fr] gap-x-1 py-1.5 text-sm">
-        <span className="pt-px font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">{id}</span>
+        <span className="pt-px font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{id}</span>
         <span className="min-w-0 break-words text-[var(--text-soft)] group-hover:text-[var(--text)] group-hover:underline">
           {EXPLANATIONS[id]?.name || id}
-          {typeof limit === "number" && <span className="block text-xs text-[var(--gold-soft)]">höchstens {fmtLimit(limit)}</span>}
+          {typeof limit === "number" && <span className="block text-sm text-[var(--gold-soft)]">höchstens {fmtLimit(limit)}</span>}
         </span>
       </a>
     </li>
@@ -36,7 +36,7 @@ export default function StageDiagram({ parameters = defaultParameterValues() }) 
             <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="font-display text-xl text-[var(--gold-soft)]">{i + 1}</span>
               <span className="text-[15px] text-[var(--text)]">{stage.title}</span>
-              <span className="ml-auto whitespace-nowrap font-[IBM_Plex_Mono] text-[11px] text-[var(--faint)]">Stufe {stage.id}</span>
+              <span className="ml-auto whitespace-nowrap font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">Stufe {stage.id}</span>
             </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{stage.question}</p>
             <ul className="mt-3 border-t border-[var(--border)] pt-2">
@@ -48,7 +48,7 @@ export default function StageDiagram({ parameters = defaultParameterValues() }) 
         ))}
       </ol>
 
-      <p className="mt-3 text-xs leading-relaxed text-[var(--muted)]">
+      <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
         Für ETFs gilt statt der Stufen A bis D die Stufe {ETF_STAGE.id} ({ETF_STAGE.title}):{" "}
         {ETF_STAGE.criteria.map((id, i) => (
           <span key={id}>

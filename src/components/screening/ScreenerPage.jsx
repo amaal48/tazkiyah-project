@@ -18,7 +18,7 @@ export default function ScreenerPage({ sectors, preset, watchlist, onToggleWatch
         </h1>
         <p className="mt-2 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
           Alle Aktien und ETFs mit ihrem Ergebnis nach den AAOIFI-Standards.{" "}
-          <a href={routes.methodik()} className="whitespace-nowrap text-[var(--gold-soft)] underline decoration-[var(--gold)]/40 underline-offset-2">
+          <a href={routes.methodik()} className="whitespace-nowrap text-[var(--primary)] underline decoration-[var(--gold)]/40 underline-offset-2">
             So prüfen wir
           </a>
         </p>

@@ -21,7 +21,7 @@ export default function SourceLink({ source, criterion, className = "" }) {
         return (
           <span key={i}>
             {href ? (
-              <a href={href} className="text-[var(--gold-soft)] underline decoration-[var(--gold)]/40 underline-offset-2 hover:decoration-[var(--gold-soft)]">
+              <a href={href} className="text-[var(--primary)] underline decoration-[var(--gold)]/40 underline-offset-2 hover:decoration-[var(--gold-soft)]">
                 {label}
               </a>
             ) : (

@@ -34,7 +34,7 @@ const byNumberAsc = (key) => (a, b) => {
 };
 
 const SELECT =
-  "rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--text)] focus:border-[var(--gold)]/60 focus:outline-none";
+  "rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] focus:border-[var(--primary)] focus:outline-none";
 
 /** Karte für schmale Bildschirme; auch auf der Watchlist verwendet. */
 export function ScreeningRow({ row, actions }) {
@@ -44,14 +44,14 @@ export function ScreeningRow({ row, actions }) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="font-[IBM_Plex_Mono] text-sm tracking-wide text-[var(--text)]">{row.ticker}</span>
           {row.assetType === "etf" && (
-            <span className="rounded-full border border-[var(--gold)]/40 px-1.5 py-0.5 text-[10px] uppercase text-[var(--gold-soft)]">ETF</span>
+            <span className="rounded-full border border-[var(--gold)]/40 px-1.5 py-0.5 text-sm text-[var(--gold-soft)] font-medium">ETF</span>
           )}
           <StatusBadge status={row.status} />
         </div>
         <p className="mt-1 text-[15px] text-[var(--text)]/90">{row.name}</p>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{reasonLine(row)}</p>
+        <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{reasonLine(row)}</p>
       </a>
-      {actions && <div className="flex flex-wrap items-center gap-4 border-t border-[var(--border)] px-5 py-2 text-xs">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-4 border-t border-[var(--border)] px-5 py-2 text-sm">{actions}</div>}
     </div>
   );
 }
@@ -67,9 +67,9 @@ function TableRow({ row, actions }) {
         <span className="min-w-0">
           <span className="block text-[15px] text-[var(--text)]">{row.name}</span>
           <span className="mt-0.5 flex items-center gap-2">
-            <span className="font-[IBM_Plex_Mono] text-xs tracking-wide text-[var(--muted)]">{row.ticker}</span>
+            <span className="font-[IBM_Plex_Mono] text-sm tracking-wide text-[var(--muted)]">{row.ticker}</span>
             {row.assetType === "etf" && (
-              <span className="rounded-full border border-[var(--gold)]/40 px-1.5 text-[10px] uppercase text-[var(--gold-soft)]">ETF</span>
+              <span className="rounded-full border border-[var(--gold)]/40 px-1.5 text-sm text-[var(--gold-soft)] font-medium">ETF</span>
             )}
           </span>
         </span>
@@ -82,7 +82,7 @@ function TableRow({ row, actions }) {
           {reason}
         </span>
       </a>
-      <span className="flex items-center gap-3 py-3.5 pr-3 text-xs">{actions}</span>
+      <span className="flex items-center gap-3 py-3.5 pr-3 text-sm">{actions}</span>
     </li>
   );
 }
@@ -142,7 +142,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
         type="button"
         onClick={() => onToggleWatchlist(r.ticker)}
         aria-pressed={watchlist.includes(r.ticker)}
-        className={"whitespace-nowrap " + (watchlist.includes(r.ticker) ? "text-[var(--gold-soft)]" : "text-[var(--faint)] hover:text-[var(--muted)]")}
+        className={"whitespace-nowrap " + (watchlist.includes(r.ticker) ? "text-[var(--primary)]" : "text-[var(--faint)] hover:text-[var(--muted)]")}
       >
         {watchlist.includes(r.ticker) ? "✓ Watchlist" : "+ Watchlist"}
       </button>
@@ -164,7 +164,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
             onChange={(e) => update({ query: e.target.value })}
             placeholder="Name oder Ticker suchen…"
             aria-label="Name oder Ticker suchen"
-            className="min-w-[8rem] flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:border-[var(--gold)]/60 focus:outline-none"
+            className="min-w-[8rem] flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:border-[var(--primary)] focus:outline-none"
           />
           <div role="group" aria-label="Status" className="flex flex-shrink-0 gap-1.5">
             {STATUS_ORDER.map((s) => (
@@ -174,10 +174,10 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
                 onClick={() => toggleStatus(s)}
                 aria-pressed={f.statuses.includes(s)}
                 className={
-                  "whitespace-nowrap rounded-full border px-2.5 py-2 text-xs transition-colors " +
+                  "whitespace-nowrap rounded-full border px-2.5 py-2 text-sm transition-colors " +
                   (f.statuses.includes(s)
-                    ? "border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold-soft)]"
-                    : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--gold)]/50")
+                    ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--primary)]")
                 }
               >
                 {STATUS_TEXT[s]}
@@ -207,7 +207,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
         </div>
       </div>
 
-      <p className="mb-3 mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs text-[var(--faint)]">
+      <p className="mb-3 mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-[var(--faint)]">
         <span>
           {loading ? "Lade Ergebnisse…" : `${filtered.length} Titel gefunden${filtered.length > shown.length ? ` · ${shown.length} angezeigt` : ""}`}
         </span>
@@ -230,7 +230,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
       {!loading && !error && filtered.length === 0 && (
         <div className="rounded-2xl border border-[var(--border)] px-5 py-8 text-center text-sm text-[var(--muted)]">
           Keine Treffer.{" "}
-          <button type="button" onClick={() => update({ ...EMPTY, sort: f.sort })} className="text-[var(--gold-soft)] underline underline-offset-2">
+          <button type="button" onClick={() => update({ ...EMPTY, sort: f.sort })} className="text-[var(--primary)] underline underline-offset-2">
             Filter zurücksetzen
           </button>
         </div>
@@ -239,7 +239,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
       {/* Zeilenliste ab 1000 px */}
       {shown.length > 0 && (
         <ul className="hidden min-[1000px]:block">
-          <li aria-hidden="true" className={"grid gap-x-6 pb-2 pl-3 text-[11px] uppercase tracking-[0.15em] text-[var(--faint)] " + COLS}>
+          <li aria-hidden="true" className={"grid gap-x-6 pb-2 pl-3 text-sm text-[var(--faint)] font-medium " + COLS}>
             <span>Name und Ticker</span>
             <span>Sektor</span>
             <span>Status</span>
@@ -264,7 +264,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
           <button
             type="button"
             onClick={() => setVisible((c) => c + PAGE)}
-            className="rounded-full border border-[var(--border)] px-5 py-2 text-sm text-[var(--muted)] hover:border-[var(--gold)]/50 hover:text-[var(--gold-soft)]"
+            className="rounded-full border border-[var(--border)] px-5 py-2 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
           >
             Weitere {Math.min(PAGE, filtered.length - shown.length)} von {filtered.length - shown.length} laden
           </button>

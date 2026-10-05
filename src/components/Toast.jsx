@@ -32,7 +32,7 @@ export function Toast({ toast, onDismiss, duration = 4000 }) {
       }
     >
       <span>{toast.message}</span>
-      <button onClick={onDismiss} className="text-xs text-[var(--faint)] hover:text-[var(--text)]" aria-label="Schließen">
+      <button onClick={onDismiss} className="text-sm text-[var(--faint)] hover:text-[var(--text)]" aria-label="Schließen">
         ✕
       </button>
     </div>
