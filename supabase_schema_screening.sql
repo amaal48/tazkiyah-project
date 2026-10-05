@@ -78,6 +78,10 @@ create table if not exists public.screening_runs (
   run_at             timestamptz not null default now()
 );
 
+-- Ergänzt 05.10.2026: US-Börse für die Kurs-Widgets (NASDAQ, NYSE, CBOE). Befüllt mit
+-- supabase_securities_exchange.sql (aus scripts/sec-exchanges.mjs). Leer = kein Widget.
+alter table public.securities add column if not exists exchange text;
+
 -- Ergänzt für den Cron: verwendete Eingangsdaten (für Nachvollziehbarkeit und
 -- Neuberechnung ohne API-Abruf) und Prüfsumme des Ergebnisses.
 alter table public.screening_runs add column if not exists inputs      jsonb;

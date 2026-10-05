@@ -2,7 +2,8 @@
 //
 // Detailseite eines Titels (#/aktie/AAPL), Design B: Ergebnisfeld, je Stufe eine Karte mit
 // einer Zeile pro Prüfung (Werte gegen Grenzwert, Balken mit Grenzmarke, Quelle, manuelle
-// Prüfung), Verlauf der Statuswechsel, Hinweis zu Reinigung und Zakat.
+// Prüfung), Kurs und Marktdaten von TradingView (nach Zustimmung), Verlauf der Statuswechsel,
+// Hinweis zu Reinigung und Zakat.
 
 import { useEffect, useState } from "react";
 import { ETF_STAGE, EXPLANATIONS, FLAG_TEXTS, RESULT_LABELS, STAGES } from "../../screening/explanations.js";
@@ -11,6 +12,7 @@ import { routes } from "../../lib/hashRoute.js";
 import StatusBadge, { StatusIcon } from "./StatusBadge.jsx";
 import SourceLink from "./SourceLink.jsx";
 import LimitBar from "./LimitBar.jsx";
+import MarketData from "./MarketData.jsx";
 import {
   BASIS_TEXT,
   H1_STYLE,
@@ -230,7 +232,7 @@ function groupCriteria(criteria, isEtf) {
   return groups.filter((g) => g.items.length);
 }
 
-export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWatchlist, priceSection }) {
+export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWatchlist }) {
   const list = useScreeningList();
   const row = list.byTicker.get(ticker) || null;
   const [detail, setDetail] = useState({ loading: true, error: null, data: null });
@@ -381,6 +383,9 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
             </div>
           )}
 
+          {/* Kurs und Marktdaten (TradingView, erst nach Zustimmung) */}
+          <MarketData ticker={ticker} exchange={row?.exchange} name={name} />
+
           {/* Verlauf */}
           <section className="mt-[72px]">
             <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
@@ -423,9 +428,6 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
               So prüft Tazkiyah
             </a>
           </p>
-
-          {/* 6. Platzhalter-Kurse */}
-          {priceSection}
         </>
       )}
     </div>

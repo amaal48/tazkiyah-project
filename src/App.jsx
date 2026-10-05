@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ALL_STOCKS } from "./data/stocks";
 import { generateICS, downloadICS } from "./utils/icsExport";
 import { supabase } from "./lib/supabaseClient";
@@ -31,216 +30,6 @@ import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./components/screening/fo
    per einfachem State-Switch navigierbar (als Grundlage gedacht,
    nicht als fertiges Routing).
    ============================================================ */
-
-/* ---------- Gemeinsame Bausteine ---------- */
-
-/* ---------- Kurs-Chart mit Zeitfiltern ----------
-   generateMockSeries() erzeugt Demo-Kursreihen. fetchPriceHistory() ist die
-   Stelle, an der eine echte Marktdaten-API angebunden wird — siehe Hinweise
-   am Ende der Datei / im Chat für konkrete Anbieter und Anbindung. */
-
-const CHART_RANGES = [
-  { key: "1D", label: "1T", days: 1, intraday: true },
-  { key: "1W", label: "1W", days: 7 },
-  { key: "1M", label: "1M", days: 30 },
-  { key: "1Y", label: "1J", days: 365 },
-  { key: "5Y", label: "5J", days: 1825 },
-  { key: "MAX", label: "Max", days: 3650 },
-];
-
-// Fixer Näherungskurs für die Dollar->Euro-Anzeige (EZB-Referenzkurs, Stand 04.09.2026:
-// 1 € = 1,1622 $ → 1 $ ≈ 0,86 €). KEINE Live-Umrechnung — für ein fertiges Produkt
-// sollte hier ein echter FX-Endpoint (z.B. exchangerate.host, Twelve Data "currency_conversion")
-// angebunden werden, idealerweise mit demselben Caching-Muster wie price-history.js.
-const USD_EUR_RATE = 0.86;
-
-function parseEuro(str) {
-  return parseFloat(str.replace(/\./g, "").replace(",", ".").replace("$", "").replace("€", "").trim());
-}
-function parsePercent(str) {
-  return parseFloat(str.replace("%", "").replace(",", "."));
-}
-
-// Deterministischer Pseudo-Zufallswert (gleiches Ticker+Range ergibt immer dieselbe Kurve)
-function seededRandom(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
-// Intraday-Serie (1T): stündliche Punkte über einen Handelstag (9-17:30 Uhr Xetra-Fenster
-// als Orientierung), statt nur zwei Datenpunkten — sonst sieht "1T" wie eine gerade Linie aus.
-function generateIntradaySeries(ticker, currentPrice) {
-  const seedBase = ticker.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + 1;
-  const rand = seededRandom(seedBase);
-  const points = [];
-  let price = currentPrice * (0.985 + rand() * 0.01);
-  const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "17:30"];
-  for (let i = 0; i < hours.length; i++) {
-    price = price + (rand() - 0.48) * currentPrice * 0.004;
-    points.push({ date: hours[i], price: Number(price.toFixed(2)) });
-  }
-  points[points.length - 1].price = currentPrice;
-  return points;
-}
-
-function generateMockSeries(ticker, days, currentPrice) {
-  const seedBase = ticker.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + days;
-  const rand = seededRandom(seedBase);
-  const points = [];
-  let price = currentPrice * (0.92 + rand() * 0.06);
-  const today = new Date();
-  // Bei langen Zeiträumen nicht jeden einzelnen Tag berechnen (unnötig für die Optik,
-  // kostet nur Performance) — stattdessen auf ca. 180 Stützpunkte verdichten.
-  const step = Math.max(1, Math.floor(days / 180));
-  for (let i = days; i >= 0; i -= step) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    price = Math.max(price + (rand() - 0.485) * currentPrice * 0.012 * step, currentPrice * 0.35);
-    points.push({ date: d.toISOString().slice(0, 10), price: Number(price.toFixed(2)) });
-  }
-  points[points.length - 1].price = currentPrice; // heutiger Kurs bleibt exakt
-  return points;
-}
-
-// Versucht die echte API-Route; fällt bei Fehler (z.B. Function noch nicht
-// eingerichtet, kein API-Key, ISIN fehlt) automatisch auf Demo-Daten zurück,
-// damit die App auch ohne Backend-Setup lauffähig bleibt.
-async function fetchPriceHistory(ticker, rangeKey, currentPrice) {
-  const range = CHART_RANGES.find((r) => r.key === rangeKey);
-
-  try {
-    const res = await fetch(`/api/price-history?symbol=${ticker}&range=${rangeKey}`);
-    if (!res.ok) throw new Error("API nicht erreichbar");
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) throw new Error("Keine Daten");
-    return data;
-  } catch (err) {
-    // Fallback: Demo-Daten (z.B. während der lokalen Entwicklung ohne Vercel-Function)
-    await new Promise((r) => setTimeout(r, 150));
-    return range.intraday ? generateIntradaySeries(ticker, currentPrice) : generateMockSeries(ticker, range.days, currentPrice);
-  }
-}
-
-// Formatiert die X-Achsen-/Tooltip-Beschriftung je nach Zeitraum unterschiedlich fein
-function formatChartLabel(dateStr, rangeKey) {
-  if (rangeKey === "1D") return dateStr; // schon "HH:mm"
-  const d = new Date(dateStr + "T00:00:00");
-  if (rangeKey === "5Y" || rangeKey === "MAX") {
-    return d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
-  }
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
-}
-
-function StockChart({ stock }) {
-  const [range, setRange] = useState("1M");
-  const [series, setSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const currentPrice = parseEuro(stock.price);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchPriceHistory(stock.ticker, range, currentPrice).then((data) => {
-      if (!cancelled) {
-        setSeries(data);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stock.ticker, range]);
-
-  const first = series[0]?.price;
-  const last = series[series.length - 1]?.price;
-  const changeAbs = first != null ? (last - first) * USD_EUR_RATE : 0;
-  const changePct = first ? ((last - first) / first) * 100 : 0; // Prozent ist währungsunabhängig
-  const up = changeAbs >= 0;
-  const color = up ? "var(--emerald-soft)" : "var(--red-soft)";
-  const seriesEUR = series.map((p) => ({ ...p, price: Number((p.price * USD_EUR_RATE).toFixed(2)) }));
-
-  return (
-    <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          {loading ? (
-            <span className="text-sm text-[var(--faint)]">Lade Kursdaten…</span>
-          ) : (
-            <>
-              <span className={"font-[IBM_Plex_Mono] text-lg " + (up ? "text-[var(--emerald-soft)]" : "text-[var(--red-soft)]")}>
-                {up ? "+" : ""}{changePct.toFixed(2)}%
-              </span>
-              <span className="ml-2 text-sm text-[var(--muted)]">
-                ({up ? "+" : ""}{changeAbs.toFixed(2).replace(".", ",")} €) im gewählten Zeitraum
-              </span>
-            </>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1 rounded-full border border-[var(--border)] p-1">
-          {CHART_RANGES.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => setRange(r.key)}
-              className={
-                "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-3 text-sm font-[IBM_Plex_Mono] " +
-                (range === r.key ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")
-              }
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex h-56 items-center justify-center text-sm text-[var(--faint)]">Lade Kursdaten…</div>
-      ) : (
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={seriesEUR} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.25} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="var(--border)" strokeDasharray="3 5" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(v) => formatChartLabel(v, range)}
-              tick={{ fill: "var(--faint)", fontSize: 11 }}
-              axisLine={{ stroke: "var(--border)" }}
-              tickLine={false}
-              minTickGap={40}
-            />
-            <YAxis
-              domain={["dataMin", "dataMax"]}
-              tick={{ fill: "var(--faint)", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={54}
-              tickFormatter={(v) => `${v.toFixed(0)} €`}
-            />
-            <Tooltip
-              contentStyle={{ background: "var(--bg-deep)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
-              labelStyle={{ color: "var(--muted)" }}
-              labelFormatter={(v) => formatChartLabel(v, range)}
-              formatter={(v) => [`${v.toFixed(2).replace(".", ",")} €`, "Kurs"]}
-            />
-            <Area type="monotone" dataKey="price" stroke={color} fill="url(#chartFade)" strokeWidth={2} activeDot={{ r: 4 }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
-
-      <div className="mt-3 flex items-center justify-between text-sm text-[var(--faint)]">
-        <span>Quelle: Demo-Daten (Platzhalter) · Anzeige in € umgerechnet, Original in $ (US-notiert)</span>
-      </div>
-    </div>
-  );
-}
 
 /* ---------- Daten ---------- */
 
@@ -280,43 +69,8 @@ function daysUntil(iso) {
   return Math.round((d - today) / 86400000);
 }
 
-// Kurs und Kursverlauf aus stocks.js sind Platzhalter und werden nur so gekennzeichnet gezeigt
-function PriceSection({ stock }) {
-  const priceNum = parseEuro(stock.price);
-  const dayPct = parsePercent(stock.change);
-  const dayAbs = (priceNum * dayPct) / (100 + dayPct);
-  return (
-    <section className="mt-12 border-t border-[var(--border)] pt-8">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-sm text-[var(--muted)] font-medium">Kurs</p>
-        <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sm text-[var(--text-soft)]">Beispielwerte</span>
-      </div>
-      <div className="mt-3 flex flex-wrap items-baseline gap-3">
-        <span className="font-[IBM_Plex_Mono] text-2xl text-[var(--text)]">{(priceNum * USD_EUR_RATE).toFixed(2).replace(".", ",")} €</span>
-        <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">≈ {stock.price}</span>
-        <span className={"font-[IBM_Plex_Mono] text-sm " + (stock.up ? "text-[var(--emerald-soft)]" : "text-[var(--red-soft)]")}>
-          {stock.up ? "+" : ""}{dayPct.toFixed(2)}% ({stock.up ? "+" : ""}{(dayAbs * USD_EUR_RATE).toFixed(2).replace(".", ",")} €) heute
-        </span>
-      </div>
-      <p className="mt-1.5 text-sm text-[var(--faint)]">
-        Beispielwerte, keine echten Kurse. Euro-Wert über festen Näherungskurs (1 $ ≈ {USD_EUR_RATE} €).
-      </p>
-      <StockChart stock={stock} />
-    </section>
-  );
-}
-
 function StockDetailPage({ onBack, ticker, watchlist, onToggleWatchlist }) {
-  const stock = sampleStocks.find((s) => s.ticker === ticker) || null;
-  return (
-    <ScreeningDetail
-      ticker={ticker}
-      onBack={onBack}
-      watchlist={watchlist}
-      onToggleWatchlist={onToggleWatchlist}
-      priceSection={stock ? <PriceSection stock={stock} /> : null}
-    />
-  );
+  return <ScreeningDetail ticker={ticker} onBack={onBack} watchlist={watchlist} onToggleWatchlist={onToggleWatchlist} />;
 }
 
 /* ---------- Watchlist-Seite ---------- */
@@ -1571,6 +1325,16 @@ export default function TazkiyahPrototype() {
           --tile: #E6EFE9;    --tile-gold: #F4ECD9;
           --note-bg: #FBF5E6; --note-border: #EADBB5;
           --logo-dot: #D9B45F;
+          /* TradingView-Widgets (Kurs-Chart auf der Detailseite). Werden beim Laden ausgelesen. */
+          --tv-line: var(--primary);
+          --tv-area-top: rgba(31, 90, 67, 0.16);
+          --tv-area-bottom: rgba(31, 90, 67, 0.01);
+          --tv-grid: rgba(27, 36, 31, 0.06);
+          --tv-scale-text: var(--muted);
+          --tv-text: var(--text);
+          --tv-bg: var(--surface);
+          --tv-up: var(--emerald);
+          --tv-down: var(--red);
         }
 
         /* Inhaltsbreite: höchstens 1160 px, mittig, 40 px Innenabstand (Handy 20 px).

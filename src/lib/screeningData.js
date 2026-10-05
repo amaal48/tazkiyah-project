@@ -8,7 +8,7 @@
 //   Verlauf: screening_status_changes je security_id.
 //
 // Stammdaten wie Sektor kommen vorerst aus src/data/stocks.js (Zuordnung über ticker),
-// der Status nie.
+// der Status nie. Die US-Börse (für die Kurs-Widgets) kommt aus securities.exchange.
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
@@ -52,9 +52,13 @@ function governing(id, expectedId, a, q) {
 }
 
 async function fetchList() {
-  const securities = await fetchAll(() =>
-    supabase.from("securities").select("id,ticker,name,asset_type").order("ticker")
-  );
+  let securities;
+  try {
+    securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type,exchange").order("ticker"));
+  } catch {
+    // Spalte exchange noch nicht angelegt (supabase_securities_exchange.sql): ohne Börse weiter
+    securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type").order("ticker"));
+  }
 
   let current;
   let sortable = true;
@@ -74,6 +78,7 @@ async function fetchList() {
       ticker: s.ticker,
       name: s.name,
       assetType: s.asset_type,
+      exchange: s.exchange ?? null,
       sector: SECTOR_BY_TICKER.get(s.ticker) ?? null,
       hasResult: !!r,
       // Kein Ergebnis in der Datenbank = für Nutzer „nicht geprüft“ (kein vierter Status)
