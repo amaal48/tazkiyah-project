@@ -27,7 +27,7 @@ export function Toast({ toast, onDismiss, duration = 4000 }) {
       role="status"
       aria-live="polite"
       className={
-        "fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-[var(--bg-deep)] px-5 py-3 text-sm shadow-xl " +
+        "fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-[var(--bg-deep)] px-5 py-3 text-sm " +
         (TYPE_STYLES[toast.type] || TYPE_STYLES.info)
       }
     >

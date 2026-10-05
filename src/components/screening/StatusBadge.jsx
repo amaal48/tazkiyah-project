@@ -25,11 +25,13 @@ export function StatusIcon({ status, size = 14, strokeWidth = 2.3 }) {
   );
 }
 
-export default function StatusBadge({ status, size = "sm", className = "" }) {
+export default function StatusBadge({ status, size = "sm", inverse = false, className = "" }) {
   const key = STYLES[status] ? status : "nicht_geprueft";
+  // inverse: weiße Pille auf dunkelgrüner Fläche (Ergebnisfeld „konform“)
+  const colors = inverse ? "bg-[var(--surface)] text-[var(--ok-text)]" : STYLES[key];
   const pad = size === "lg" ? "px-[18px] py-[10px] text-[16px]" : "px-3 py-1.5 text-[14px]";
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-semibold leading-none ${pad} ${STYLES[key]} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-semibold leading-none ${pad} ${colors} ${className}`}>
       <StatusIcon status={key} size={size === "lg" ? 16 : 14} />
       {STATUS_TEXT[key]}
     </span>

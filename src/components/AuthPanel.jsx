@@ -97,7 +97,7 @@ export function AuthPanel({ onClose }) {
   const titles = { login: "Anmelden", signup: "Konto erstellen", forgot: "Passwort zurücksetzen" };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--text)]/40 px-4" onClick={onClose}>
       <div
         className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6"
         onClick={(e) => e.stopPropagation()}

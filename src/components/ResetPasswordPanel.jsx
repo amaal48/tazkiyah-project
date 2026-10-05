@@ -40,7 +40,7 @@ export function ResetPasswordPanel({ onDone }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--text)]/40 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="font-display mb-4 text-xl text-[var(--text)]">Neues Passwort setzen</h2>
 

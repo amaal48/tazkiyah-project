@@ -1,12 +1,12 @@
 // src/components/screening/ScreeningList.jsx
 //
-// Filter (Suche, Status, Sektor, Aktie/ETF), Sortierung und Liste der Screening-Ergebnisse.
-// Ab 1000 px Zeilenliste mit Spalten, darunter Karten. Die ganze Zeile öffnet die Detailseite.
-// Filter bleiben für die Sitzung erhalten, damit „Zurück“ von der Detailseite sie nicht verliert.
+// Filter (Suche, Status, Aktie/ETF, Sektor), Sortierung und Liste der Screening-Ergebnisse.
+// Design B: Filterkarte oben, darunter jede Aktie als eigene Kartenzeile, ganz klickbar
+// zur Detailseite. Filter bleiben für die Sitzung erhalten, damit „Zurück“ sie nicht verliert.
 
 import { useEffect, useMemo, useState } from "react";
 import { routes } from "../../lib/hashRoute.js";
-import StatusBadge from "./StatusBadge.jsx";
+import StatusBadge, { StatusIcon } from "./StatusBadge.jsx";
 import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./format.js";
 
 const PAGE = 30;
@@ -19,6 +19,8 @@ const SORTS = [
 ];
 
 const EMPTY = { query: "", statuses: [], sector: "", assetType: "", sort: "name" };
+
+const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 
 // Sitzungsweiter Zustand der Filter (Modul-Variable, kein Speicher im Browser nötig)
 let saved = { ...EMPTY };
@@ -33,57 +35,27 @@ const byNumberAsc = (key) => (a, b) => {
   return x - y;
 };
 
-const SELECT =
-  "rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] focus:border-[var(--primary)] focus:outline-none";
+const ICON_BTN =
+  "inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] border border-[var(--control-border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] aria-pressed:border-[var(--primary)] aria-pressed:bg-[var(--primary)] aria-pressed:text-[var(--on-primary)]";
 
-/** Karte für schmale Bildschirme; auch auf der Watchlist verwendet. */
+/** Eine Aktie als Kartenzeile; auch auf der Watchlist verwendet. */
 export function ScreeningRow({ row, actions }) {
+  const meta = [row.ticker, ASSET_TEXT[row.assetType], row.sector].filter(Boolean).join(" · ");
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] transition-colors hover:border-[var(--emerald)]/60">
-      <a href={routes.stock(row.ticker)} className="block px-5 py-4 text-left">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="font-[IBM_Plex_Mono] text-sm tracking-wide text-[var(--text)]">{row.ticker}</span>
-          {row.assetType === "etf" && (
-            <span className="rounded-full border border-[var(--gold)]/40 px-1.5 py-0.5 text-sm text-[var(--gold-soft)] font-medium">ETF</span>
-          )}
-          <StatusBadge status={row.status} />
-        </div>
-        <p className="mt-1 text-[15px] text-[var(--text)]/90">{row.name}</p>
-        <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{reasonLine(row)}</p>
+    <div className="flex items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-6 py-5 transition-colors hover:border-[var(--primary)]">
+      <a href={routes.stock(row.ticker)} className="group flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 text-left">
+        <span className="min-w-[12rem] flex-[1_1_14rem]">
+          <span className="block text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{row.name}</span>
+          <span className="mt-0.5 block font-[IBM_Plex_Mono] text-[13px] text-[var(--muted)]">{meta}</span>
+        </span>
+        <StatusBadge status={row.status} />
+        <span className="min-w-[14rem] flex-[2_1_18rem] text-[16px] leading-relaxed text-[var(--muted)]">{reasonLine(row)}</span>
+        <span aria-hidden="true" className="text-[20px] text-[var(--gold-soft)]">
+          →
+        </span>
       </a>
-      {actions && <div className="flex flex-wrap items-center gap-4 border-t border-[var(--border)] px-5 py-2 text-sm">{actions}</div>}
+      {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
     </div>
-  );
-}
-
-// Spalten der Zeilenliste: Name und Ticker | Sektor | Status | Begründung | Aktionen
-const COLS = "min-[1000px]:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_8.5rem_minmax(0,2.2fr)_auto]";
-
-function TableRow({ row, actions }) {
-  const reason = reasonLine(row);
-  return (
-    <li className={"grid items-start gap-x-6 border-t border-[var(--border)] transition-colors hover:bg-[var(--surface)] " + COLS}>
-      <a href={routes.stock(row.ticker)} className="col-span-4 grid grid-cols-subgrid items-start py-3.5 pl-3 text-left">
-        <span className="min-w-0">
-          <span className="block text-[15px] text-[var(--text)]">{row.name}</span>
-          <span className="mt-0.5 flex items-center gap-2">
-            <span className="font-[IBM_Plex_Mono] text-sm tracking-wide text-[var(--muted)]">{row.ticker}</span>
-            {row.assetType === "etf" && (
-              <span className="rounded-full border border-[var(--gold)]/40 px-1.5 text-sm text-[var(--gold-soft)] font-medium">ETF</span>
-            )}
-          </span>
-        </span>
-        <span className="min-w-0 pt-0.5 text-sm text-[var(--text-soft)]">{row.sector || "–"}</span>
-        <span className="pt-0.5">
-          <StatusBadge status={row.status} />
-        </span>
-        {/* Höchstens zwei Zeilen; der volle Text steht im Tooltip und auf der Detailseite */}
-        <span title={reason} className="line-clamp-2 min-w-0 pt-0.5 text-sm leading-relaxed text-[var(--muted)]">
-          {reason}
-        </span>
-      </a>
-      <span className="flex items-center gap-3 py-3.5 pr-3 text-sm">{actions}</span>
-    </li>
   );
 }
 
@@ -98,7 +70,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
       return next;
     });
 
-  // Vorgaben aus der Sidebar (Status- oder Sektorfilter), jede nur einmal anwenden
+  // Vorgaben aus der Navigation (Status- oder Sektorfilter), jede nur einmal anwenden
   useEffect(() => {
     if (!preset || preset.ts === appliedPresetTs) return;
     appliedPresetTs = preset.ts;
@@ -112,6 +84,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
   // Ohne geladene B1/B2-Werte gibt es diese Sortierungen nicht
   const sortBy = sortable || !SORTS.find((s) => s.key === f.sort)?.needsValues ? f.sort : "name";
   const toggleStatus = (s) => update({ statuses: f.statuses.includes(s) ? f.statuses.filter((x) => x !== s) : [...f.statuses, s] });
+  const toggleAsset = (t) => update({ assetType: f.assetType === t ? "" : t });
   const active = f.query || f.statuses.length || f.sector || f.assetType;
 
   const filtered = useMemo(() => {
@@ -136,83 +109,98 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
 
   const shown = filtered.slice(0, visible);
 
-  const actionsFor = (r) => (
-    <>
-      <button
-        type="button"
-        onClick={() => onToggleWatchlist(r.ticker)}
-        aria-pressed={watchlist.includes(r.ticker)}
-        className={"whitespace-nowrap " + (watchlist.includes(r.ticker) ? "text-[var(--primary)]" : "text-[var(--faint)] hover:text-[var(--muted)]")}
-      >
-        {watchlist.includes(r.ticker) ? "✓ Watchlist" : "+ Watchlist"}
-      </button>
-      <label className="flex items-center gap-1.5 whitespace-nowrap text-[var(--faint)] hover:text-[var(--muted)]">
-        <input type="checkbox" checked={compareTickers.includes(r.ticker)} onChange={() => onToggleCompare(r.ticker)} className="accent-[var(--gold)]" />
-        Vergleichen
-      </label>
-    </>
-  );
+  const actionsFor = (r) => {
+    const inList = watchlist.includes(r.ticker);
+    const comparing = compareTickers.includes(r.ticker);
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => onToggleWatchlist(r.ticker)}
+          aria-pressed={inList}
+          aria-label={`${r.name} ${inList ? "aus der Watchlist entfernen" : "zur Watchlist hinzufügen"}`}
+          title={inList ? "In der Watchlist" : "Zur Watchlist"}
+          className={ICON_BTN}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill={inList ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" aria-hidden="true">
+            <path d="M7 3h10v18l-5-4-5 4z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggleCompare(r.ticker)}
+          aria-pressed={comparing}
+          aria-label={`${r.name} ${comparing ? "nicht mehr vergleichen" : "zum Vergleich hinzufügen"}`}
+          title={comparing ? "Im Vergleich" : "Vergleichen"}
+          className={ICON_BTN}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+            <path d="M8 4v16M16 4v16M4 8h8M12 16h8" />
+          </svg>
+        </button>
+      </>
+    );
+  };
 
   return (
     <div className="text-left">
-      {/* Filterleiste: ab 1000 px eine Zeile */}
-      <div className="sticky top-0 z-20 -mx-[clamp(16px,3vw,48px)] bg-[var(--bg)]/95 px-[clamp(16px,3vw,48px)] py-3 backdrop-blur">
-        {/* Eine Zeile, sobald der Platz reicht; sonst bricht die Leiste um statt seitlich überzustehen */}
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={f.query}
-            onChange={(e) => update({ query: e.target.value })}
-            placeholder="Name oder Ticker suchen…"
-            aria-label="Name oder Ticker suchen"
-            className="min-w-[8rem] flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] placeholder:text-[var(--faint)] focus:border-[var(--primary)] focus:outline-none"
-          />
-          <div role="group" aria-label="Status" className="flex flex-shrink-0 gap-1.5">
-            {STATUS_ORDER.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleStatus(s)}
-                aria-pressed={f.statuses.includes(s)}
-                className={
-                  "whitespace-nowrap rounded-full border px-2.5 py-2 text-sm transition-colors " +
-                  (f.statuses.includes(s)
-                    ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                    : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--primary)]")
-                }
-              >
-                {STATUS_TEXT[s]}
-              </button>
-            ))}
-          </div>
-          <select value={f.sector} onChange={(e) => update({ sector: e.target.value })} aria-label="Sektor" className={SELECT}>
-            <option value="">Alle Sektoren</option>
-            {sectors.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select value={f.assetType} onChange={(e) => update({ assetType: e.target.value })} aria-label="Aktie oder ETF" className={SELECT}>
-            <option value="">Aktien und ETFs</option>
-            <option value="stock">Nur Aktien</option>
-            <option value="etf">Nur ETFs</option>
-          </select>
-          <select value={sortBy} onChange={(e) => update({ sort: e.target.value })} aria-label="Sortierung" className={SELECT}>
-            {SORTS.filter((s) => sortable || !s.needsValues).map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+      {/* Filterkarte */}
+      <div className="card">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[14rem] flex-1">
+            <span className="sr-only-label">Name oder Ticker suchen</span>
+            <input value={f.query} onChange={(e) => update({ query: e.target.value })} placeholder="Name oder Ticker suchen" className="field w-full" />
+          </label>
+          <label>
+            <span className="sr-only-label">Sortierung</span>
+            <select value={sortBy} onChange={(e) => update({ sort: e.target.value })} className="field">
+              {SORTS.filter((s) => sortable || !s.needsValues).map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-[15px] font-medium text-[var(--muted)]">Status:</span>
+          <button type="button" className="chip" aria-pressed={f.statuses.length === 0} onClick={() => update({ statuses: [] })}>
+            Alle
+          </button>
+          {STATUS_ORDER.map((s) => (
+            <button key={s} type="button" className="chip" aria-pressed={f.statuses.includes(s)} onClick={() => toggleStatus(s)}>
+              <StatusIcon status={s} size={14} />
+              {STATUS_TEXT[s]}
+            </button>
+          ))}
+          <span aria-hidden="true" className="mx-2 hidden h-7 w-px bg-[var(--border)] sm:inline-block" />
+          <button type="button" className="chip" aria-pressed={f.assetType === "stock"} onClick={() => toggleAsset("stock")}>
+            Aktien
+          </button>
+          <button type="button" className="chip" aria-pressed={f.assetType === "etf"} onClick={() => toggleAsset("etf")}>
+            ETFs
+          </button>
+          <label className="inline-flex">
+            <span className="sr-only-label">Sektor</span>
+            <select value={f.sector} onChange={(e) => update({ sector: e.target.value })} className="chip pr-3">
+              <option value="">Alle Sektoren</option>
+              {sectors.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
-      <p className="mb-3 mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-[var(--faint)]">
+      <p className="mb-4 mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[15px] text-[var(--muted)]">
         <span>
           {loading ? "Lade Ergebnisse…" : `${filtered.length} Titel gefunden${filtered.length > shown.length ? ` · ${shown.length} angezeigt` : ""}`}
         </span>
         {active ? (
-          <button type="button" onClick={() => update({ ...EMPTY, sort: f.sort })} className="text-[var(--muted)] underline underline-offset-2 hover:text-[var(--text)]">
+          <button type="button" onClick={() => update({ ...EMPTY, sort: f.sort })} className="min-h-[44px] text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
             Filter zurücksetzen
           </button>
         ) : null}
@@ -222,13 +210,13 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
       </p>
 
       {error && (
-        <p className="rounded-2xl border border-[var(--red)]/50 px-5 py-4 text-sm text-[var(--red-soft)]">
+        <p className="card border-[var(--bad-border)] bg-[var(--bad-bg)] text-[var(--bad-strong)]">
           Die Ergebnisse konnten nicht geladen werden. Bitte später erneut versuchen.
         </p>
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="rounded-2xl border border-[var(--border)] px-5 py-8 text-center text-sm text-[var(--muted)]">
+        <div className="card text-center text-[var(--muted)]">
           Keine Treffer.{" "}
           <button type="button" onClick={() => update({ ...EMPTY, sort: f.sort })} className="text-[var(--primary)] underline underline-offset-2">
             Filter zurücksetzen
@@ -236,36 +224,17 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
         </div>
       )}
 
-      {/* Zeilenliste ab 1000 px */}
-      {shown.length > 0 && (
-        <ul className="hidden min-[1000px]:block">
-          <li aria-hidden="true" className={"grid gap-x-6 pb-2 pl-3 text-sm text-[var(--faint)] font-medium " + COLS}>
-            <span>Name und Ticker</span>
-            <span>Sektor</span>
-            <span>Status</span>
-            <span>Begründung</span>
-            <span />
-          </li>
-          {shown.map((r) => (
-            <TableRow key={r.ticker} row={r} actions={actionsFor(r)} />
-          ))}
-        </ul>
-      )}
-
-      {/* Karten auf schmalen Bildschirmen */}
-      <div className="grid gap-3 min-[1000px]:hidden">
+      <ul className="grid gap-[10px]">
         {shown.map((r) => (
-          <ScreeningRow key={r.ticker} row={r} actions={actionsFor(r)} />
+          <li key={r.ticker}>
+            <ScreeningRow row={r} actions={actionsFor(r)} />
+          </li>
         ))}
-      </div>
+      </ul>
 
       {filtered.length > shown.length && (
-        <div className="mt-5 flex justify-center">
-          <button
-            type="button"
-            onClick={() => setVisible((c) => c + PAGE)}
-            className="rounded-full border border-[var(--border)] px-5 py-2 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          >
+        <div className="mt-6 flex justify-center">
+          <button type="button" onClick={() => setVisible((c) => c + PAGE)} className="btn-secondary">
             Weitere {Math.min(PAGE, filtered.length - shown.length)} von {filtered.length - shown.length} laden
           </button>
         </div>

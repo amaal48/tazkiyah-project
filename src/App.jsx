@@ -1963,7 +1963,7 @@ export default function TazkiyahPrototype() {
 
       {/* Floating Vergleichs-Leiste */}
       {compareTickers.length > 0 && page !== "compare" && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-3 shadow-xl">
+        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-3">
           <span className="text-sm text-[var(--muted)]">{compareTickers.length} zum Vergleich ausgewählt</span>
           <button
             onClick={() => goTo("compare")}
