@@ -6,13 +6,14 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
-**Neu am 06.10.2026** (Branch `ui-screening`, nicht auf `main`):
+**Neu am 06.10.2026:**
+- **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
 - **Gegenprüfung:** `pass` nur nach vollständiger Gegenprüfung, „nicht konform“ auch per Stichprobe; festgehalten in `manual_reviews.verification`. Details: Abschnitt 4, „Gegenprüfung (Regel vom 06.10.2026)“.
 - **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“.
 - **Methodik-Seite:** Festlegung Arzneimittel bei „Drogen“, Absatz zur KI-gestützten Auswertung („Jede Auswertung nennt die genaue Fundstelle.“).
 - **`review-to-sql.mjs`:** Aufruf `node --env-file=.env.local scripts/review-to-sql.mjs --reviewer AMI`; prüft den Jahresabschluss gegen `screening_current` und die Gegenprüfung.
 - **Datenschutz der Prüfdaten:** `supabase_manual_reviews_verification.sql` und `supabase_manual_reviews_privacy.sql` am 06.10.2026 im SQL Editor ausgeführt. Test mit dem öffentlichen Schlüssel am 06.10.2026: `manual_reviews` und `manual_reviews_due` abgewiesen („permission denied“), 0 Vorkommen von `reviewer`, „KI-Entwurf“ oder `ai_draft` in den 31 gespeicherten Läufen; `screening_current` und `securities` weiter lesbar, Detailseite lädt.
-- **Nächste Schritte:** (1) ~~SQL ausführen~~ erledigt 06.10. (2) Vorschau von `ui-screening` prüfen. (3) Kandidatenabfrage in `docs/BRIEFING-A2-B3.md` an den Prüfumfang vom 05.10. anpassen und ausführen. (4) `ui-screening` auf `main` mergen, danach Neuberechnung (`?limit=0`), nicht vorher über die Vorschau; erst dann erscheint „· vollständig geprüft“ an den Ergebnissen (die gespeicherten Ergebnisse stammen noch von Engine 1.3.0). Offene Punkte: Abschnitt 1, „Offene Punkte (Stand 06.10.2026)“.
+- **Nächste Schritte:** (1) ~~SQL ausführen~~ erledigt 06.10. (2) Vorschau von `ui-screening` prüfen. (3) Kandidatenabfrage in `docs/BRIEFING-A2-B3.md` an den Prüfumfang vom 05.10. anpassen und ausführen. (4) ~~`ui-screening` auf `main` mergen~~ erledigt 06.10., danach Neuberechnung (`?limit=0`) auf der Production-Adresse; erst dann erscheint „· vollständig geprüft“ an den Ergebnissen (die gespeicherten Ergebnisse stammen noch von Engine 1.3.0). Offene Punkte: Abschnitt 1, „Offene Punkte (Stand 06.10.2026)“.
 
 **Neu am 05.10.2026:**
 - **Datenanbieter entschieden:** FMP wird ganz ersetzt (SEC für Abschlüsse, Tiingo für Kurse). Bis dahin bleibt FMP Free in Betrieb. Details: Abschnitt 1, „Datenanbieter (Entscheidung 05.10.2026)“.
@@ -28,7 +29,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 **Zuerst prüfen oder erledigen:**
 1. Vorschau von `ui-screening` ansehen (Apple-Chart, Microsoft ohne „Leasing geschätzt“, Handy, Klick auf eine Quelle) und danach auf `main` mergen.
-2. `CRON_SECRET` erneuern (der alte Wert stand im Chat), `SCREENING_DAILY_CALL_BUDGET` auf 200 prüfen. Nach Änderungen an Vercel-Variablen manuell neu deployen.
+2. ~~`CRON_SECRET` erneuern (der alte Wert stand im Chat)~~ erledigt 06.10.2026. Noch offen: `SCREENING_DAILY_CALL_BUDGET` auf 200 prüfen. Nach Änderungen an Vercel-Variablen manuell neu deployen.
 3. Cron-Fortschritt ansehen (Abfrage der Titel mit Ergebnis in `screening_current`), damit klar ist, wie viele Titel schon Kandidaten für A2/B3 sind. (Erledigt 05.10.: 9 Titel, Ursache siehe Abschnitt 4, „Cron-Befund“.)
 
 **Regeln, die immer gelten:**
@@ -106,7 +107,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 
 **Screener (nächste Schritte, Stand 02.10. abends):**
 1. `ui-screening` prüfen (Vorschau) und auf `main` mergen. Die Seite ist nicht gestartet.
-2. `CRON_SECRET` erneuern, `SCREENING_DAILY_CALL_BUDGET` = 200 prüfen, Redeploy.
+2. ~~`CRON_SECRET` erneuern~~ erledigt 06.10.2026. Noch offen: `SCREENING_DAILY_CALL_BUDGET` = 200 prüfen, Redeploy.
 3. **A2/B3-Pilot** mit zehn Aktien (NVDA, JNJ, AAPL, AMZN, GOOGL, DIS, BRK-B, MSFT, KO, HD): KI liest Satzung und Segmentangaben, liefert Entwurf mit wörtlichem Zitat und Link, die Nutzerin kontrolliert alle zehn. Details: `docs/BRIEFING-A2-B3.md`. Stand 05.10.: Pilot durchgeführt (Abschnitt 4). Als Nächstes die Kandidatenabfrage ausführen. Achtung: Die Abfrage in `docs/BRIEFING-A2-B3.md` filtert noch mit `status <> 'nicht_konform'` und damit auch nach B1/B2/C1. Für den Prüfumfang vom 05.10.2026 (Abschnitt 4) darf sie nur Titel ausschließen, die eindeutig an A1 scheitern (noch anzupassen). Offen: B3-Häufigkeit (jährlich, quartalsweise oder nur Aktien mit verbotenen Segmenten quartalsweise), Wortlaut der Prüfer-Angabe (entschieden 06.10.2026, Abschnitt 4, „Manuelle Prüfungen“). Methodik-Seite (seit 06.10.2026, ersetzt den Platzhalter „KI-gestützte Prüfung mit Stichprobenkontrolle“): „Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung nennt die genaue Fundstelle. Bevor ein Titel als ‚konform‘ gilt, prüfen wir die zitierten Stellen selbst nach.“ Regel dazu: Abschnitt 4, „Gegenprüfung“.
 4. Großer Lauf für alle Aktien außer Titeln, die eindeutig an A1 scheitern (Prüfumfang vom 05.10.2026, siehe Abschnitt 4, „A2/B3-Prüfung (Planung)“; bis 04.10. galt: alle, die nicht schon an A1/B1/B2/C1 scheitern), danach Stichproben alle paar Tage (5–10 Aktien, gezielt). Kontrollseite für Entwürfe (Zitat, Link, „bestätigt/korrigieren“) statt Eintragen per SQL. Methodik-Seite (seit 06.10.2026, ersetzt den Platzhalter „KI-gestützte Prüfung mit Stichprobenkontrolle“): „Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung nennt die genaue Fundstelle. Bevor ein Titel als ‚konform‘ gilt, prüfen wir die zitierten Stellen selbst nach.“ Prüfer-Angabe (seit 06.10.2026): intern Kürzel (`AMI`) und `ai_draft`, öffentlich „Geprüft von der Tazkiyah-Redaktion …“ (Abschnitt 4, „Manuelle Prüfungen“).
 5. Kleinigkeiten: `todo`-Felder in `src/screening/explanations.js` (D2 Tamattu'-Aktien, C3/SS 59), alle Fundstellen gegen den Standardtext prüfen, SS 21, 3/4/8 zur Prüffrequenz nachlesen, Feld `metrics` im Ergebnis (Sortierung nach B1/B2 ohne Positionszugriff), OpenFIGI-Börsenkennungen prüfen (`providers/openfigi.js`), AAOIFI J5 (neuere Fassungen von SS 21/27/35?), `api/fundamentals.js` entfernen oder auf die Engine umbauen (wird von der Oberfläche nicht mehr benutzt).
