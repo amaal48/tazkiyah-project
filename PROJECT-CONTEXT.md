@@ -287,6 +287,7 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 - `draft.json` hat je Prüfung das Feld `verification`, das die Nutzerin beim Bestätigen setzt (nie die KI).
 - `scripts/review-to-sql.mjs` übernimmt `verification` in die Spalte. `pass` nur mit `full`, sonst übersprungen („pass ohne vollständige Gegenprüfung“); `fail` mit `full` oder `sample`; fehlt `verification`, wird übersprungen. Ablauf: `docs/REVIEW-PILOT.md`, Abschnitt 5 und 6.
 - Stand 06.10.: Bei den sieben bestätigten Prüfungen (A2: HD, JNJ, KO, MSFT, NVDA; B3: JNJ, NVDA) steht `verification: "full"`; die Nutzerin hat sie vollständig geprüft.
+- Die Fundstelle (`sourceNote`) wird auf der Website wörtlich als „Quelle“ angezeigt und wird bei der Gegenprüfung mitgelesen (Dokument, Artikel/Item/Note, ggf. Seite).
 
 **Arzneimittel (Festlegung vom 06.10.2026, Amaal Ibrahim):** Verschreibungspflichtige Arzneimittel, auch Betäubungsmittel für den medizinischen Einsatz, gelten als Arzneimittel und fallen nicht unter „Drogen“. Die Gruppe „Drogen“ meint Rauschmittel für den Freizeitgebrauch, einschließlich Freizeit-Cannabis. Gilt für alle Pharmaunternehmen. Hinterlegt in `src/screening/industryRules.js` (Gruppe `drugs`, Feld `decision`); die Methodik-Seite zeigt sie bei den Branchen als „Unsere Festlegung (06.10.2026)“. Reine Anzeige, die Prüflogik ändert sich nicht.
 

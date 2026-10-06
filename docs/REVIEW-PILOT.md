@@ -122,7 +122,7 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
 
 ## 5. Kontrollieren
 
-**Regel zur Gegenprüfung (06.10.2026):** Jedes Ergebnis, das zu „konform“ führen kann (`pass`), wird vor der Freigabe vollständig gegengeprüft. Ergebnisse, die zu „nicht konform“ führen, dürfen per Stichprobe gegengeprüft werden. Festgehalten in `manual_reviews.verification`.
+**Regel zur Gegenprüfung (06.10.2026):** Jedes Ergebnis, das zu „konform“ führen kann (`pass`), wird vor der Freigabe vollständig gegengeprüft. Ergebnisse, die zu „nicht konform“ führen, dürfen per Stichprobe gegengeprüft werden. Festgehalten in `manual_reviews.verification`. Die Fundstelle (`sourceNote`) wird auf der Website wörtlich als „Quelle“ angezeigt und wird bei der Gegenprüfung mitgelesen (Dokument, Artikel/Item/Note, ggf. Seite).
 
 1. Zitate automatisch prüfen: `node scripts/check-quotes.mjs`. Jede Zeile muss mit `OK` beginnen. Bei `FEHLT` steht das Zitat nicht wörtlich in der Quelldatei, dann darf dieses Ergebnis nicht übernommen werden. Das ist eine zweite, unabhängige Prüfung neben der der KI. Zeilenumbrüche, Leerraum und typografische Anführungszeichen spielen dabei keine Rolle, der Wortlaut schon.
 2. Kontrollbogen erzeugen: `node scripts/review-sheet.mjs`
