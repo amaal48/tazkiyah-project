@@ -130,7 +130,6 @@ function Review({ review }) {
     <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text-soft)]">
       <p>
         Geprüft von der Tazkiyah-Redaktion
-        {month && ` · geprüft im ${month}`}
         {verification && ` · ${verification}`}
         {(url || review.sourceNote) && (
           <>
@@ -144,6 +143,7 @@ function Review({ review }) {
             )}
           </>
         )}
+        {month && ` · geprüft im ${month}`}
       </p>
       {review.state === "expired" && (
         <p className="mt-1 text-[var(--text)]">Diese Prüfung ist abgelaufen, weil ein neuer Jahresabschluss vorliegt. Sie muss erneut bestätigt werden.</p>
