@@ -157,7 +157,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 **Backend/Infrastruktur:**
 - **Supabase** — Auth (E-Mail/Passwort) + Postgres. Projekt heißt im Dashboard noch **"Amanah"** (rein kosmetisch). Region `eu-central-1`. Tarif: Free.
 - **Vercel** — Hosting + Serverless Functions + Cron. Projekt **"tazkiyah"**, Produktions-URL `https://tazkiyah-project-kohl.vercel.app`. Automatisches Deployment bei Push auf `main`.
-  - Crons (`vercel.json`): `/api/generate-weekly-report` montags 6:00 UTC, `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s)
+  - Crons (`vercel.json`): `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s), `/api/notify-questions` täglich 5:00 UTC; `/api/generate-weekly-report` (früher montags 6:00 UTC) abgeschaltet seit 06.10.2026
   - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `CONTACT_NOTIFY_EMAIL` und `CONTACT_FROM_EMAIL` (Kontaktformular; `CONTACT_FROM_EMAIL` erst nach eigener Domain bei Resend, schaltet die Eingangsbestätigung ein); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
 
 **Externe APIs:**
