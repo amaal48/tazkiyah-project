@@ -1,10 +1,20 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
+
+**Neu am 06.10.2026 (abends):**
+- **Screener pausiert**, bis die Antwort von Tiingo vorliegt (Anzeige von Status, Prozent-Kennzahlen und Marktkapitalisierung im Commercial-Tarif). Danach weiter mit Neuberechnung (`?limit=0`) auf Production, Kandidatenabfrage A2/B3, SEC- und Tiingo-Adapter.
+- **Wochenbericht:** Der Cron `/api/generate-weekly-report` schrieb noch das alte Format (highlight/marktueberblick, Schlagzeilen von FMP) und legte am 05.10.2026 einen leeren Bericht an („Wochenbericht KW 41“, tldr leer). Weil die Seite bei mindestens einem Datenbank-Eintrag nur diese zeigt, waren die vier Demo-Berichte ausgeblendet. Cron am 06.10. aus vercel.json entfernt (Commit `fa8b9f0`), `api/generate-weekly-report.js` bleibt erhalten. Leeren Eintrag in `weekly_reports` löschen, falls noch nicht geschehen. Später: Generator neu bauen (Format tldr/makroPolitik/indices/aktienFokus/ausblick, Referenzwerte DAX, MSCI World, ISWD, Quellen, Entwurfsstatus, Veröffentlichung erst nach Gegenlesen).
+- **Akademie-Fragen live** (auf `main`, Commit `1bf8998`): Feld „Frage nicht gefunden?“ speichert in `academy_questions` (Besucher dürfen nur einreichen, nicht lesen, Drossel 30 in 10 Minuten). Tägliche Sammel-Mail über Resend (`/api/notify-questions`, 5:00 UTC, nur bei neuen Fragen), am 06.10. getestet (`sent: true`). Absender noch `onboarding@resend.dev`, landete im Spam (als „Kein Spam“ markiert). Fragen werden nicht einzeln beantwortet, sondern ins FAQ / die Akademie übernommen, danach Status `beantwortet`.
+- **`CRON_SECRET` am 06.10. abends erneut erneuert** (per `openssl rand -hex 32`, 64 Zeichen). Ein früherer Wert ist im Chat gelandet und ungültig. Gilt für beide Crons.
+- **Kontaktformular** (Branch `kontakt-formular`, noch NICHT auf `main`): `#/kontakt`, `api/contact.js`, Tabelle `contact_messages`, sofortige Benachrichtigung mit reply_to an den Absender (Antworten per „Antworten“ im Postfach), Löschung nach 6 Monaten (pg_cron `kontakt-nachrichten-loeschen`). Eingangsbestätigung programmiert, aber aus, bis `CONTACT_FROM_EMAIL` gesetzt ist. Vor dem Merge: SQL-Kontrolle (10 Spalten, Lösch-Auftrag vorhanden), Test in der Vorschau (Mail kommt, „Antworten“ geht an die Formular-Adresse, Eintrag in `contact_messages`).
+- **Domain (Entscheidung 06.10.2026):** Eigene Domain mit E-Mail-Postfach wird gemietet, auch für den Launch. Grobe Kosten: .de ca. 3–10 € im Jahr, Postfach ca. 1–3 € im Monat, insgesamt ca. 15–40 € im Jahr. Anforderungen: deutscher/EU-Anbieter, DNS-Einträge selbst bearbeitbar. Vorher Namen prüfen (Namenskonflikt wie bei amanah-invest.de vermeiden). Danach: Domain bei Resend bestätigen, `CONTACT_FROM_EMAIL` setzen (schaltet die Eingangsbestätigung ein), Absender der Fragen-Mail umstellen (gegen Spam), Domain mit Vercel verbinden, Projekt-Adresse statt privater Adresse nutzen (faceless).
+- **Datenschutzerklärung fehlt noch.** Der Link „Datenschutzerklärung“ im Kontaktformular führt vorerst auf die Konto-Seite „Datenschutz“ (Datenexport). Vor dem Launch eine echte Datenschutzerklärung mit: Kontaktformular, Akademie-Fragen, Resend, TradingView, Supabase, Vercel.
+- **Hinweis Claude Code:** In der App steht eine alte Sitzung „scratch-2026-10-05 … master“ mit −5.603 Zeilen und dem Knopf „Änderungen übernehmen“. Nicht übernehmen, bevor geklärt ist, was sie enthält.
 
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
@@ -127,7 +137,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 **Übrige offene Punkte (unverändert):**
 - Backup-Strategie (Supabase Free vs. Pro / `pg_dump`)
 - E-Mail ändern mit Bestätigung, Versand-Provider (Supabase vs. Resend/Postmark), gebrandete E-Mail-Templates
-- Wöchentlicher E-Mail-Bericht (Tabelle `weekly_reports` und Cron existieren, Logik offen)
+- Wöchentlicher E-Mail-Bericht (Tabelle `weekly_reports` und Cron existieren, Logik offen; Stand und Plan: Abschnitt 0, „Neu am 06.10.2026 (abends)“, Punkt „Wochenbericht“)
 - Lokalisierung, OAuth (Google/Apple), 2FA, aktive Sitzungen, Konto löschen (serverlose Funktion mit Service-Role-Key)
 - Portfolio an echte Nutzerkonten koppeln
 - Reale AGB/Datenschutzerklärung (aktuell Platzhalter)
