@@ -411,11 +411,23 @@ do $$
 declare t text;
 begin
   foreach t in array array['securities', 'screening_runs', 'screening_status_changes',
-                           'manual_reviews', 'etf_holdings', 'purification_amounts']
+                           'etf_holdings', 'purification_amounts']
   loop
     execute format('drop policy if exists "%s_public_read" on public.%I', t, t);
     execute format('create policy "%s_public_read" on public.%I for select to anon, authenticated using (true)', t, t);
   end loop;
+end $$;
+
+-- manual_reviews ist seit 06.10.2026 nicht mehr öffentlich lesbar (enthält Prüfer-Kürzel,
+-- ai_draft und Entwurfstexte). Die Website liest die Tabelle nie, der Cron nutzt die Service-Role.
+-- Auch die Arbeitsliste manual_reviews_due ist nur intern (SQL Editor).
+drop policy if exists "manual_reviews_public_read" on public.manual_reviews;
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    execute 'revoke select on public.manual_reviews from anon, authenticated';
+    execute 'revoke select on public.manual_reviews_due from anon, authenticated';
+  end if;
 end $$;
 
 -- Benachrichtigungen: nur eigene lesen und als gelesen markieren
