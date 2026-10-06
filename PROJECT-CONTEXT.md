@@ -1,6 +1,6 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 05.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
@@ -85,6 +85,14 @@ Stand: 05.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
 - Vor dem Launch: TradingView in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
 - Universum anpassen: AVB und EA delistet, EQR jetzt VMRK (siehe Kernfunktionen, TradingView).
+
+**Offene Punkte (Stand 06.10.2026, nach Commit `2ffc7a9` auf `ui-screening`):**
+1. **SQL Editor:** `supabase_manual_reviews_verification.sql` ausführen (legt `verification` und `ai_draft` an, trägt bei den sieben Pilot-Einträgen vom 04.10. `AMI`, `ai_draft = true` und `full` nach). Kontrolle: 7 Zeilen mit `AMI / true / full`, ISWD-Zeilen mit `Tazkiyah / false / leer`. Eine neue `insert-reviews.sql` ist dafür nicht nötig (die sieben Prüfungen stehen seit 04.10. in der Tabelle, das SQL fügt nichts doppelt ein).
+2. **Vercel-Vorschau** von `ui-screening` ansehen: Detailseite („Geprüft von der Tazkiyah-Redaktion …“), Methodik-Seite (Festlegung Arzneimittel, Absatz zur KI-gestützten Auswertung).
+3. **Keine Neuberechnung über die Vorschau-Adresse** (`?limit=0`): Die Vorschau rechnet mit Engine 1.4.0, der Cron auf `main` noch mit 1.3.0; beide würden die Ergebnisse täglich gegenseitig überschreiben, und `reviewer` käme zurück. Neuberechnung erst nach dem Merge auf `main`.
+4. **Methodik-Satz „Jede Auswertung enthält Seitenangaben“ stimmt noch nicht:** Nur 5 der 20 Pilotprüfungen nennen eine Seite (B3 bei NVDA, JNJ, AAPL, MSFT, HD); alle A2 nennen nur den Artikel der Satzung, B3 bei AMZN, GOOGL, DIS, BRK-B, KO nur Item bzw. Note. Entscheidung offen: Satz anpassen (z. B. „Jede Auswertung nennt die Fundstelle“) oder Seitenangaben bei jeder Prüfung zur Pflicht machen. Vor dem Merge auf `main` klären.
+5. **Prüfer-Angabe und KI-Text noch öffentlich lesbar** (mit dem öffentlichen Schlüssel geprüft): (a) Policy `manual_reviews_public_read` gibt alle Spalten frei (`reviewer`, künftig `ai_draft`, `details` mit `kiDraft`, Begründung und Zitaten); (b) `screening_runs.result` enthält in alten Läufen `criteria[].review.reviewer` (am 06.10.: 32 Stellen in 31 Läufen, auch mit dem alten Wortlaut); (c) `manual_reviews_due` ist als interne Arbeitsliste öffentlich lesbar. Vorschlag (noch nicht umgesetzt): Policy für `manual_reviews` entfernen und aus der Policy-Schleife im Schema nehmen, `revoke select on public.manual_reviews_due from anon, authenticated`, in alten Läufen `reviewer` per einmaligem SQL aus dem JSON entfernen. Neue Ergebnisse (Engine 1.4.0) enthalten `reviewer` nicht mehr.
+6. **Prüfdatum im Prüfkasten:** Die Detailseite zeigt seit 06.10. kein „geprüft am …“ mehr (nicht in der Vorgabe). Entscheidung offen, ob das Datum zurückkommt.
 
 Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: siehe docs/UEBERGABE-2026-10-04.md
 
