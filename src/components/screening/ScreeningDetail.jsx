@@ -21,6 +21,7 @@ import {
   STATUS_TEXT,
   fmtAmount,
   fmtDate,
+  fmtMonthYear,
   fmtLimit,
   fmtNum,
   fmtPct,
@@ -40,8 +41,9 @@ const RESULT_TEXT_COLOR = {
   not_applicable: "text-[var(--none-text)]",
 };
 
-// Öffentliche Prüfer-Angabe (Entscheidung 06.10.2026): immer „Tazkiyah-Redaktion“, Umfang der
-// Gegenprüfung aus verification. Prüfer-Kürzel und ai_draft sind intern und kommen hier nie an.
+// Öffentliche Prüfer-Angabe (Entscheidung 06.10.2026): immer „Tazkiyah-Redaktion“, Prüfmonat aus
+// reviewedAt, Umfang der Gegenprüfung aus verification. Prüfer-Kürzel und ai_draft sind intern
+// und kommen hier nie an.
 const VERIFICATION_TEXT = { full: "vollständig geprüft", sample: "stichprobenartig geprüft" };
 
 const LEASE_SOURCE = {
@@ -123,10 +125,12 @@ function Review({ review }) {
   if (!review) return null;
   const url = safeUrl(review.sourceUrl);
   const verification = VERIFICATION_TEXT[review.verification];
+  const month = fmtMonthYear(review.reviewedAt);
   return (
     <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text-soft)]">
       <p>
         Geprüft von der Tazkiyah-Redaktion
+        {month && ` · geprüft im ${month}`}
         {verification && ` · ${verification}`}
         {(url || review.sourceNote) && (
           <>

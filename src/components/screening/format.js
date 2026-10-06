@@ -48,6 +48,15 @@ export function fmtAmount(n) {
   return new Intl.NumberFormat("de-DE", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }
 
+/** "2026-10-04" oder ISO-Zeitstempel → "Oktober 2026"; leer bei fehlendem oder ungültigem Datum. */
+export function fmtMonthYear(v) {
+  if (!v) return "";
+  const s = String(v);
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T12:00:00Z` : s);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "Europe/Berlin" });
+}
+
 /** "2026-06-27" oder ISO-Zeitstempel → "27.06.2026". */
 export function fmtDate(v) {
   if (!v) return "–";

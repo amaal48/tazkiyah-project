@@ -116,6 +116,8 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
 
 `annualPeriodEnd` ist das Ende des Berichtsjahres des 10-K (`meta.json` → `tenK.reportDate`). In die Datenbank wird immer dieses Datum aus dem Entwurf eingetragen; weicht das Datum der Aktie in `screening_current` ab, wird der Eintrag übersprungen (seit 06.10.2026, siehe Abschnitt 6).
 
+`sourceNote` nennt die **genaue Fundstelle**: Dokument (z. B. „10-K GJ 2025“, „Restated Certificate of Incorporation“), Abschnitt (Item, Note, Artikel) und die Seite, wenn das Dokument Seitenzahlen hat. Eine Seitenangabe ist keine Pflicht (Entscheidung 06.10.2026); die Methodik-Seite sagt „Jede Auswertung nennt die genaue Fundstelle.“
+
 `verification` (seit 06.10.2026) hält fest, wie gründlich die Nutzerin gegengeprüft hat: `full` = alle zitierten Stellen vollständig nachgeprüft, `sample` = Stichprobe. Die KI setzt das Feld nie selbst.
 
 ## 5. Kontrollieren
@@ -139,7 +141,7 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
    ```
    Übernommen wird nur Bestätigtes mit `pass` oder `fail`, dessen Zitat wörtlich in der Quelldatei steht (dieselbe Prüfung wie `check-quotes`). Unklares und Unbelegtes bleibt draußen, die Ausgabe nennt jeden übersprungenen Eintrag.
 
-   **Prüfer-Angabe (seit 06.10.2026):** `--reviewer` ist das Kürzel der prüfenden Person (2–5 Großbuchstaben, z. B. `AMI`); ein langer Text wie früher wird abgelehnt. Das Skript setzt `ai_draft = true` für alle Einträge, weil in `review-work/` immer ein KI-Entwurf zugrunde liegt. `reviewer` und `ai_draft` sind nur intern. Öffentlich zeigt die Detailseite an jedem Ergebnis nur „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft“ bzw. „· stichprobenartig geprüft“ (aus `verification`, entfällt ohne) „· Quelle: <Dokument, Seite>“ (aus `source_note`, verlinkt mit `source_url`). Die KI-Unterstützung wird einmal auf der Methodik-Seite erklärt, nicht an den Ergebnissen.
+   **Prüfer-Angabe (seit 06.10.2026):** `--reviewer` ist das Kürzel der prüfenden Person (2–5 Großbuchstaben, z. B. `AMI`); ein langer Text wie früher wird abgelehnt. Das Skript setzt `ai_draft = true` für alle Einträge, weil in `review-work/` immer ein KI-Entwurf zugrunde liegt. `reviewer` und `ai_draft` sind nur intern. Öffentlich zeigt die Detailseite an jedem Ergebnis nur „Geprüft von der Tazkiyah-Redaktion · geprüft im <Monat Jahr>“ (aus `reviewed_at`) „· vollständig geprüft“ bzw. „· stichprobenartig geprüft“ (aus `verification`, entfällt ohne) „· Quelle: <Fundstelle>“ (aus `source_note`, verlinkt mit `source_url`). Die KI-Unterstützung wird einmal auf der Methodik-Seite erklärt, nicht an den Ergebnissen.
 
    **Gegenprüfung (seit 06.10.2026):** Jedes Ergebnis, das zu „konform“ führen kann (`pass`), wird vor der Freigabe vollständig gegengeprüft. Ergebnisse, die zu „nicht konform“ führen, dürfen per Stichprobe gegengeprüft werden. Festgehalten in `manual_reviews.verification`. Das Skript übernimmt `verification` in die Spalte. Ein `pass` ohne `"full"` wird übersprungen („pass ohne vollständige Gegenprüfung“), ein `fail` darf `"full"` oder `"sample"` haben. Fehlt `verification`, wird der Eintrag übersprungen. Voraussetzung: `supabase_manual_reviews_verification.sql` wurde einmal im SQL Editor ausgeführt (legt `verification` und `ai_draft` an und trägt bei den sieben Pilot-Einträgen vom 04.10. `AMI`, `ai_draft = true` und `full` nach).
 

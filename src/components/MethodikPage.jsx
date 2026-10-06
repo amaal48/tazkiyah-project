@@ -475,7 +475,7 @@ export default function MethodikPage({ onBack, anchor }) {
                 </p>
                 <p>
                   Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung
-                  enthält Seitenangaben. Bevor ein Titel als „konform“ gilt, prüfen wir die zitierten Stellen selbst nach.
+                  nennt die genaue Fundstelle. Bevor ein Titel als „konform“ gilt, prüfen wir die zitierten Stellen selbst nach.
                 </p>
                 <p>Wo die verfügbaren Daten vom Wortlaut des Standards abweichen, sagen wir das offen:</p>
                 <ul className="list-disc space-y-2 pl-5">

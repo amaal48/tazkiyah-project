@@ -1,4 +1,4 @@
--- supabase_hide_internal_review_data.sql
+-- supabase_manual_reviews_privacy.sql
 --
 -- 06.10.2026: Interne Prüfdaten nicht mehr öffentlich lesbar machen.
 -- Hintergrund: Mit dem öffentlichen Schlüssel (anon) waren lesbar
