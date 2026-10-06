@@ -357,6 +357,15 @@ export const RESULTS = ["pass", "fail", "unclear"];
 export const CONFIDENCE = ["high", "medium", "low"];
 export const CRITERIA = { A2: "A2", B3: "B3_SEGMENTS" };
 
+// Gegenprüfung durch die Nutzerin (Regel vom 06.10.2026): pass nur nach vollständiger
+// Gegenprüfung ("full"), fail auch per Stichprobe ("sample").
+export const VERIFICATION = ["full", "sample"];
+
+// Prüfer-Angabe (Entscheidung 06.10.2026): reviewer ist das Kürzel der prüfenden Person
+// (z. B. "AMI"), ai_draft = true für alle Einträge aus review-work/ (dort liegt immer ein
+// KI-Entwurf zugrunde). Beides nur intern, die Website zeigt keins von beiden.
+export const REVIEWER_CODE = /^[A-Z]{2,5}$/;
+
 const isDate = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const isText = (s) => typeof s === "string" && s.trim().length > 0;
 
@@ -526,14 +535,26 @@ export const sqlString = (s) => (s == null ? "null" : `'${String(s).replace(/'/g
 
 /**
  * SQL für die bestätigten Teile eines Entwurfs (nur pass/fail, nur wenn confirmed === true).
- * Setzt die Jahresbasis automatisch aus dem letzten Ergebnis der Aktie ein; gibt es noch keins,
- * gilt das Datum aus dem Entwurf. Ein zweites Ausführen fügt nichts doppelt ein.
+ * Jahresbasis ist immer das Datum aus dem Entwurf (annualPeriodEnd).
+ *   currentAnnual: annual_period_end der Aktie in screening_current (Pflicht, vom Aufrufer gelesen)
+ *     - gleiches Datum   → Eintrag
+ *     - anderes Datum    → übersprungen und gemeldet (Entwurf veraltet oder Daten weichen ab)
+ *     - null (kein Ergebnis) → Eintrag mit dem Entwurfsdatum, Aktie wird in notes gemeldet
+ * Die SQL fügt zusätzlich nur ein, wenn screening_current beim Ausführen noch passt.
+ * Gegenprüfung (verification je Prüfung): Pflicht; pass nur mit "full", fail mit "full" oder "sample".
+ * reviewer: Kürzel der prüfenden Person (z. B. "AMI"); ai_draft wird immer true gesetzt.
+ * Ein zweites Ausführen fügt nichts doppelt ein.
  */
-export function draftToSql(draft, { reviewer, sources = null }) {
+export function draftToSql(draft, { reviewer, sources = null, currentAnnual }) {
   if (!isText(reviewer)) throw new Error("reviewer fehlt");
+  if (!REVIEWER_CODE.test(reviewer)) throw new Error(`reviewer muss ein Kürzel sein (2–5 Großbuchstaben, z. B. AMI), nicht: ${reviewer}`);
+  if (currentAnnual === undefined) throw new Error("currentAnnual fehlt (Datum aus screening_current oder null)");
+  if (currentAnnual !== null && !isDate(currentAnnual)) throw new Error(`currentAnnual ist kein Datum: ${currentAnnual}`);
   const problems = validateDraft(draft);
   const statements = [];
   const skipped = [];
+  const notes = [];
+  const draftDate = draft?.annualPeriodEnd;
   for (const [key, criterion] of Object.entries(CRITERIA)) {
     const c = draft?.[key];
     if (!c) continue;
@@ -543,6 +564,29 @@ export function draftToSql(draft, { reviewer, sources = null }) {
     }
     if (c.result === "unclear") {
       skipped.push(`${draft.ticker} ${key}: unklar, bleibt auf der Grenzfall-Liste`);
+      continue;
+    }
+    if (c.verification == null) {
+      skipped.push(`${draft.ticker} ${key}: verification fehlt (Umfang der Gegenprüfung: full oder sample)`);
+      continue;
+    }
+    if (!VERIFICATION.includes(c.verification)) {
+      skipped.push(`${draft.ticker} ${key}: verification ungültig (${c.verification}), erlaubt sind full oder sample`);
+      continue;
+    }
+    if (c.result === "pass" && c.verification !== "full") {
+      skipped.push(`${draft.ticker} ${key}: pass ohne vollständige Gegenprüfung (verification ist ${c.verification}, nötig ist full)`);
+      continue;
+    }
+    if (!isDate(draftDate)) {
+      skipped.push(`${draft.ticker} ${key}: annualPeriodEnd fehlt im Entwurf oder ist kein Datum`);
+      continue;
+    }
+    if (currentAnnual !== null && currentAnnual !== draftDate) {
+      skipped.push(
+        `${draft.ticker} ${key}: Jahresabschluss im Entwurf ${draftDate}, in screening_current ${currentAnnual} ` +
+          `(Entwurf veraltet oder Daten weichen ab, bitte prüfen)`
+      );
       continue;
     }
     const own = problems.filter((p) => p.startsWith(key));
@@ -561,27 +605,31 @@ export function draftToSql(draft, { reviewer, sources = null }) {
         continue;
       }
     }
-    const details = { kiDraft: true, quote: c.quote, reasoning: c.reasoning ?? null, confidence: c.confidence ?? null };
+    const details = { quote: c.quote, reasoning: c.reasoning ?? null, confidence: c.confidence ?? null };
     if (key === "B3" && c.result === "fail") details.prohibitedRevenueByPeriod = c.prohibitedRevenueByPeriod;
     if (key === "B3") details.segments = c.segments ?? null;
-    const basis = `coalesce(sc.annual_period_end, ${sqlString(draft.annualPeriodEnd)}::date)`;
+    const basis = `${sqlString(draftDate)}::date`;
     statements.push(
       [
         `-- ${draft.ticker} ${criterion}: ${c.result}`,
         `insert into public.manual_reviews`,
-        `  (security_id, criterion, result, details, source_url, source_note, reviewer, basis_annual_period_end)`,
+        `  (security_id, criterion, result, details, source_url, source_note, reviewer, basis_annual_period_end, verification, ai_draft)`,
         `select s.id, ${sqlString(criterion)}, ${sqlString(c.result)}, ${sqlString(JSON.stringify(details))}::jsonb,`,
-        `       ${sqlString(c.sourceUrl ?? null)}, ${sqlString(c.sourceNote ?? null)}, ${sqlString(reviewer)}, ${basis}`,
+        `       ${sqlString(c.sourceUrl ?? null)}, ${sqlString(c.sourceNote ?? null)}, ${sqlString(reviewer)}, ${basis}, ${sqlString(c.verification)}, true`,
         `from public.securities s`,
         `left join public.screening_current sc on sc.security_id = s.id`,
         `where s.ticker = ${sqlString(draft.ticker)}`,
+        `  and (sc.annual_period_end is null or sc.annual_period_end = ${basis})`,
         `  and not exists (select 1 from public.manual_reviews m where m.security_id = s.id and m.criterion = ${sqlString(criterion)}`,
         `                  and m.basis_annual_period_end = ${basis} and m.result = ${sqlString(c.result)}`,
         `                  and m.source_url is not distinct from ${sqlString(c.sourceUrl ?? null)});`,
       ].join("\n")
     );
   }
-  return { statements, skipped };
+  if (statements.length && currentAnnual === null) {
+    notes.push(`${draft.ticker}: noch kein Ergebnis in screening_current, Datum aus dem Entwurf (${draftDate}) eingetragen`);
+  }
+  return { statements, skipped, notes };
 }
 
 /** Kontrollabfrage am Ende der SQL-Datei: zeigt, welche Einträge wirklich in der Tabelle gelandet sind. */
@@ -590,7 +638,7 @@ export function verificationSql(tickers) {
   return [
     "-- Kontrolle: Diese Zeilen müssen für jeden bestätigten Eintrag erscheinen.",
     "-- Fehlt eine Aktie, gibt es ihren Ticker in public.securities nicht (z. B. BRK-B statt BRK.B).",
-    "select s.ticker, m.criterion, m.result, m.basis_annual_period_end, m.reviewer, m.reviewed_at",
+    "select s.ticker, m.criterion, m.result, m.verification, m.basis_annual_period_end, m.reviewer, m.ai_draft, m.reviewed_at",
     "from public.manual_reviews m",
     "join public.securities s on s.id = m.security_id",
     `where s.ticker in (${list || "''"}) and m.reviewed_at > now() - interval '1 day'`,

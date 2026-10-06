@@ -40,7 +40,9 @@ const RESULT_TEXT_COLOR = {
   not_applicable: "text-[var(--none-text)]",
 };
 
-const REVIEW_RESULT = { pass: "bestanden", fail: "nicht bestanden", unclear: "unklar" };
+// Öffentliche Prüfer-Angabe (Entscheidung 06.10.2026): immer „Tazkiyah-Redaktion“, Umfang der
+// Gegenprüfung aus verification. Prüfer-Kürzel und ai_draft sind intern und kommen hier nie an.
+const VERIFICATION_TEXT = { full: "vollständig geprüft", sample: "stichprobenartig geprüft" };
 
 const LEASE_SOURCE = {
   annual_estimate: "Leasing aus dem letzten Jahresabschluss übernommen (Schätzung)",
@@ -120,27 +122,27 @@ function InfoCheck({ check }) {
 function Review({ review }) {
   if (!review) return null;
   const url = safeUrl(review.sourceUrl);
+  const verification = VERIFICATION_TEXT[review.verification];
   return (
     <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text-soft)]">
       <p>
-        Manuell geprüft{review.reviewedAt && ` am ${fmtDate(review.reviewedAt)}`}
-        {review.result && `: ${REVIEW_RESULT[review.result] || review.result}`}
-        {review.reviewer && <span className="text-[var(--muted)]"> · geprüft von {review.reviewer}</span>}
+        Geprüft von der Tazkiyah-Redaktion
+        {verification && ` · ${verification}`}
+        {(url || review.sourceNote) && (
+          <>
+            {" · Quelle: "}
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+                {review.sourceNote || "Dokument öffnen"}
+              </a>
+            ) : (
+              review.sourceNote
+            )}
+          </>
+        )}
       </p>
       {review.state === "expired" && (
         <p className="mt-1 text-[var(--text)]">Diese Prüfung ist abgelaufen, weil ein neuer Jahresabschluss vorliegt. Sie muss erneut bestätigt werden.</p>
-      )}
-      {(url || review.sourceNote) && (
-        <p className="mt-1 text-[var(--muted)]">
-          Beleg:{" "}
-          {url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
-              {review.sourceNote || "Dokument öffnen"}
-            </a>
-          ) : (
-            review.sourceNote
-          )}
-        </p>
       )}
     </div>
   );

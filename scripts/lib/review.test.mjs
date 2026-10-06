@@ -103,7 +103,7 @@ test("buildSlicesMarkdown: Abschnitte vorhanden, Satzung fehlt → klarer Hinwei
 const good = () => ({
   ticker: "AAPL",
   annualPeriodEnd: "2025-09-27",
-  A2: { result: "pass", quote: "to engage in any lawful act or activity.", sourceUrl: "https://x/c.htm", sourceNote: "Art. III", confidence: "high", confirmed: true },
+  A2: { result: "pass", quote: "to engage in any lawful act or activity.", sourceUrl: "https://x/c.htm", sourceNote: "Art. III", confidence: "high", confirmed: true, verification: "full" },
   B3: { result: "unclear", quote: "", sourceUrl: "https://x/10k.htm", confidence: "low", needsHumanReview: true, reasonForReview: "Dienstleistungen enthalten Musik, nicht getrennt ausgewiesen" },
 });
 
@@ -133,29 +133,106 @@ test("validateDraft: Zitat und Quelle sind Pflicht, B3 fail braucht alle Periode
 test("draftToSql: nur Bestätigtes, Apostrophe doppelt, Wiederholung fügt nichts doppelt ein", () => {
   const d = good();
   d.A2.quote = "to engage in any lawful act or activity (the Company's purpose)";
-  const { statements, skipped } = draftToSql(d, { reviewer: "KI-Entwurf (Claude), kontrolliert von Test" });
+  const { statements, skipped } = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
   assert.equal(statements.length, 1);
   assert.match(statements[0], /'A2', 'pass'/);
+  assert.match(statements[0], /'AMI', '2025-09-27'::date, 'full', true\nfrom/);
+  assert.match(statements[0], /verification, ai_draft\)/);
+  assert.doesNotMatch(statements[0], /kiDraft|KI-Entwurf|Claude/);
   assert.match(statements[0], /Company''s purpose/);
-  assert.match(statements[0], /coalesce\(sc\.annual_period_end, '2025-09-27'::date\)/);
+  assert.doesNotMatch(statements[0], /coalesce/);
+  assert.match(statements[0], /, '2025-09-27'::date, 'full', true\nfrom/);
   assert.match(statements[0], /not exists/);
   assert.match(statements[0], /where s\.ticker = 'AAPL'/);
   assert.ok(skipped.some((x) => /B3: nicht bestätigt/.test(x)));
   // unklar bleibt draußen, auch wenn bestätigt
   d.B3.confirmed = true;
-  assert.ok(draftToSql(d, { reviewer: "x" }).skipped.some((x) => /unklar/.test(x)));
+  assert.ok(draftToSql(d, { reviewer: "AMI", currentAnnual: null }).skipped.some((x) => /unklar/.test(x)));
   // B3 fail ohne vollständige Beträge wird nicht ausgegeben
-  d.B3 = { result: "fail", quote: "q.", sourceUrl: "u", confirmed: true, prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
-  const r = draftToSql(d, { reviewer: "x" });
+  d.B3 = { result: "fail", quote: "q.", sourceUrl: "u", confirmed: true, verification: "sample", prohibitedRevenueByPeriod: { "annual:2025-09-27": { music: 5 } } };
+  const r = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
   assert.equal(r.statements.length, 1); // nur A2
   assert.ok(r.skipped.some((x) => /B3/.test(x) && /Quartale/.test(x)));
-  assert.throws(() => draftToSql(d, { reviewer: "" }));
+  assert.throws(() => draftToSql(d, { reviewer: "", currentAnnual: null }));
+  // Prüfer-Angabe nur als Kürzel, der alte lange Wortlaut wird abgelehnt
+  assert.throws(() => draftToSql(good(), { reviewer: "KI-Entwurf (Claude), kontrolliert von Test", currentAnnual: null }), /Kürzel/);
+  assert.throws(() => draftToSql(good(), { reviewer: "ami", currentAnnual: null }), /Kürzel/);
   assert.equal(sqlString("a'b"), "'a''b'");
   assert.equal(sqlString(null), "null");
 });
 
+test("draftToSql: Jahresabschluss gleich, abweichend, kein Ergebnis", () => {
+  // gleich: Eintrag mit dem Entwurfsdatum, SQL sichert gegen spätere Änderung ab
+  const same = draftToSql(good(), { reviewer: "AMI", currentAnnual: "2025-09-27" });
+  assert.equal(same.statements.length, 1);
+  assert.match(same.statements[0], /'2025-09-27'::date, 'full', true\nfrom/);
+  assert.match(same.statements[0], /and \(sc\.annual_period_end is null or sc\.annual_period_end = '2025-09-27'::date\)/);
+  assert.match(same.statements[0], /m\.basis_annual_period_end = '2025-09-27'::date/);
+  assert.deepEqual(same.notes, []);
+
+  // abweichend: übersprungen und gemeldet, kein Eintrag
+  const diff = draftToSql(good(), { reviewer: "AMI", currentAnnual: "2026-09-26" });
+  assert.equal(diff.statements.length, 0);
+  assert.ok(diff.skipped.some((x) => /AAPL A2: Jahresabschluss im Entwurf 2025-09-27, in screening_current 2026-09-26/.test(x)));
+  assert.deepEqual(diff.notes, []);
+
+  // kein Ergebnis: Eintrag mit dem Entwurfsdatum, Aktie wird gemeldet
+  const none = draftToSql(good(), { reviewer: "AMI", currentAnnual: null });
+  assert.equal(none.statements.length, 1);
+  assert.match(none.statements[0], /'2025-09-27'::date, 'full', true\nfrom/);
+  assert.ok(none.notes.some((x) => /AAPL: noch kein Ergebnis in screening_current, Datum aus dem Entwurf \(2025-09-27\)/.test(x)));
+
+  // ohne Angabe oder mit ungültigem Datum: Fehler statt still weiter
+  assert.throws(() => draftToSql(good(), { reviewer: "AMI" }), /currentAnnual fehlt/);
+  assert.throws(() => draftToSql(good(), { reviewer: "AMI", currentAnnual: "gestern" }), /kein Datum/);
+
+  // Entwurf ohne gültiges Datum: übersprungen
+  const bad = good();
+  bad.annualPeriodEnd = "2025";
+  const r = draftToSql(bad, { reviewer: "AMI", currentAnnual: null });
+  assert.equal(r.statements.length, 0);
+  assert.ok(r.skipped.some((x) => /annualPeriodEnd fehlt im Entwurf/.test(x)));
+});
+
+test("draftToSql: Gegenprüfung – pass nur mit full, fail auch mit sample, fehlend wird übersprungen", () => {
+  // pass + full: übernommen, verification landet in der Spalte
+  const full = draftToSql(good(), { reviewer: "AMI", currentAnnual: null });
+  assert.equal(full.statements.length, 1);
+  assert.match(full.statements[0], /basis_annual_period_end, verification, ai_draft\)/);
+  assert.match(full.statements[0], /'2025-09-27'::date, 'full', true\nfrom/);
+
+  // pass + sample: übersprungen und gemeldet
+  const d = good();
+  d.A2.verification = "sample";
+  const r1 = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
+  assert.equal(r1.statements.length, 0);
+  assert.ok(r1.skipped.some((x) => /AAPL A2: pass ohne vollständige Gegenprüfung/.test(x)));
+
+  // verification fehlt: übersprungen und gemeldet
+  delete d.A2.verification;
+  const r2 = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
+  assert.equal(r2.statements.length, 0);
+  assert.ok(r2.skipped.some((x) => /AAPL A2: verification fehlt/.test(x)));
+
+  // ungültiger Wert: übersprungen
+  d.A2.verification = "teilweise";
+  assert.ok(draftToSql(d, { reviewer: "AMI", currentAnnual: null }).skipped.some((x) => /verification ungültig/.test(x)));
+
+  // fail + sample und fail + full: beide übernommen
+  const quarters = { "annual:2025-09-27": { music: 5 }, "quarter:2025-12-27": 1, "quarter:2026-03-28": 1, "quarter:2026-06-27": 1, "quarter:2025-09-27": 1 };
+  for (const v of ["sample", "full"]) {
+    const f = good();
+    f.B3 = { result: "fail", quote: "q.", sourceUrl: "u", confirmed: true, verification: v, prohibitedRevenueByPeriod: quarters };
+    const r = draftToSql(f, { reviewer: "AMI", currentAnnual: null });
+    assert.equal(r.statements.length, 2, v);
+    assert.match(r.statements[1], new RegExp(`'B3_SEGMENTS', 'fail'[\\s\\S]*'2025-09-27'::date, '${v}', true`));
+  }
+});
+
 test("verificationSql und reviewSheet", () => {
   assert.match(verificationSql(["AAPL", "AAPL", "MSFT"]), /in \('AAPL', 'MSFT'\)/);
+  assert.match(verificationSql(["AAPL"]), /m\.verification/);
+  assert.match(verificationSql(["AAPL"]), /m\.ai_draft/);
   const sheet = reviewSheet([good()]);
   assert.match(sheet, /## AAPL/);
   assert.match(sheet, /> to engage in any lawful act or activity\./);
@@ -198,13 +275,13 @@ test("findQuote: Umbrüche, Leerraum und typografische Zeichen egal, Wortlaut ni
 
 test("draftToSql mit Quellen: Zitat muss in der Quelldatei stehen", () => {
   const d = good();
-  d.B3 = { result: "pass", quote: "Our segments are Cloud and Devices.", sourceUrl: "u", confirmed: true };
+  d.B3 = { result: "pass", quote: "Our segments are Cloud and Devices.", sourceUrl: "u", confirmed: true, verification: "full" };
   const sources = { A2: { "charter.txt": "ARTICLE III to engage in any lawful act or activity." }, B3: { "10k.txt": "unrelated text only" } };
-  const r = draftToSql(d, { reviewer: "x", sources });
+  const r = draftToSql(d, { reviewer: "AMI", sources, currentAnnual: null });
   assert.equal(r.statements.length, 1); // A2 ja, B3 nein
   assert.ok(r.skipped.some((x) => /B3: Zitat steht nicht wörtlich/.test(x)));
   sources.B3["10k.txt"] = "Note 13. Our segments are Cloud\nand Devices.";
-  assert.equal(draftToSql(d, { reviewer: "x", sources }).statements.length, 2);
+  assert.equal(draftToSql(d, { reviewer: "AMI", sources, currentAnnual: null }).statements.length, 2);
 });
 
 // ------------------------------------------------ spätere Satzungsänderungen, Summenprüfung
@@ -242,10 +319,10 @@ test("checkSegmentSums: gleiche Summen ok, Abweichung und Lücken erkannt", () =
 
 test("draftToSql: B3 pass mit falschen Segmentsummen wird nicht übernommen", () => {
   const d = good();
-  d.B3 = { result: "pass", quote: "Segmente.", sourceUrl: "u", confirmed: true, segments: [
+  d.B3 = { result: "pass", quote: "Segmente.", sourceUrl: "u", confirmed: true, verification: "full", segments: [
     { name: "A", dimension: "Berichtssegment", revenue: 100 }, { name: "B", dimension: "Berichtssegment", revenue: 50 },
     { name: "X", dimension: "Endmarkt", revenue: 100 }, { name: "Y", dimension: "Endmarkt", revenue: 20 } ] };
-  const r = draftToSql(d, { reviewer: "x" });
+  const r = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
   assert.equal(r.statements.length, 1);
   assert.ok(r.skipped.some((x) => /Segmentsummen/.test(x)));
 });

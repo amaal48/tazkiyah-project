@@ -238,6 +238,12 @@ export function IndustryGroups() {
             </div>
             <div className="text-sm leading-relaxed text-[var(--text-soft)]">
               <p>{nb(g.rationale)}</p>
+              {g.decision && (
+                <div className="mt-3 rounded-[10px] border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
+                  <p className="font-semibold text-[var(--text)]">Unsere Festlegung ({formatDate(g.decision.date)})</p>
+                  <p className="pt-1">{nb(g.decision.text)}</p>
+                </div>
+              )}
               <p className="pt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
                 <span>{g.basis}</span>
                 <span aria-hidden="true">/</span>
@@ -466,6 +472,10 @@ export default function MethodikPage({ onBack, anchor }) {
                   Abschlüssen der Unternehmen. Satzung, Umsatzsegmente und die Angaben zu ETFs werden von Hand in den
                   Jahresberichten und Fondsdokumenten geprüft; jede dieser Prüfungen ist mit Quelle, Datum und
                   prüfender Person gespeichert und läuft mit dem nächsten Jahresabschluss ab.
+                </p>
+                <p>
+                  Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung
+                  enthält Seitenangaben. Bevor ein Titel als „konform“ gilt, prüfen wir die zitierten Stellen selbst nach.
                 </p>
                 <p>Wo die verfügbaren Daten vom Wortlaut des Standards abweichen, sagen wir das offen:</p>
                 <ul className="list-disc space-y-2 pl-5">

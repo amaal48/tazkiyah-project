@@ -24,6 +24,9 @@
 // Services“) gleichermaßen greifen.
 
 // Gruppen für die Methodik-Seite. Reihenfolge = Prüfreihenfolge.
+// Optionales Feld `decision` { date, text }: eigene Festlegung der Projektinhaberin zur
+// Abgrenzung der Gruppe. Die Methodik-Seite zeigt sie als „Unsere Festlegung“ mit Datum.
+// Nur Text für die Anzeige, ändert die Prüflogik nicht.
 export const INDUSTRY_GROUPS = [
   {
     id: "alcohol",
@@ -83,6 +86,11 @@ export const INDUSTRY_GROUPS = [
     source: "SS 21, 2/1; SS 21, 3/2",
     rationale:
       "Fällt unter „und Ähnliches“. Cannabisunternehmen werden in den Finanzdaten oft als Pharmahersteller geführt; Stichworttreffer führen deshalb zur manuellen Prüfung, bestätigte Fälle werden ausgeschlossen. Medizinische Pharmazie ist nicht betroffen.",
+    decision: {
+      date: "2026-10-06",
+      text:
+        "Verschreibungspflichtige Arzneimittel, auch Betäubungsmittel für den medizinischen Einsatz, gelten als Arzneimittel und fallen nicht unter „Drogen“. Die Gruppe „Drogen“ meint Rauschmittel für den Freizeitgebrauch, einschließlich Freizeit-Cannabis. Gilt für alle Pharmaunternehmen.",
+    },
     industryKeywords: [],
     descriptionKeywords: ["cannabis", "marijuana", "recreational drug"],
   },

@@ -102,6 +102,17 @@ test("manuelle Prüfung läuft bei neuem Jahresabschluss ab", () => {
   assert.equal(crit(r, "A2").review.state, "expired");
 });
 
+test("manuelle Prüfung im Ergebnis: verification ja, Prüfer-Kürzel und ai_draft nie", () => {
+  const reviews = validReviews.map((r) => ({ ...r, reviewer: "AMI", aiDraft: true, verification: "full" }));
+  const r = screenSecurity(base({ manualReviews: reviews }));
+  const review = crit(r, "A2").review;
+  assert.equal(review.verification, "full");
+  assert.equal("reviewer" in review, false);
+  assert.doesNotMatch(JSON.stringify(r), /AMI|aiDraft|ai_draft/);
+  // Altbestand ohne verification
+  assert.equal(crit(screenSecurity(base()), "A2").review.verification, null);
+});
+
 test("B3: fehlende Zinserträge → nicht geprüft", () => {
   const qs = Q_ENDS.map((d, i) => snap("quarter", d, i === 2 ? { income: { interestIncome: null } } : {}));
   const r = screenSecurity(base({ quarters: qs }));

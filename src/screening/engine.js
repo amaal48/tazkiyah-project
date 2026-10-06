@@ -30,7 +30,7 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.3.0";
+export const ENGINE_VERSION = "1.4.0"; // 1.4.0 (06.10.2026): review ohne reviewer, mit verification
 
 export const STATUS = {
   CONFORM: "konform",
@@ -140,7 +140,8 @@ function reviewInfo(picked) {
     result: r.result,
     sourceUrl: r.sourceUrl ?? null,
     sourceNote: r.sourceNote ?? null,
-    reviewer: r.reviewer ?? null,
+    // Prüfer-Kürzel und ai_draft bleiben intern und gehen nie ins (öffentliche) Ergebnis
+    verification: r.verification ?? null,
     reviewedAt: r.reviewedAt ?? null,
     basisAnnualPeriodEnd: r.basisAnnualPeriodEnd ?? null,
   };

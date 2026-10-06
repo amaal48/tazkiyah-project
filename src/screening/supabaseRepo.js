@@ -30,7 +30,7 @@ export function createSupabaseRepo(db) {
         fetchAll(() =>
           db
             .from("manual_reviews")
-            .select("id,security_id,criterion,result,details,source_url,source_note,reviewer,reviewed_at,basis_annual_period_end")
+            .select("id,security_id,criterion,result,details,source_url,source_note,verification,reviewed_at,basis_annual_period_end")
             .order("id")
         ),
         fetchAll(() => db.from("etf_holdings").select("etf_id,holding_isin,holding_ticker,holding_country,weight,as_of").order("etf_id")),

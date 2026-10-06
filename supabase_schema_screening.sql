@@ -235,6 +235,19 @@ alter table public.manual_reviews add constraint manual_reviews_criterion_check
 create index if not exists manual_reviews_lookup_idx
   on public.manual_reviews (security_id, criterion, reviewed_at desc);
 
+-- Ergänzt 06.10.2026: Umfang der Gegenprüfung durch die Nutzerin.
+--   'full'   = alle zitierten Stellen vollständig gegengeprüft (Pflicht für pass)
+--   'sample' = Stichprobe (nur für fail erlaubt, siehe scripts/review-to-sql.mjs)
+--   null     = Altbestand von vor dieser Regel
+alter table public.manual_reviews add column if not exists verification text;
+alter table public.manual_reviews drop constraint if exists manual_reviews_verification_check;
+alter table public.manual_reviews add constraint manual_reviews_verification_check
+  check (verification is null or verification in ('full', 'sample'));
+
+-- Ergänzt 06.10.2026: Lag der Prüfung ein KI-Entwurf zugrunde? Nur intern, wird nie angezeigt.
+-- reviewer ist seit 06.10.2026 das Kürzel der prüfenden Person (z. B. 'AMI').
+alter table public.manual_reviews add column if not exists ai_draft boolean not null default false;
+
 -- Arbeitsliste: welche Pflichtprüfungen fehlen oder sind abgelaufen?
 -- Aktien: A2 und B3_SEGMENTS (A1 nur für Prüfbranchen — steht im Ergebnis
 -- als „nicht geprüft“ mit Begründung). ETFs: G2, G3, G4, G5_FUND_INCOME.

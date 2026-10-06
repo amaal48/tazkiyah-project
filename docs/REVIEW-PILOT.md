@@ -93,7 +93,8 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
     "confidence": "high | medium | low",
     "needsHumanReview": false,
     "reasonForReview": null,
-    "confirmed": false
+    "confirmed": false,
+    "verification": "full | sample (setzt die Nutzerin beim Bestätigen)"
   },
   "B3": {
     "result": "pass | unclear",
@@ -105,16 +106,21 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
     "confidence": "high | medium | low",
     "needsHumanReview": true,
     "reasonForReview": "z. B. Dienstleistungen enthalten Musik, nicht getrennt ausgewiesen",
-    "confirmed": false
+    "confirmed": false,
+    "verification": "full | sample (setzt die Nutzerin beim Bestätigen)"
   }
 }
 ```
 
 Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht mit einem Satzende schließt.
 
-`annualPeriodEnd` ist das Ende des Berichtsjahres des 10-K (`meta.json` → `tenK.reportDate`). In der Datenbank gilt später das Datum aus dem letzten Ergebnis der Aktie; das Skript nimmt dieses automatisch und das Datum aus dem Entwurf nur als Ersatz.
+`annualPeriodEnd` ist das Ende des Berichtsjahres des 10-K (`meta.json` → `tenK.reportDate`). In die Datenbank wird immer dieses Datum aus dem Entwurf eingetragen; weicht das Datum der Aktie in `screening_current` ab, wird der Eintrag übersprungen (seit 06.10.2026, siehe Abschnitt 6).
+
+`verification` (seit 06.10.2026) hält fest, wie gründlich die Nutzerin gegengeprüft hat: `full` = alle zitierten Stellen vollständig nachgeprüft, `sample` = Stichprobe. Die KI setzt das Feld nie selbst.
 
 ## 5. Kontrollieren
+
+**Regel zur Gegenprüfung (06.10.2026):** Jedes Ergebnis, das zu „konform“ führen kann (`pass`), wird vor der Freigabe vollständig gegengeprüft. Ergebnisse, die zu „nicht konform“ führen, dürfen per Stichprobe gegengeprüft werden. Festgehalten in `manual_reviews.verification`.
 
 1. Zitate automatisch prüfen: `node scripts/check-quotes.mjs`. Jede Zeile muss mit `OK` beginnen. Bei `FEHLT` steht das Zitat nicht wörtlich in der Quelldatei, dann darf dieses Ergebnis nicht übernommen werden. Das ist eine zweite, unabhängige Prüfung neben der der KI. Zeilenumbrüche, Leerraum und typografische Anführungszeichen spielen dabei keine Rolle, der Wortlaut schon.
 2. Kontrollbogen erzeugen: `node scripts/review-sheet.mjs`
@@ -123,15 +129,26 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
    - Passt das Ergebnis zum Zitat? Bei B3: stimmen die Segmente mit dem Anhang des 10-K überein?
    - Grenzfälle stehen unten in einer eigenen Liste.
 4. Notiere pro Aktie die **Zeit**, die du gebraucht hast, und **jeden Fehler**, den du findest (siehe Abschnitt 7).
-5. Was du bestätigst, bekommt in `draft.json` bei der jeweiligen Prüfung `"confirmed": true`. Korrigierst du das Ergebnis, ändere `result` und notiere den Grund. Du kannst Claude Code bitten, das für dich einzutragen („Setze confirmed auf true für A2 bei NVDA, JNJ, KO“).
+5. Was du bestätigst, bekommt in `draft.json` bei der jeweiligen Prüfung `"confirmed": true` und `"verification"`: `"full"`, wenn du alle zitierten Stellen vollständig nachgeprüft hast, sonst `"sample"`. Ein `pass` braucht immer `"full"`. Korrigierst du das Ergebnis, ändere `result` und notiere den Grund. Du kannst Claude Code bitten, das für dich einzutragen („Setze confirmed auf true und verification auf full für A2 bei NVDA, JNJ, KO“).
 
 ## 6. In die Datenbank übernehmen
 
-1. SQL-Datei erzeugen (Namen einsetzen):
+1. SQL-Datei erzeugen (Kürzel der prüfenden Person einsetzen, im Projektordner):
    ```
-   node scripts/review-to-sql.mjs --reviewer "KI-Entwurf (Claude), kontrolliert von Vorname Nachname"
+   node --env-file=.env.local scripts/review-to-sql.mjs --reviewer AMI
    ```
    Übernommen wird nur Bestätigtes mit `pass` oder `fail`, dessen Zitat wörtlich in der Quelldatei steht (dieselbe Prüfung wie `check-quotes`). Unklares und Unbelegtes bleibt draußen, die Ausgabe nennt jeden übersprungenen Eintrag.
+
+   **Prüfer-Angabe (seit 06.10.2026):** `--reviewer` ist das Kürzel der prüfenden Person (2–5 Großbuchstaben, z. B. `AMI`); ein langer Text wie früher wird abgelehnt. Das Skript setzt `ai_draft = true` für alle Einträge, weil in `review-work/` immer ein KI-Entwurf zugrunde liegt. `reviewer` und `ai_draft` sind nur intern. Öffentlich zeigt die Detailseite an jedem Ergebnis nur „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft“ bzw. „· stichprobenartig geprüft“ (aus `verification`, entfällt ohne) „· Quelle: <Dokument, Seite>“ (aus `source_note`, verlinkt mit `source_url`). Die KI-Unterstützung wird einmal auf der Methodik-Seite erklärt, nicht an den Ergebnissen.
+
+   **Gegenprüfung (seit 06.10.2026):** Jedes Ergebnis, das zu „konform“ führen kann (`pass`), wird vor der Freigabe vollständig gegengeprüft. Ergebnisse, die zu „nicht konform“ führen, dürfen per Stichprobe gegengeprüft werden. Festgehalten in `manual_reviews.verification`. Das Skript übernimmt `verification` in die Spalte. Ein `pass` ohne `"full"` wird übersprungen („pass ohne vollständige Gegenprüfung“), ein `fail` darf `"full"` oder `"sample"` haben. Fehlt `verification`, wird der Eintrag übersprungen. Voraussetzung: `supabase_manual_reviews_verification.sql` wurde einmal im SQL Editor ausgeführt (legt `verification` und `ai_draft` an und trägt bei den sieben Pilot-Einträgen vom 04.10. `AMI`, `ai_draft = true` und `full` nach).
+
+   **Jahresabschluss (seit 06.10.2026):** Das Skript liest für jede Aktie `annual_period_end` aus `screening_current` (nur lesen, mit dem öffentlichen Schlüssel aus `.env.local`). Klappt das Lesen nicht, bricht es ab und schreibt nichts. Eingetragen wird immer das Datum aus dem Entwurf (`annualPeriodEnd`):
+   - **gleiches Datum:** Eintrag wird erzeugt.
+   - **anderes Datum:** Eintrag wird übersprungen und gemeldet („Jahresabschluss im Entwurf …, in screening_current …“). Meist gibt es einen neueren Jahresabschluss; dann muss der Entwurf neu gemacht werden.
+   - **noch kein Ergebnis** in `screening_current`: Eintrag mit dem Entwurfsdatum, die Aktie wird als „Hinweis“ gemeldet. Die Prüfung gilt dann erst, wenn der Cron für die Aktie genau diesen Jahresabschluss speichert.
+
+   Zusätzlich fügt die SQL nur ein, wenn `screening_current` beim Ausführen noch passt (`sc.annual_period_end is null or sc.annual_period_end = '<Entwurfsdatum>'`). Hat sich das Datum seit dem Erzeugen geändert, fehlt die Zeile in der Kontrollabfrage.
 2. `review-work/insert-reviews.sql` öffnen, den Inhalt in den **Supabase SQL Editor** einfügen und ausführen. Ein zweites Ausführen fügt nichts doppelt ein.
 3. Die Kontrollabfrage am Ende der Datei zeigt, welche Zeilen wirklich gelandet sind. Fehlt eine Aktie, gibt es ihren Ticker in `securities` nicht (z. B. `BRK-B` gegen `BRK.B`).
 4. Status neu rechnen lassen, ohne FMP-Abrufe (im Terminal, mit dem Geheimwort aus `read -s CRON_SECRET`):
@@ -140,7 +157,7 @@ Optional `quoteIsPartial: true` bei einer Prüfung, wenn ein Zitat bewusst nicht
    ```
    Danach zeigt die Detailseite die Prüfung mit Prüfer, Quelle und Datum.
 
-Gilt eine Prüfung als „abgelaufen“, passt das Datum nicht: Der Cron hat für die Aktie einen anderen Jahresabschluss gespeichert. Dann das SQL noch einmal erzeugen und ausführen, es nimmt das Datum der Aktie automatisch.
+Gilt eine Prüfung als „abgelaufen“, passt das Datum nicht: Der Cron hat für die Aktie einen anderen Jahresabschluss gespeichert. Das SQL übernimmt dieses Datum seit 06.10.2026 nicht mehr automatisch, weil die Prüfung sonst ungeprüft für einen anderen Jahresabschluss gelten würde. Stattdessen die Unterlagen neu holen (`sec-fetch.mjs`), den Entwurf für den neuen Jahresabschluss neu prüfen lassen und erst dann das SQL erzeugen.
 
 ## 7. Auswertung des Pilots
 

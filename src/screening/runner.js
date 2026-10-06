@@ -129,7 +129,7 @@ export function toEngineReview(r) {
     details: r.details || {},
     sourceUrl: r.source_url,
     sourceNote: r.source_note,
-    reviewer: r.reviewer,
+    verification: r.verification ?? null, // reviewer und ai_draft bleiben intern (nicht ins Ergebnis)
     reviewedAt: r.reviewed_at,
     basisAnnualPeriodEnd: r.basis_annual_period_end,
   };
