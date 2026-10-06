@@ -8,6 +8,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
+- **Akademie-Fragen** (Branch `akademie-fragen`, nicht auf `main`): „Frage nicht gefunden?“ speichert Fragen in der Supabase-Tabelle `academy_questions` (Spalten `question`, `page`). Besucher dürfen nur einreichen, nicht lesen (kein `.select()` nach dem insert); Drossel in der Datenbank: 30 Fragen in 10 Minuten, zusätzlich 30 Sekunden Pause je Sitzung im Browser (nur Arbeitsspeicher). 5–500 Zeichen. **Vor dem Launch in die Datenschutzerklärung aufnehmen.**
 - **Gegenprüfung:** `pass` nur nach vollständiger Gegenprüfung, „nicht konform“ auch per Stichprobe; festgehalten in `manual_reviews.verification`. Details: Abschnitt 4, „Gegenprüfung (Regel vom 06.10.2026)“.
 - **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“.
 - **Methodik-Seite:** Festlegung Arzneimittel bei „Drogen“, Absatz zur KI-gestützten Auswertung („Jede Auswertung nennt die genaue Fundstelle.“).
@@ -92,7 +93,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 **Offene Punkte (Stand 05.10.2026):**
 - Cron: Ursache für die 9 Titel ist gefunden (Abschnitt 4, „Cron-Befund“). Lösung ist der Anbieterwechsel oben; im Code wurde nichts geändert.
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
-- Vor dem Launch: TradingView in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
+- Vor dem Launch: TradingView und die Akademie-Fragen (`academy_questions`) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
 - Universum anpassen: AVB und EA delistet, EQR jetzt VMRK (siehe Kernfunktionen, TradingView).
 
 **Offene Punkte (Stand 06.10.2026, nach Commit `2ffc7a9` auf `ui-screening`):**
