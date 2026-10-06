@@ -9,6 +9,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
 - **Akademie-Fragen** (Branch `akademie-fragen`, nicht auf `main`): „Frage nicht gefunden?“ speichert Fragen in der Supabase-Tabelle `academy_questions` (Spalten `question`, `page`). Besucher dürfen nur einreichen, nicht lesen (kein `.select()` nach dem insert); Drossel in der Datenbank: 30 Fragen in 10 Minuten, zusätzlich 30 Sekunden Pause je Sitzung im Browser (nur Arbeitsspeicher). 5–500 Zeichen. **Vor dem Launch in die Datenschutzerklärung aufnehmen.**
+- **Akademie-Fragen per E-Mail** (Branch `akademie-fragen`): `api/notify-questions.js`, Cron täglich 5:00 UTC. Schickt über Resend eine Sammel-Mail mit allen Fragen mit `status = 'neu'` und leerem `notified_at` (höchstens 100 je Lauf, Rest beim nächsten Lauf). Erst nach erfolgreichem Versand wird `notified_at` gesetzt. Absender `onboarding@resend.dev`, damit nur an die Adresse des Resend-Kontos möglich (für andere Empfänger eigene Domain bei Resend bestätigen). Neue Vercel-Variablen: `RESEND_API_KEY` (geheim), `QUESTIONS_NOTIFY_EMAIL`. Test: `?dryRun=1` (nur zählen). Betreff und Text: `src/lib/questionDigest.js` (Tests in `npm run test:lib`). **Resend vor dem Launch in die Datenschutzerklärung aufnehmen.**
 - **Gegenprüfung:** `pass` nur nach vollständiger Gegenprüfung, „nicht konform“ auch per Stichprobe; festgehalten in `manual_reviews.verification`. Details: Abschnitt 4, „Gegenprüfung (Regel vom 06.10.2026)“.
 - **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“.
 - **Methodik-Seite:** Festlegung Arzneimittel bei „Drogen“, Absatz zur KI-gestützten Auswertung („Jede Auswertung nennt die genaue Fundstelle.“).
@@ -93,7 +94,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 **Offene Punkte (Stand 05.10.2026):**
 - Cron: Ursache für die 9 Titel ist gefunden (Abschnitt 4, „Cron-Befund“). Lösung ist der Anbieterwechsel oben; im Code wurde nichts geändert.
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
-- Vor dem Launch: TradingView und die Akademie-Fragen (`academy_questions`) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
+- Vor dem Launch: TradingView, die Akademie-Fragen (`academy_questions`) und Resend (E-Mail-Versand der Fragen) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
 - Universum anpassen: AVB und EA delistet, EQR jetzt VMRK (siehe Kernfunktionen, TradingView).
 
 **Offene Punkte (Stand 06.10.2026, nach Commit `2ffc7a9` auf `ui-screening`):**
@@ -146,7 +147,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 - **Supabase** — Auth (E-Mail/Passwort) + Postgres. Projekt heißt im Dashboard noch **"Amanah"** (rein kosmetisch). Region `eu-central-1`. Tarif: Free.
 - **Vercel** — Hosting + Serverless Functions + Cron. Projekt **"tazkiyah"**, Produktions-URL `https://tazkiyah-project-kohl.vercel.app`. Automatisches Deployment bei Push auf `main`.
   - Crons (`vercel.json`): `/api/generate-weekly-report` montags 6:00 UTC, `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s)
-  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, `TWELVE_DATA_API_KEY`; optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
+  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
 
 **Externe APIs:**
 - Twelve Data (Kurse, `api/price-history.js`; seit 05.10. von der Oberfläche nicht mehr benutzt)
@@ -196,6 +197,7 @@ docs/
   BRIEFING-A2-B3.md      — Briefing für die A2/B3-Prüfung (neuer Chat)
 api/
   run-screening.js       — täglicher Screening-Cron (manuell: ?limit=2&dryRun=1 oder ?tickers=AAPL,MSFT&force=1, nur mit CRON_SECRET)
+  notify-questions.js    — tägliche Sammel-Mail mit neuen Akademie-Fragen über Resend (manuell: ?dryRun=1, nur mit CRON_SECRET)
 scripts/
   import-etf-holdings.mjs — node scripts/import-etf-holdings.mjs <csv> [ETF-Ticker] [Stichtag]
   sec-exchanges.mjs      — Börse je Aktie aus der SEC-Liste → supabase_securities_exchange.sql (05.10.)
