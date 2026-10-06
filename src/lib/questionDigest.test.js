@@ -32,3 +32,26 @@ test("Limit erreicht: Hinweis auf den nächsten Lauf", () => {
   assert.match(d.text, /Weitere Fragen folgen beim nächsten Lauf\./);
   assert.doesNotMatch(buildQuestionDigest(rows.slice(0, 2), { limit: 3 }).text, /nächsten Lauf/);
 });
+
+const contact = (message, created_at = "2026-10-06T06:00:00Z") => ({ topic: "fehler", email: "max@example.de", message, created_at });
+
+test("nur Kontaktnachrichten: eigene Überschrift, Thema, E-Mail, Datum, Nachricht", () => {
+  const d = buildQuestionDigest([], { contacts: [contact("Der Link geht nicht.")] });
+  assert.equal(d.subject, "Tazkiyah: 1 Kontaktnachricht ohne Benachrichtigung");
+  assert.match(d.text, /^Kontaktnachrichten ohne Benachrichtigung\n=+\n\n1\. 06\.10\.2026, 08:00 Uhr · Thema: Fehler auf der Seite · E-Mail: max@example\.de\nDer Link geht nicht\.\n/);
+  assert.match(d.text, /contact_messages\n$/);
+  assert.doesNotMatch(d.text, /academy_questions/);
+});
+
+test("Fragen und Kontaktnachrichten zusammen: Fragen zuerst, beide Fußzeilen", () => {
+  const d = buildQuestionDigest([row("Was ist Riba?")], { contacts: [contact("Eins"), contact("Zwei")] });
+  assert.equal(d.subject, "Tazkiyah: 1 neue Frage in der Akademie und 2 Kontaktnachrichten ohne Benachrichtigung");
+  assert.ok(d.text.indexOf("Was ist Riba?") < d.text.indexOf("Kontaktnachrichten ohne Benachrichtigung"));
+  assert.ok(d.text.indexOf("academy_questions") < d.text.indexOf("Kontaktnachrichten ohne Benachrichtigung"));
+  assert.match(d.text, /2\. .*\nZwei\n/);
+});
+
+test("Limit bei Kontaktnachrichten erreicht: eigener Hinweis", () => {
+  const d = buildQuestionDigest([], { limit: 2, contacts: [contact("Eins"), contact("Zwei")] });
+  assert.match(d.text, /ersten 2 Kontaktnachrichten\. Weitere folgen beim nächsten Lauf\./);
+});

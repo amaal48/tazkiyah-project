@@ -18,6 +18,7 @@ import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
 import ScreenerPage from "./components/screening/ScreenerPage.jsx";
 import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
+import ContactPage from "./components/ContactPage.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
@@ -1250,7 +1251,7 @@ const NAV_GROUPS = [
 /* ---------- Root ---------- */
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["screener", "detail", "criterion", "methodik"];
+const ROUTED_PAGES = ["screener", "detail", "criterion", "methodik", "kontakt"];
 
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | screener | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | compare | …
@@ -1289,7 +1290,7 @@ export default function TazkiyahPrototype() {
     navigate(routes.stock(ticker));
   }
 
-  // Seiten mit Hash-Adresse: Hauptseite, Detailseite, Erklärseite, Methodik.
+  // Seiten mit Hash-Adresse: Hauptseite, Detailseite, Erklärseite, Methodik, Kontakt.
   // Alle übrigen Seiten laufen weiter über den page-Zustand.
   const route = useHashRoute();
   const methodikAnchorRef = React.useRef(null);
@@ -1306,6 +1307,10 @@ export default function TazkiyahPrototype() {
     } else if (route.name === "screener") {
       setPage("screener");
       setActiveAnchor(null);
+    } else if (route.name === "kontakt") {
+      setPage("kontakt");
+      setActiveAnchor(null);
+      window.scrollTo({ top: 0 });
     } else if (route.name === "methodik") {
       setPage("methodik");
       setActiveAnchor(methodikAnchorRef.current);
@@ -1490,11 +1495,20 @@ export default function TazkiyahPrototype() {
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
         {page === "privacy" && <PrivacyPage session={session} onGo={goTo} />}
+        {page === "kontakt" && <ContactPage onBack={() => goTo("home")} onOpenPrivacy={() => goTo("privacy")} />}
 
         {/* Fußzeile über die volle Breite */}
         <footer className="mt-20 bg-[var(--footer)] py-8">
           <div className="page">
             <BasisLine variant="footer" />
+            <nav aria-label="Fußzeile" className="mt-3 text-sm">
+              <a
+                href={routes.kontakt()}
+                className="-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]"
+              >
+                Kontakt
+              </a>
+            </nav>
           </div>
         </footer>
       </div>
