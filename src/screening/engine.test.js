@@ -261,10 +261,52 @@ test("B3-Nenner: Gesamteinnahmen inkl. Zins- und sonstige Erträge", () => {
   assert.equal(crit(r, "B3").checks[0].value, 1); // 4 / (390 + 4 + 6)
 });
 
-test("B3-Nenner: fehlende sonstige Erträge → nicht geprüft", () => {
-  const a = snap("annual", ANNUAL_END, { income: { otherIncome: null } });
+test("B3-Nenner ohne fehlende sonstige Erträge: < 5 % bestanden, ≥ 5 % nicht geprüft, nie nicht konform (08.10.2026)", () => {
+  const noOther = (x) => Object.assign(x, { income: { ...x.income, otherIncome: null } });
+  // 4 / (400 + 4) = 0,99 % → bestanden, gekennzeichnet
+  const ok = crit(screenSecurity(base({ annual: noOther(snap("annual", ANNUAL_END)) })), "B3");
+  assert.equal(ok.result, RESULT.PASS);
+  assert.equal(ok.checks[0].denominatorWithoutOtherIncome, true);
+  assert.equal(ok.checks[1].denominatorWithoutOtherIncome, undefined); // Quartale haben sonstige Erträge
+  assert.ok(ok.flags.includes("nenner_ohne_sonstige_ertraege"));
+  // 30 / (400 + 30) = 6,98 % → nicht geprüft statt nicht konform
+  const high = crit(screenSecurity(base({ annual: noOther(snap("annual", ANNUAL_END, { income: { interestIncome: 30 } })) })), "B3");
+  assert.equal(high.checks[0].result, RESULT.NOT_CHECKED);
+  assert.equal(high.checks[0].reason, "Sonstige Erträge nicht ausgewiesen, Nenner vorsichtig ohne sie");
+  assert.equal(high.result, RESULT.NOT_CHECKED);
+  // Mit sonstigen Erträgen wie bisher: 30 / (400 + 30 + 0) über 5 % → nicht konform
+  assert.equal(crit(screenSecurity(base({ annual: snap("annual", ANNUAL_END, { income: { interestIncome: 30 } }) })), "B3").result, RESULT.FAIL);
+  // TTM: fehlt in einem Quartal der Wert, bleibt er für alle vier weg
+  const qs = Q_ENDS.map((d, i) => (i === 2 ? noOther(snap("quarter", d)) : snap("quarter", d, { income: { otherIncome: 50 } })));
+  const ttm = crit(screenSecurity(base({ quarters: qs })), "B3").checks[1];
+  assert.equal(ttm.denominatorWithoutOtherIncome, true);
+  assert.equal(ttm.value, 0.99); // 4 / (400 + 4), ohne die 150 sonstigen Erträge der anderen Quartale
+});
+
+test("C1 nur mit eindeutig belegten realen Werten, wenn Posten fehlen: ≥ 33,3 % bestanden, sonst nicht geprüft (08.10.2026)", () => {
+  const withIdentified = (tangible, receivables, rights) =>
+    snap("annual", ANNUAL_END, { balance: { goodwill: null, identifiedRealAssets: { tangible, receivables, rights } } });
+  // (250 + 100 + 0) / 1000 = 35 % → bestanden, gekennzeichnet
+  const ok = crit(screenSecurity(base({ annual: withIdentified(250, 100, 0) })), "C1");
+  assert.equal(ok.checks[0].result, RESULT.PASS);
+  assert.equal(ok.checks[0].identifiedOnly, true);
+  assert.ok(ok.flags.includes("sammelzeilen_nicht_mitgezaehlt"));
+  // 30 % → nicht geprüft, nie nicht konform
+  const low = crit(screenSecurity(base({ annual: withIdentified(200, 100, 0) })), "C1");
+  assert.equal(low.checks[0].result, RESULT.NOT_CHECKED);
+  assert.match(low.checks[0].reason, /Sammelzeilen/);
+  // Ohne belegte Werte bleibt es wie bisher „nicht geprüft“ (Datenfeld fehlt)
+  const none = crit(screenSecurity(base({ annual: snap("annual", ANNUAL_END, { balance: { goodwill: null } }) })), "C1");
+  assert.match(none.checks[0].reason, /goodwill/);
+  // Vollständige Daten: normale Rechnung, keine Kennzeichnung
+  assert.ok(!crit(screenSecurity(base()), "C1").flags.includes("sammelzeilen_nicht_mitgezaehlt"));
+});
+
+test("Belegte reale Werte gelten nur für C1, nicht für B2 und Zakat", () => {
+  const a = snap("annual", ANNUAL_END, { balance: { cash: null, identifiedRealAssets: { tangible: 900, receivables: 0, rights: 0 } } });
   const r = screenSecurity(base({ annual: a }));
-  assert.equal(crit(r, "B3").result, RESULT.NOT_CHECKED);
+  assert.equal(crit(r, "B2").checks[0].result, RESULT.NOT_CHECKED);
+  assert.equal(crit(r, "C1").checks[0].identifiedOnly, true);
 });
 
 test("B3: Zinserträge laut Anhang aus der B3-Prüfung, wenn der Datenwert fehlt (08.10.2026)", () => {

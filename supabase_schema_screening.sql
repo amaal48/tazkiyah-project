@@ -91,13 +91,48 @@ create index if not exists screening_runs_security_run_idx
   on public.screening_runs (security_id, run_at desc, id desc);
 
 -- Views werden neu angelegt, damit neue Spalten enthalten sind.
+-- Seit 08.10.2026 (supabase_protect_raw_inputs.sql): Anbieter-Rohzahlen (inputs) nur für den Server.
+--   screening_current_internal — letztes Ergebnis mit inputs/fingerprint, nur Service-Role (Cron)
+--   screening_current          — öffentlich, ohne inputs/fingerprint und ohne drei Rohwerte im result
+--                                (zakat.trading.priceAtPeriodEnd, purification.periods[].prohibitedIncome
+--                                und .sharesOutstanding), die die Website nicht anzeigt
 drop view if exists public.manual_reviews_due;
 drop view if exists public.screening_current;
+drop view if exists public.screening_current_internal;
+
+create view public.screening_current_internal
+with (security_invoker = true) as
+select distinct on (r.security_id)
+  r.*, s.ticker, s.isin, s.name, s.asset_type
+from public.screening_runs r
+join public.securities s on s.id = r.security_id
+order by r.security_id, r.run_at desc, r.id desc;
 
 create view public.screening_current
 with (security_invoker = true) as
 select distinct on (r.security_id)
-  r.*, s.ticker, s.isin, s.name, s.asset_type
+  r.id,
+  r.security_id,
+  r.status,
+  r.in_universe,
+  r.annual_period_end,
+  r.quarter_period_end,
+  case
+    when jsonb_typeof(r.result -> 'purification' -> 'periods') = 'array' then
+      jsonb_set(
+        r.result #- '{zakat,trading,priceAtPeriodEnd}',
+        '{purification,periods}',
+        (select coalesce(jsonb_agg(p - 'prohibitedIncome' - 'sharesOutstanding'), '[]'::jsonb)
+           from jsonb_array_elements(r.result -> 'purification' -> 'periods') p)
+      )
+    else r.result #- '{zakat,trading,priceAtPeriodEnd}'
+  end as result,
+  r.parameters,
+  r.engine_version,
+  r.parameters_version,
+  r.data_provider,
+  r.run_at,
+  s.ticker, s.isin, s.name, s.asset_type
 from public.screening_runs r
 join public.securities s on s.id = r.security_id
 order by r.security_id, r.run_at desc, r.id desc;
@@ -420,11 +455,30 @@ do $$
 declare t text;
 begin
   foreach t in array array['securities', 'screening_runs', 'screening_status_changes',
-                           'etf_holdings', 'purification_amounts']
+                           'etf_holdings']
   loop
     execute format('drop policy if exists "%s_public_read" on public.%I', t, t);
     execute format('create policy "%s_public_read" on public.%I for select to anon, authenticated using (true)', t, t);
   end loop;
+end $$;
+
+-- Anbieter-Rohzahlen nur für den Server (seit 08.10.2026, supabase_protect_raw_inputs.sql):
+-- screening_runs nur ohne inputs/fingerprint lesbar, interne View nur Service-Role,
+-- purification_amounts nicht öffentlich (die Website liest die Tabelle nicht, nur der Cron).
+drop policy if exists "purification_amounts_public_read" on public.purification_amounts;
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    execute 'revoke select on public.screening_runs from anon, authenticated';
+    execute 'grant select (id, security_id, status, in_universe, annual_period_end, quarter_period_end, result, '
+            'parameters, engine_version, parameters_version, data_provider, run_at) on public.screening_runs to anon, authenticated';
+    execute 'revoke all on public.screening_current_internal from anon, authenticated';
+    execute 'grant select on public.screening_current to anon, authenticated';
+    execute 'revoke select on public.purification_amounts from anon, authenticated';
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select on public.screening_current_internal to service_role';
+  end if;
 end $$;
 
 -- manual_reviews ist seit 06.10.2026 nicht mehr öffentlich lesbar (enthält Prüfer-Kürzel,

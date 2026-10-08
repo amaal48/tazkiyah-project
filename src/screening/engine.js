@@ -30,7 +30,8 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.5.0"; // 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich
+export const ENGINE_VERSION = "1.5.0"; // 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich,
+// B3-Nenner ohne fehlende sonstige Erträge, C1 nur mit eindeutig belegten realen Werten (beide nur „bestanden“ oder „nicht geprüft“)
 // vorher 1.4.0 (06.10.2026): review ohne reviewer, mit verification
 
 export const STATUS = {
@@ -437,9 +438,29 @@ function prohibitedIncomeFor(s, segmentReview, p) {
  * Nenner für B3. "total_income" = Umsatz + Zinserträge + sonstige Erträge
  * (Wortlaut „total income“, SS 21, 3/4/4); "revenue" = nur Umsatz.
  */
-function incomeDenominator(s, p, segmentReview) {
-  const keys = p.prohibitedIncomeDenominator === "total_income" ? ["revenue", "interestIncome", "otherIncome"] : ["revenue"];
-  return sumFields({ ...(s?.income || {}), interestIncome: interestIncomeOf(s, segmentReview).value }, keys);
+function incomeDenominator(s, p, segmentReview, { dropOther = false } = {}) {
+  const income = { ...(s?.income || {}), interestIncome: interestIncomeOf(s, segmentReview).value };
+  if (p.prohibitedIncomeDenominator !== "total_income") return { ...sumFields(income, ["revenue"]), withoutOther: false };
+  // Festlegung 08.10.2026: Fehlen die sonstigen Erträge, bleiben sie im Nenner weg (kleinerer Nenner = strenger).
+  // Ergebnis dann nur „bestanden“ (Quote < Grenze) oder „nicht geprüft“, nie „nicht konform“ (withoutOtherIncome).
+  if (dropOther || !isNum(income.otherIncome)) return { ...sumFields(income, ["revenue", "interestIncome"]), withoutOther: true };
+  return { ...sumFields(income, ["revenue", "interestIncome", "otherIncome"]), withoutOther: false };
+}
+
+export const WITHOUT_OTHER_INCOME_REASON = "Sonstige Erträge nicht ausgewiesen, Nenner vorsichtig ohne sie";
+
+/** Nenner ohne sonstige Erträge: bestanden nur bei Quote < Grenze, sonst „nicht geprüft“. */
+function withoutOtherIncome(check, numerator, denominator, limit) {
+  check.denominatorWithoutOtherIncome = true;
+  if (check.result === RESULT.NOT_CHECKED) return check;
+  const pct = denominator > 0 ? (numerator / denominator) * 100 : null;
+  if (pct !== null && pct < limit) {
+    check.result = RESULT.PASS;
+  } else {
+    check.result = RESULT.NOT_CHECKED;
+    check.reason = WITHOUT_OTHER_INCOME_REASON;
+  }
+  return check;
 }
 
 function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
@@ -494,45 +515,48 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
   // Jahresabschluss
   const annualProhibited = prohibitedIncomeFor(annual, segReview, p);
   const annualDen = incomeDenominator(annual, p, segReview);
-  b3.checks.push(
-    ratioCheck({
-      basis: "annual",
-      periodEnd: annual?.periodEnd,
-      numerator: annualProhibited.value,
-      denominator: annualDen.value,
-      limit: p.prohibitedIncomeMaxPct,
-      comparator: "<=",
-      missing: [...annualProhibited.missing, ...annualDen.missing],
-      label: "Verbotene Einnahmen / Gesamteinnahmen (Jahr)",
-    })
-  );
+  const annualCheck = ratioCheck({
+    basis: "annual",
+    periodEnd: annual?.periodEnd,
+    numerator: annualProhibited.value,
+    denominator: annualDen.value,
+    limit: p.prohibitedIncomeMaxPct,
+    comparator: "<=",
+    missing: [...annualProhibited.missing, ...annualDen.missing],
+    label: "Verbotene Einnahmen / Gesamteinnahmen (Jahr)",
+  });
+  b3.checks.push(annualDen.withoutOther ? withoutOtherIncome(annualCheck, annualProhibited.value, annualDen.value, p.prohibitedIncomeMaxPct) : annualCheck);
 
   // Letzte vier Quartale zusammen
   let ttmNum = 0;
   let ttmDen = 0;
   const ttmMissing = [];
   if (quarters.length < 4) ttmMissing.push(`nur ${quarters.length} von 4 Quartalen vorhanden`);
+  // Fehlen in einem Quartal die sonstigen Erträge, bleiben sie für alle vier weg (einheitlicher Nenner)
+  const ttmDropOther = quarters.slice(0, 4).some((q) => !isNum(q?.income?.otherIncome));
+  let ttmWithoutOther = false;
   for (const q of quarters.slice(0, 4)) {
     const pi = prohibitedIncomeFor(q, segReview, p);
     if (pi.value === null) ttmMissing.push(...pi.missing.map((m) => `${m} (${q.periodEnd})`));
     else ttmNum += pi.value;
-    const den = incomeDenominator(q, p, segReview);
+    const den = incomeDenominator(q, p, segReview, { dropOther: ttmDropOther });
+    if (den.withoutOther) ttmWithoutOther = true;
     if (den.value !== null) ttmDen += den.value;
     else ttmMissing.push(...den.missing.map((m) => `${m} (${q.periodEnd})`));
   }
-  b3.checks.push(
-    ratioCheck({
-      basis: "ttm",
-      periodEnd: latestQ?.periodEnd,
-      numerator: ttmNum,
-      denominator: ttmDen,
-      limit: p.prohibitedIncomeMaxPct,
-      comparator: "<=",
-      missing: [...new Set(ttmMissing)],
-      label: "Verbotene Einnahmen / Gesamteinnahmen (letzte 4 Quartale)",
-    })
-  );
+  const ttmCheck = ratioCheck({
+    basis: "ttm",
+    periodEnd: latestQ?.periodEnd,
+    numerator: ttmNum,
+    denominator: ttmDen,
+    limit: p.prohibitedIncomeMaxPct,
+    comparator: "<=",
+    missing: [...new Set(ttmMissing)],
+    label: "Verbotene Einnahmen / Gesamteinnahmen (letzte 4 Quartale)",
+  });
+  b3.checks.push(ttmWithoutOther ? withoutOtherIncome(ttmCheck, ttmNum, ttmDen, p.prohibitedIncomeMaxPct) : ttmCheck);
   b3.result = combine(b3.checks);
+  if (b3.checks.some((c) => c.denominatorWithoutOtherIncome)) b3.flags.push("nenner_ohne_sonstige_ertraege");
 
   // Welche Kategorien verbotener Einnahmen wurden erfasst? Auslegungsfragen kennzeichnen.
   const cats = new Set(annualProhibited.categories);
@@ -567,6 +591,9 @@ function realAssetsCheck(s, basis, p) {
   if (!p.goodwillCountsAsRealAsset) needed.push("goodwill");
   if (!p.intangiblesCountAsRights) needed.push("intangiblesExGoodwill");
   const missing = needed.filter((k) => !isNum(b[k]));
+  if (missing.length && isNum(b.totalAssets) && b.totalAssets > 0 && b.identifiedRealAssets) {
+    return identifiedRealAssetsCheck(s, basis, p);
+  }
   let real = null;
   if (!missing.length) {
     real = b.totalAssets - b.cash - b.shortTermInvestments - b.longTermInvestments;
@@ -586,6 +613,39 @@ function realAssetsCheck(s, basis, p) {
   });
 }
 
+export const IDENTIFIED_ONLY_REASON =
+  "Eindeutig belegte reale Werte unter der Grenze; Sammelzeilen und nicht ausgewiesene Posten sind nicht mitgezählt";
+
+/**
+ * C1 mit nur eindeutig belegten realen Werten (Festlegung 08.10.2026, nur C1): Fehlen Posten für die
+ * normale Rechnung, zählen nur die Bilanzzeilen als real, die eindeutig real sind (Sachanlagen, Vorräte,
+ * je nach Parameter Forderungen und Rechte; balance.identifiedRealAssets vom Datenanbieter).
+ * Sammelzeilen („Other assets“) und fehlende Posten zählen nicht (strenger). Nenner bleibt Assets.
+ * Ergebnis nur „bestanden“ (≥ Grenze) oder „nicht geprüft“, nie „nicht konform“.
+ */
+function identifiedRealAssetsCheck(s, basis, p) {
+  const b = s.balance;
+  const ir = b.identifiedRealAssets;
+  const parts = [ir.tangible, p.operatingReceivablesCountAsReal ? ir.receivables : 0, p.intangiblesCountAsRights ? ir.rights : 0];
+  const real = parts.every(isNum) ? parts.reduce((a, v) => a + v, 0) : null;
+  const check = ratioCheck({
+    basis,
+    periodEnd: s?.periodEnd,
+    numerator: real,
+    denominator: b.totalAssets,
+    limit: p.realAssetsMinPct,
+    comparator: ">=",
+    missing: real === null ? ["eindeutig belegte reale Werte"] : [],
+    label: "Reale Vermögenswerte und Rechte / Gesamtaktiva (nur eindeutig belegte Werte)",
+  });
+  check.identifiedOnly = true;
+  if (check.result === RESULT.FAIL) {
+    check.result = RESULT.NOT_CHECKED;
+    check.reason = IDENTIFIED_ONLY_REASON;
+  }
+  return check;
+}
+
 function stageC({ annual, quarters, profile, p }) {
   const latestQ = quarters[0] || null;
 
@@ -594,6 +654,7 @@ function stageC({ annual, quarters, profile, p }) {
   });
   c1.checks = [realAssetsCheck(annual, "annual", p), realAssetsCheck(latestQ, "quarter", p)];
   c1.result = combine(c1.checks);
+  if (c1.checks.some((c) => c.identifiedOnly)) c1.flags.push("sammelzeilen_nicht_mitgezaehlt");
   if (usesReconciledZero([annual, latestQ], ["shortTermInvestments", "longTermInvestments", "goodwill", "intangiblesExGoodwill", "netReceivables"])) {
     c1.flags.push("posten_null_bilanzabgleich");
   }

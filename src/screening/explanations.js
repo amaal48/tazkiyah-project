@@ -67,6 +67,14 @@ export const FLAG_TEXTS = {
     text: "Zinserträge vorsichtig vollständig gezählt: Die Angabe enthält auch Dividenden oder andere Erträge",
     criterion: "B3",
   },
+  nenner_ohne_sonstige_ertraege: {
+    text: "Sonstige Erträge nicht ausgewiesen, Nenner vorsichtig ohne sie (strenger). Bestanden nur unter der Grenze, sonst „nicht geprüft“",
+    criterion: "B3",
+  },
+  sammelzeilen_nicht_mitgezaehlt: {
+    text: "Sammelzeilen nicht mitgezählt (strenger): Nur eindeutig belegte reale Werte zählen. Bestanden nur ab der Grenze, sonst „nicht geprüft“",
+    criterion: "C1",
+  },
   posten_null_bilanzabgleich: {
     text: "Ein nicht ausgewiesener Bilanzposten zählt als 0, weil die übrigen Posten die Bilanzsumme vollständig erklären",
     criterion: "C1",

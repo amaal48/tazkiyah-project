@@ -68,6 +68,8 @@
  * @property {number|null} income.netIncome
  * @property {number|null} income.distributions  Ausschüttungen der Periode (positiv)
  * Optional (SEC-Adapter, ./sec.js; fehlen bei anderen Anbietern):
+ * @property {Object} [balance.identifiedRealAssets] nur C1: eindeutig reale Bilanzzeilen nach Art
+ *   { tangible, receivables, rights, lines } (Sachanlagen/Vorräte, Forderungen, Rechte); Sammelzeilen zählen nicht
  * @property {string|null} [sharesAsOf]   Datum der Aktienzahl (bei sharesBasis "cover_page" nach dem Stichtag)
  * @property {Object|null} [sourceFiling] Fundstelle der Periode:
  *   { accessionNumber, form, filingDate, reportDate, url } (url = Einreichung im EDGAR-Archiv)

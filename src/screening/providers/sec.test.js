@@ -10,6 +10,7 @@ import {
   applyBalanceReconciliation,
   balanceLeavesFromCalc,
   balanceValueOf,
+  identifiedRealAssets,
   buildTickerIndex,
   createSecProvider,
   listFilings,
@@ -363,4 +364,19 @@ test("Abruf: Bilanz-Abgleich lädt die Rechenstruktur nur bei fehlenden Posten (
   // Beispielfirma: Zeilen erklären Assets nicht → Hinweis, Posten bleiben null
   assert.equal(res.annual.balance.goodwill, null);
   assert.ok(res.notes.some((n) => /Bilanz-Abgleich 2025-09-30 nicht möglich/.test(n)));
+});
+
+test("Eindeutig belegte reale Werte: nur Sachanlagen, Vorräte, Forderungen, Rechte; Sammelzeilen nicht", () => {
+  const values = { PropertyPlantAndEquipmentNet: 500, InventoryNet: 50, AccountsReceivableNetCurrent: 100, OperatingLeaseRightOfUseAsset: 20, OtherAssetsNoncurrent: 300, CashAndCashEquivalentsAtCarryingValue: 30 };
+  const leaves = Object.keys(values).map((c) => ({ concept: `us-gaap:${c}`, weight: 1 })).concat([{ concept: "abc:Custom", weight: 1 }]);
+  const ir = identifiedRealAssets(leaves, (n) => values[n] ?? null);
+  assert.deepEqual([ir.tangible, ir.receivables, ir.rights], [550, 100, 20]);
+  // Abziehende Zeile ohne eindeutige Zuordnung → null (Summe wäre zu hoch)
+  assert.equal(identifiedRealAssets([...leaves, { concept: "us-gaap:SomethingElse", weight: -1 }], (n) => values[n] ?? 5), null);
+  // Brutto minus Abschreibung
+  const gross = identifiedRealAssets(
+    [{ concept: "us-gaap:PropertyPlantAndEquipmentGross", weight: 1 }, { concept: "us-gaap:AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment", weight: -1 }],
+    (n) => ({ PropertyPlantAndEquipmentGross: 800, AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment: 300 })[n]
+  );
+  assert.equal(gross.tangible, 500);
 });

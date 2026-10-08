@@ -493,6 +493,19 @@ export default function MethodikPage({ onBack, anchor }) {
                     lautet der Status „nicht geprüft“, bis der Quartalsbericht von Hand geprüft ist.
                   </li>
                   <li>Sonstige Erträge liegen teilweise nur als Saldo mit Aufwendungen vor.</li>
+                  <li>
+                    Verbotene Einnahmen (B3) werden auf die Gesamteinnahmen bezogen. Weist ein Unternehmen seine sonstigen
+                    Erträge nicht gesondert aus, rechnen wir vorsichtig nur mit Umsatz und Zinserträgen. Der Nenner wird
+                    dadurch kleiner, die Quote eher höher. Liegt sie unter 5 %, gilt die Prüfung als bestanden; sonst steht
+                    sie auf „nicht geprüft“, nie auf „nicht konform“.
+                  </li>
+                  <li>
+                    Für die realen Vermögenswerte (C1) fehlen manchmal einzelne Bilanzposten, oder sie stecken in
+                    Sammelzeilen wie „Sonstige Vermögenswerte“. Dann zählen wir nur Werte, die eindeutig real sind
+                    (Sachanlagen, Vorräte, Forderungen, Rechte). Sammelzeilen und nicht ausgewiesene Posten zählen nicht
+                    mit, die Bilanzsumme bleibt der Maßstab. Erreichen die belegten Werte 33,3 %, gilt die Prüfung als
+                    bestanden; sonst steht sie auf „nicht geprüft“, nie auf „nicht konform“.
+                  </li>
                 </ul>
                 <p>
                   Die verwendeten Fassungen der Standards stammen von 2004 (Nr. 21), 2006 (Nr. 27) und 2008 (Nr. 35), wie sie

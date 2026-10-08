@@ -673,6 +673,50 @@ export function applyBalanceReconciliation(snapshot, leaves, valueOf, accn = nul
   return { ok: true, reason: null, zeroed };
 }
 
+// ---------------------------------------------------------------- Eindeutig belegte reale Werte (C1)
+//
+// Festlegung 08.10.2026 (nur C1): Fehlen Posten für die normale Rechnung, zählen nur Bilanzzeilen,
+// die eindeutig real sind. Sammelzeilen, unbekannte Zeilen und Zeilen ohne Wert zählen nicht (strenger).
+// Getrennt nach Art, damit die Engine die Parameter anwenden kann (Forderungen, Rechte).
+export const REAL_CLASS = Object.fromEntries([
+  ...[
+    "PropertyPlantAndEquipmentNet",
+    "PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization",
+    "PropertyPlantAndEquipmentGross",
+    "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment",
+    "InventoryNet",
+  ].map((c) => [c, "tangible"]),
+  ...["AccountsReceivableNetCurrent", "NontradeReceivablesCurrent", "OtherReceivablesNetCurrent", "AccountsAndOtherReceivablesNetCurrent", "ReceivablesNetCurrent"].map((c) => [c, "receivables"]),
+  ...[
+    "IntangibleAssetsNetExcludingGoodwill",
+    "IndefiniteLivedTrademarks",
+    "IndefiniteLivedIntangibleAssetsExcludingGoodwill",
+    "FiniteLivedIntangibleAssetsNet",
+    "OperatingLeaseRightOfUseAsset",
+    "FinanceLeaseRightOfUseAsset",
+  ].map((c) => [c, "rights"]),
+]);
+
+/**
+ * Summe der eindeutig realen Bilanzzeilen nach Art: { tangible, receivables, rights, lines }.
+ * null, wenn eine abziehende Zeile (Gewicht < 0) nicht eindeutig zugeordnet oder ohne Wert ist
+ * (dann wäre die Summe zu hoch).
+ */
+export function identifiedRealAssets(leaves, valueOf) {
+  if (!leaves?.length) return null;
+  const out = { tangible: 0, receivables: 0, rights: 0, lines: [] };
+  for (const leaf of leaves) {
+    const [ns, name] = leaf.concept.split(":");
+    const cls = ns === "us-gaap" ? REAL_CLASS[name] : undefined;
+    const v = ns === "us-gaap" ? valueOf(name) : null;
+    if (leaf.weight < 0 && (!cls || v === null)) return null;
+    if (!cls || v === null) continue;
+    out[cls] += leaf.weight * v;
+    out.lines.push({ concept: name, value: v, weight: leaf.weight, class: cls });
+  }
+  return out;
+}
+
 /**
  * Wert einer Bilanzzeile (instant, Stichtag) aus den Einreichungen dieser Periode.
  * accns: Vorrang-Reihenfolge (jüngste Einreichung zuerst, z. B. 10-K/A vor 10-K).
@@ -814,8 +858,14 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
         notes.push(`SEC: Bilanz-Abgleich ${s.periodEnd} nicht möglich (Rechenstruktur nicht abrufbar)`);
         continue;
       }
-      const r = applyBalanceReconciliation(s, leaves, balanceValueOf(facts, { end: s.periodEnd, accns: periodAccns(s), unit: s.currency }), accn);
+      const valueOf = balanceValueOf(facts, { end: s.periodEnd, accns: periodAccns(s), unit: s.currency });
+      const r = applyBalanceReconciliation(s, leaves, valueOf, accn);
       if (!r.ok) notes.push(`SEC: Bilanz-Abgleich ${s.periodEnd} nicht möglich (${r.reason})`);
+      // Fehlen weiter Posten für C1, die eindeutig belegten realen Werte mitgeben (nur C1 nutzt sie)
+      if (["cash", "shortTermInvestments", "longTermInvestments", "goodwill"].some((f) => s.balance[f] === null)) {
+        const ir = identifiedRealAssets(leaves, valueOf);
+        if (ir) s.balance.identifiedRealAssets = ir;
+      }
     }
   }
 
