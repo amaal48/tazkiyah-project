@@ -107,7 +107,13 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - Vergleich: `node scripts/compare-sec-fmp.mjs [Ticker …]` (Standard AAPL, MSFT, KO; liest `SEC_USER_AGENT` und `FMP_API_KEY` aus `.env.local`). Tabelle Feld | FMP | SEC | Abweichung, über 2 % markiert; danach B3 (mit Annahme „keine verbotenen Segmente“) und C1 über die Engine.
 
 **Offene Punkte SEC-Adapter (Stand 08.10.2026):**
-- Abweichungen aus dem Vergleich SEC ↔ FMP auswerten. Erster Lauf am 08.10.2026 nur mit SEC-Werten (FMP-Schlüssel in `.env.local` war fehlerhaft, neu eintragen). Befunde aus den SEC-Daten:
+- Vergleich SEC ↔ FMP am 08.10.2026 (FMP-Werte aus den gespeicherten Läufen in `screening_current.inputs`, abgerufen 02./04.10.; das Skript nimmt diese, wenn kein `FMP_API_KEY` gesetzt ist):
+  - Gleiche Stichtage: alle gemeinsamen Werte (Umsatz, Gewinn, Bilanzsumme, Cash, Anlagen, Forderungen, Vorräte, Schulden, Leasing) bei AAPL, MSFT und KO (Jahr) auf 0,0 % gleich. Aktienzahl −0,0 bis −1,2 % (FMP: Periodendurchschnitt, SEC: Stichtag/Deckblatt).
+  - Über 2 %: AAPL Quartal 27.06.2026 immaterielle Werte FMP 20.342 Mio. vs. SEC 25.417 Mio. (+24,9 %) → gegen den 10-Q prüfen. KO Quartal nicht vergleichbar (FMP 03.07.2026, SEC 03.04.2026).
+  - Nur bei FMP vorhanden: Zinserträge (AAPL, MSFT), sonstige Erträge, immaterielle Werte (MSFT, KO), Firmenwert AAPL (FMP 0), KO Schulden (45.492 Mio.) und Anlagen. Folge mit SEC: B3 bei allen drei, C1 bei AAPL und KO „nicht geprüft“; mit FMP alle bestanden.
+  - **Achtung FMP:** AAPL Zinserträge bei FMP = 0, obwohl Apple Zinserträge hat (nur im Saldo „Other income/(expense)“ ausgewiesen). B3 mit FMP daher 0 % → zu günstig (Punkt 2 in `fmp.js` bestätigt: 0 heißt bei FMP nicht „ausdrücklich null“).
+  - Hinweis: `screening_current.inputs` (FMP-Rohzahlen) ist mit dem öffentlichen Schlüssel lesbar (Lizenzfrage FMP, vor dem Launch klären).
+- Befunde aus den SEC-Daten:
   - KO taggt langfristige Schulden als `LongTermDebtAndCapitalLeaseObligations` (42,1 Mrd. $, inkl. Finanzierungsleasing), kurzfristige Anlagen als `OtherShortTermInvestments` (3,6 Mrd. $) bzw. `MarketableSecurities`. Beides nicht in `CONCEPTS` → Schulden und C1 bei KO „nicht geprüft“. Entscheidung: Konzepte aufnehmen (Leasing dann herausrechnen)?
   - KO: 10-Q vom 29.07.2026 am 08.10. noch nicht in companyfacts (neuestes Quartal daher 03.04.2026).
   - AAPL: kein `Goodwill`, keine Zinserträge einzeln (`InvestmentIncomeInterest` fehlt, nur Saldo `NonoperatingIncomeExpense`) → B3 und C1 „nicht geprüft“. Immaterielle Werte im 10-K nicht getaggt (nur in 10-Q). MSFT: B3 „nicht geprüft“ (Zinserträge, sonstige Erträge), C1 69,3 % (bestanden).

@@ -5,8 +5,10 @@
 //   node scripts/compare-sec-fmp.mjs            → AAPL, MSFT, KO
 //   node scripts/compare-sec-fmp.mjs NVDA JNJ   → andere Ticker
 //
-// Braucht SEC_USER_AGENT (Format "Tazkiyah kontakt@…") und FMP_API_KEY, gelesen aus .env.local
-// bzw. .env im Projektordner (oder aus der Umgebung). Schlüsselwerte werden nie ausgegeben.
+// Braucht SEC_USER_AGENT (Format "Tazkiyah kontakt@…"), gelesen aus .env.local bzw. .env im
+// Projektordner (oder aus der Umgebung). FMP-Werte: mit FMP_API_KEY live abgerufen; ohne Schlüssel
+// die zuletzt gespeicherten FMP-Eingangsdaten aus Supabase (screening_current.inputs, öffentlicher
+// Schlüssel VITE_SUPABASE_ANON_KEY). Schlüsselwerte werden nie ausgegeben.
 //
 // Ausgabe je Ticker: neueste Jahres- und Quartalsperiode beider Adapter, Tabelle
 // Feld | FMP | SEC | Abweichung in %, Abweichungen über 2 % mit „!!“ markiert.
@@ -22,12 +24,24 @@ for (const f of [".env.local", ".env"]) if (existsSync(f)) process.loadEnvFile(f
 
 const UA = (process.env.SEC_USER_AGENT || "").trim();
 const FMP_KEY = (process.env.FMP_API_KEY || "").trim();
-const missing = [!UA.includes("@") && "SEC_USER_AGENT", !FMP_KEY && "FMP_API_KEY"].filter(Boolean);
+const SB_URL = process.env.VITE_SUPABASE_URL;
+const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const missing = [!UA.includes("@") && "SEC_USER_AGENT", !FMP_KEY && !(SB_URL && SB_KEY) && "FMP_API_KEY oder VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY"].filter(Boolean);
 if (missing.length) {
   console.error(`Es fehlt: ${missing.join(", ")}. Bitte selbst in .env.local eintragen, z. B.:`);
   if (missing.includes("SEC_USER_AGENT")) console.error('  SEC_USER_AGENT="Tazkiyah kontakt@deine-adresse"');
-  if (missing.includes("FMP_API_KEY")) console.error("  FMP_API_KEY=… (derselbe Wert wie in Vercel)");
   process.exit(1);
+}
+
+/** Gespeicherte FMP-Eingangsdaten des letzten Laufs (ohne FMP-Schlüssel). */
+async function storedFmp(ticker) {
+  const q = `screening_current?select=ticker,run_at,inputs&ticker=eq.${encodeURIComponent(ticker)}`;
+  const res = await fetch(`${SB_URL}/rest/v1/${q}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
+  if (!res.ok) throw new Error(`Supabase ${res.status}`);
+  const row = (await res.json())[0];
+  if (!row?.inputs) throw new Error("kein gespeicherter Lauf");
+  if (row.inputs.provider !== "fmp") throw new Error(`gespeicherte Daten stammen von ${row.inputs.provider}`);
+  return { annual: row.inputs.annual, quarters: row.inputs.quarters || [], notes: [`FMP-Werte gespeichert (abgerufen ${String(row.inputs.fetchedAt || row.run_at).slice(0, 10)})`] };
 }
 
 const TICKERS = process.argv.slice(2).length ? process.argv.slice(2) : ["AAPL", "MSFT", "KO"];
@@ -97,7 +111,7 @@ function engineChecks(ticker, periods) {
 const fmtCheck = (c) =>
   !c ? "—" : c.value === null || c.value === undefined ? `nicht geprüft (${c.reason || "fehlt"})` : `${c.value.toLocaleString("de-DE", { maximumFractionDigits: 2 })} % → ${c.result}`;
 
-const fmp = createFmpProvider({ apiKey: FMP_KEY });
+const fmp = FMP_KEY ? createFmpProvider({ apiKey: FMP_KEY }) : { getFinancialPeriods: storedFmp };
 const sec = createSecProvider({ userAgent: UA });
 const flagged = [];
 
