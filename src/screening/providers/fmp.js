@@ -267,6 +267,12 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
       return { currency: "USD", series };
     },
 
+    /** Schlusskurse [{ date, price }] im Zeitraum (1 Abruf). Für den Modus sec_fmp (./secFmp.js). */
+    async getPriceHistory(symbol, { from, to }) {
+      const data = await get("historical-price-eod/light", { symbol, from, to });
+      return Array.isArray(data) ? data : [];
+    },
+
     async getProfile(symbol) {
       const data = await get("profile", { symbol });
       return mapFmpProfile(Array.isArray(data) ? data[0] : null);

@@ -32,7 +32,9 @@ import { createHash } from "node:crypto";
 import { screenSecurity, ENGINE_VERSION } from "./engine.js";
 import { PARAMETERS_VERSION } from "./parameters.js";
 
-// Profil (1) + Bilanz/GuV/Cashflow je Jahr und Quartal (6) + Kursverlauf (1)
+// Profil (1) + Bilanz/GuV/Cashflow je Jahr und Quartal (6) + Kursverlauf (1) — FMP.
+// Andere Adapter geben ihre Zahl selbst an (provider.callsPerTitle, z. B. SEC: 2) und
+// zählen ihr Tagesbudget unter provider.usageKey (Standard: provider.id).
 export const CALLS_PER_TITLE = 8;
 // Stand der Datenaufbereitung im Adapter. Ergebnisse mit älterem Stand werden einmal neu abgerufen,
 // auch wenn die Daten jünger als 7 Tage sind (z. B. 30.09.: Ergebnisse ohne Marktkapitalisierung).
@@ -191,9 +193,12 @@ async function runScreeningUnlocked({
   const timeLeft = () => timeBudgetMs - (Date.now() - started);
   const nowMs = now.getTime();
 
-  const state = await repo.loadState({ provider: provider.id, day: now.toISOString().slice(0, 10) });
+  const usageKey = provider.usageKey ?? provider.id;
+  const callsPerTitle = provider.callsPerTitle ?? CALLS_PER_TITLE;
+  const state = await repo.loadState({ provider: usageKey, day: now.toISOString().slice(0, 10) });
   const summary = {
     dryRun,
+    provider: provider.id,
     engineVersion: ENGINE_VERSION,
     parametersVersion: PARAMETERS_VERSION,
     callsUsedBefore: state.usedToday,
@@ -254,7 +259,7 @@ async function runScreeningUnlocked({
 
   const budgetLeft = Math.max(0, dailyCallBudget - state.usedToday);
   const fxCalls = provider.getFxToEurSeries ? 1 : 0;
-  const maxTitles = Math.min(limit, Math.floor(Math.max(0, budgetLeft - fxCalls) / CALLS_PER_TITLE));
+  const maxTitles = Math.min(limit, Math.floor(Math.max(0, budgetLeft - fxCalls) / callsPerTitle));
   const toFetch = fetchDue.slice(0, maxTitles);
   summary.pending.fetch = fetchDue.length - toFetch.length;
 
@@ -268,9 +273,9 @@ async function runScreeningUnlocked({
       summary.callsUsedNow += n;
       return true;
     }
-    const total = await repo.addUsage(provider.id, n);
+    const total = await repo.addUsage(usageKey, n);
     if (typeof total === "number" && total > dailyCallBudget) {
-      await repo.addUsage(provider.id, -n); // Reservierung zurückgeben
+      await repo.addUsage(usageKey, -n); // Reservierung zurückgeben
       return false;
     }
     summary.callsUsedNow += n;
@@ -337,7 +342,7 @@ async function runScreeningUnlocked({
         summary.stoppedEarly = true;
         return;
       }
-      if (!(await reserveCalls(CALLS_PER_TITLE))) {
+      if (!(await reserveCalls(callsPerTitle))) {
         stop("Tagesbudget für API-Abrufe erreicht");
         return;
       }
@@ -435,5 +440,7 @@ async function runScreeningUnlocked({
     }
   }
 
+  // Tatsächliche Abrufe beim Anbieter (z. B. SEC), nur zur Information
+  if (typeof provider.getCallCount === "function") summary.providerCalls = provider.getCallCount();
   return summary;
 }

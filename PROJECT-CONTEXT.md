@@ -6,6 +6,9 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
+**Neu am 08.10.2026 (Branch `sec-adapter`, noch NICHT auf `main`, noch nicht aktiv):**
+- **SEC-Adapter** für Bilanz- und Umsatzzahlen direkt von der SEC (EDGAR XBRL), ersetzt später FMP. Standard bleibt `fmp`; umschaltbar über `SCREENING_FUNDAMENTALS_PROVIDER`. Details: Abschnitt 1, „SEC-Adapter (08.10.2026)“. Offene Punkte dort.
+
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
 - **Akademie-Fragen** (Branch `akademie-fragen`, nicht auf `main`): „Frage nicht gefunden?“ speichert Fragen in der Supabase-Tabelle `academy_questions` (Spalten `question`, `page`). Besucher dürfen nur einreichen, nicht lesen (kein `.select()` nach dem insert); Drossel in der Datenbank: 30 Fragen in 10 Minuten, zusätzlich 30 Sekunden Pause je Sitzung im Browser (nur Arbeitsspeicher). 5–500 Zeichen. **Vor dem Launch in die Datenschutzerklärung aufnehmen.**
@@ -91,6 +94,24 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - Reihenfolge: 1. Pilot A2/B3. 2. SEC- und Tiingo-Adapter bauen, für die Pilotaktien parallel zu FMP laufen lassen. 3. Zahlen vergleichen. 4. SIC-Zuordnung. 5. FMP abschalten. Bis dahin bleibt FMP Free in Betrieb und dient als Gegenprobe.
 - Die Adapter-Schicht (`providers/model.js`) ist dafür vorgesehen. `mapFmpProfile` und der Cron werden bis dahin nicht mehr erweitert.
 
+**SEC-Adapter (08.10.2026, Branch `sec-adapter`, noch nicht aktiv):**
+- Datei `src/screening/providers/sec.js` (`createSecProvider`), Tests `sec.test.js` mit gekürzten Beispielantworten (`providers/fixtures/sec-sample.json`, erfundenes Unternehmen, keine Netzaufrufe).
+- Quelle: `company_tickers.json` (Ticker → CIK, 1× je Lauf; BRK-B = BRK.B = BRKB), `submissions/CIK….json` (Name, SIC, Geschäftsjahresende, Einreichungen), `api/xbrl/companyfacts/CIK….json` (Werte). 2 Abrufe je Titel, höchstens 8 Anfragen/s, bei 429/503 einmal warten und wiederholen. Jede Anfrage mit `User-Agent` = `SEC_USER_AGENT`.
+- Feldzuordnung: Tabelle `CONCEPTS` am Anfang von `sec.js` (Reihenfolge = Vorrang, Abweichungen zu FMP dort kommentiert). Nur 10-K, 10-K/A, 10-Q, 10-Q/A; je Periode gilt der Wert aus der jüngsten Einreichung für genau diese Periode (Berichtigung schlägt Erstfassung). Quartale nur aus echten 3-Monats-Werten, nie aus kumulierten (6/9 Monate).
+- Viertes Quartal: Jahreswert minus Q1–Q3 desselben Geschäftsjahres, nur wenn alle drei vorliegen (sonst null); gekennzeichnet als „abgeleitet aus Jahres- und Quartalswerten“. Bilanz Q4 = Bilanz des 10-K.
+- Marktkapitalisierung und Kurs liefert die SEC nicht (null → B1/B2 „nicht geprüft“). Aktienzahl: Bestand zum Stichtag (`CommonStockSharesOutstanding`, `period_end`), sonst Deckblatt (`dei:EntityCommonStockSharesOutstanding`, `cover_page`, mit Datum `sharesAsOf`); mehrere Aktiengattungen werden addiert.
+- Fundstellen: je Periode `sourceFiling` (Accession Number, Formular, Einreichungsdatum, Link ins EDGAR-Archiv) und je Feld `sourceConcepts` (Konzept, Einreichung), damit die Detailseite später „Quelle: 10-K vom …“ zeigen kann. Optionale Felder in `model.js` ergänzt (`sic`, `sicDescription`, `fiscalYearEnd`, `sharesAsOf`, `sourceFiling`, `sourceConcepts`); bestehende Felder unverändert.
+- Profil: Branche (`industry`) bleibt null, bis die SIC-Zuordnung steht → A1 „Branche unbekannt“ (nicht geprüft). ISIN weiter von OpenFIGI.
+- Umschalten: `SCREENING_FUNDAMENTALS_PROVIDER` = `fmp` (Standard, wie bisher), `sec` (nur SEC, kein Tageslimit, gedrosselt), `sec_fmp` (Zahlen von der SEC, Kurs und Marktkapitalisierung von FMP = Schlusskurs × SEC-Aktienzahl, Profil von FMP mit SIC; nur Entwicklung/Vergleich, `providers/secFmp.js`). Tagesbudget je Anbieter (`provider.usageKey`, `provider.callsPerTitle` im Runner). `SEC_USER_AGENT` Pflicht bei `sec` und `sec_fmp`.
+- Vergleich: `node scripts/compare-sec-fmp.mjs [Ticker …]` (Standard AAPL, MSFT, KO; liest `SEC_USER_AGENT` und `FMP_API_KEY` aus `.env.local`). Tabelle Feld | FMP | SEC | Abweichung, über 2 % markiert; danach B3 (mit Annahme „keine verbotenen Segmente“) und C1 über die Engine.
+
+**Offene Punkte SEC-Adapter (Stand 08.10.2026):**
+- Abweichungen aus dem Vergleich SEC ↔ FMP auswerten (Vergleich noch nicht gelaufen: `SEC_USER_AGENT` und `FMP_API_KEY` fehlen in `.env.local`).
+- Bekannte Lücken: Fehlt ein Posten im XBRL (z. B. kein Firmenwert, keine kurzfristigen Anlagen), bleibt er null statt 0 → C1/B2 „nicht geprüft“. Zinserträge und sonstige Erträge (`OtherNonoperatingIncome`) werden oft nicht einzeln getaggt → B3 „nicht geprüft“. Ausschüttungen im Quartal meist null (10-Q-Cashflows nur kumuliert). Entscheidung nötig, wie damit umzugehen ist.
+- SIC → Branchengruppen (`industryRules.js`) zuordnen, damit A1 mit SEC-Daten geprüft werden kann.
+- Umschalten auf `sec` (danach FMP abschalten).
+- Kursquelle für B1/B2 offen (Tiingo-Rückfrage vom 08.10.2026).
+
 **Offene Punkte (Stand 05.10.2026):**
 - Cron: Ursache für die 9 Titel ist gefunden (Abschnitt 4, „Cron-Befund“). Lösung ist der Anbieterwechsel oben; im Code wurde nichts geändert.
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
@@ -147,13 +168,13 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 - **Supabase** — Auth (E-Mail/Passwort) + Postgres. Projekt heißt im Dashboard noch **"Amanah"** (rein kosmetisch). Region `eu-central-1`. Tarif: Free.
 - **Vercel** — Hosting + Serverless Functions + Cron. Projekt **"tazkiyah"**, Produktions-URL `https://tazkiyah-project-kohl.vercel.app`. Automatisches Deployment bei Push auf `main`.
   - Crons (`vercel.json`): `/api/generate-weekly-report` montags 6:00 UTC, `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s)
-  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
+  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, optional `SCREENING_FUNDAMENTALS_PROVIDER` (`fmp` Standard, `sec`, `sec_fmp`) und `SEC_USER_AGENT` (Pflicht bei `sec`/`sec_fmp`), `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
 
 **Externe APIs:**
 - Twelve Data (Kurse, `api/price-history.js`; seit 05.10. von der Oberfläche nicht mehr benutzt)
 - Financial Modeling Prep Stable API (Fundamentaldaten). **Free-Tarif nur für Entwicklung/Test** (250 Abrufe/Tag, geteilt mit dem Wochenbericht). Vor dem öffentlichen Launch Wechsel auf einen Tarif, der öffentliche Anzeige und kommerzielle Nutzung erlaubt. Anbieter ist über die Adapter-Schicht austauschbar.
 - OpenFIGI (deutsche Handelsplätze per ISIN, kostenlos)
-- SEC / EDGAR (kostenlos, User-Agent mit Name und E-Mail Pflicht): 10-K und Satzung für A2/B3 (`scripts/sec-fetch.mjs`), Börse je Aktie (`scripts/sec-exchanges.mjs`). Abschlüsse per XBRL: geplant (ersetzt FMP).
+- SEC / EDGAR (kostenlos, User-Agent mit Name und E-Mail Pflicht): 10-K und Satzung für A2/B3 (`scripts/sec-fetch.mjs`), Börse je Aktie (`scripts/sec-exchanges.mjs`). Abschlüsse per XBRL: SEC-Adapter `providers/sec.js` (seit 08.10.2026 auf Branch `sec-adapter`, noch nicht aktiv; ersetzt später FMP).
 - TradingView-Widgets (kostenlos, mit Branding, nur nach Klick): Kurs-Chart und Finanzdaten auf der Detailseite.
 - Tiingo Commercial: geplant (Kurse zum Stichtag), noch nicht gebucht.
 
@@ -175,6 +196,9 @@ src/
     providers/
       model.js           — anbieterneutrales Datenmodell (die Engine kennt nur dieses)
       fmp.js             — FMP-Adapter
+      sec.js             — SEC-Adapter (EDGAR XBRL), Feldzuordnung in CONCEPTS (08.10., noch nicht aktiv)
+      secFmp.js          — Modus sec_fmp: SEC-Zahlen + FMP-Kurs (nur Entwicklung/Vergleich)
+      fixtures/          — gekürzte Beispielantworten für die Tests
       openfigi.js        — Handelsplätze per ISIN
     *.test.js            — Tests (engine, runner, holdingsCsv)
     explanations.js      — Erklärtexte in einfachen Worten je Prüfung, Prüfstufen, Kennzeichnungstexte
@@ -201,12 +225,13 @@ api/
 scripts/
   import-etf-holdings.mjs — node scripts/import-etf-holdings.mjs <csv> [ETF-Ticker] [Stichtag]
   sec-exchanges.mjs      — Börse je Aktie aus der SEC-Liste → supabase_securities_exchange.sql (05.10.)
+  compare-sec-fmp.mjs    — Vergleich SEC- gegen FMP-Adapter (AAPL, MSFT, KO), inkl. B3/C1 über die Engine (08.10.)
 supabase_schema_screening.sql — Schema für den Screener (wiederholbar)
 supabase_securities_exchange.sql — Spalte securities.exchange anlegen und leere Felder füllen (wiederholbar)
 supabase_seed_securities.sql  — Titel aus stocks.js anlegen (wiederholbar)
 ```
 
-**Tests:** `npm run test:screening` (85 Tests: engine, runner, holdingsCsv, providers/fmp), `npm run test:scripts` (26 Tests: A2/B3-Skripte, Börsen-Skript), `npm run test:lib` (5 Tests: TradingView-Symbole). Stand 05.10.: alle bestanden.
+**Tests:** `npm run test:screening` (104 Tests seit 08.10.: engine, runner, holdingsCsv, providers/fmp, providers/sec), `npm run test:scripts` (26 Tests: A2/B3-Skripte, Börsen-Skript), `npm run test:lib` (5 Tests: TradingView-Symbole). Stand 05.10.: alle bestanden.
 
 **Wo der Code liegt:** Lokal auf dem MacBook der Nutzerin (`~/Desktop/Website`), zusätzlich auf GitHub. Notion nur für Planung/Dokumentation.
 

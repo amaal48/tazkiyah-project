@@ -110,6 +110,30 @@ test("Budget begrenzt die Zahl der Titel; Abrufe werden gezählt", async () => {
   assert.equal(repo.db.runs[0].result.purification.periods[0].calculable, false);
 });
 
+test("Budget je Anbieter: eigene Abrufzahl je Titel (callsPerTitle) und eigener Zähler (usageKey)", async () => {
+  const repo = memoryRepo(stocks);
+  const keys = [];
+  const loadState = repo.loadState;
+  repo.loadState = async (args) => {
+    keys.push(["load", args.provider]);
+    return loadState(args);
+  };
+  const addUsage = repo.addUsage;
+  repo.addUsage = async (key, n) => {
+    keys.push(["add", key]);
+    return addUsage(key, n);
+  };
+  const { getFxToEurSeries: _noFx, ...base } = fakeProvider();
+  const provider = { ...base, id: "sec", usageKey: "sec", callsPerTitle: 2, getCallCount: () => 99 };
+  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 7 });
+  assert.equal(s.fetched.length, 3); // 7 / 2 = 3 Titel, kein EUR-Abruf
+  assert.equal(repo.db.usage, 6);
+  assert.ok(keys.every(([, k]) => k === "sec"));
+  assert.equal(s.provider, "sec");
+  assert.equal(s.providerCalls, 99);
+  assert.equal(repo.db.runs[0].inputs.provider, "sec");
+});
+
 test("Zweiter Lauf am selben Tag: kein Budget mehr, nichts doppelt", async () => {
   const repo = memoryRepo(stocks);
   await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 });

@@ -11,6 +11,11 @@
 //   SCREENING_DAILY_CALL_BUDGET — optional, Standard 200 (FMP Free: 250/Tag;
 //                                 50 bleiben für Wochenbericht und Tests frei)
 //   OPENFIGI_API_KEY            — optional (ohne Key: 50 ISINs pro Lauf)
+//   SCREENING_FUNDAMENTALS_PROVIDER — optional, Quelle der Finanzdaten:
+//                                 "fmp" (Standard), "sec" (nur SEC; ohne Marktkapitalisierung →
+//                                 B1/B2 „nicht geprüft“), "sec_fmp" (Zahlen von der SEC, Kurs und
+//                                 Marktkapitalisierung von FMP; nur für Entwicklung/Vergleich)
+//   SEC_USER_AGENT              — Pflicht bei "sec" und "sec_fmp", Format "Tazkiyah kontakt@…"
 //
 // Manuell auslösen (z. B. zum Testen), nur mit CRON_SECRET:
 //   /api/run-screening?limit=2&dryRun=1
@@ -23,6 +28,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createFmpProvider } from "../src/screening/providers/fmp.js";
+import { createSecProvider } from "../src/screening/providers/sec.js";
+import { createSecFmpProvider } from "../src/screening/providers/secFmp.js";
 import { createOpenFigiClient } from "../src/screening/providers/openfigi.js";
 import { createSupabaseRepo } from "../src/screening/supabaseRepo.js";
 import { runScreening } from "../src/screening/runner.js";
@@ -50,8 +57,20 @@ export default async function handler(req, res) {
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey || !process.env.FMP_API_KEY) {
-    return res.status(500).json({ error: "Umgebungsvariablen fehlen (Supabase-URL, SUPABASE_SERVICE_ROLE_KEY oder FMP_API_KEY)" });
+  const providerName = (process.env.SCREENING_FUNDAMENTALS_PROVIDER || "fmp").trim().toLowerCase();
+  if (!["fmp", "sec", "sec_fmp"].includes(providerName)) {
+    return res.status(500).json({ error: `SCREENING_FUNDAMENTALS_PROVIDER unbekannt (erlaubt: fmp, sec, sec_fmp)` });
+  }
+  const needsFmp = providerName !== "sec";
+  const needsSec = providerName !== "fmp";
+  const missing = [
+    !url && "SUPABASE_URL/VITE_SUPABASE_URL",
+    !serviceKey && "SUPABASE_SERVICE_ROLE_KEY",
+    needsFmp && !process.env.FMP_API_KEY && "FMP_API_KEY",
+    needsSec && !(process.env.SEC_USER_AGENT || "").includes("@") && "SEC_USER_AGENT",
+  ].filter(Boolean);
+  if (missing.length) {
+    return res.status(500).json({ error: `Umgebungsvariablen fehlen: ${missing.join(", ")}` });
   }
 
   const limit = req.query.limit ? Math.max(0, parseInt(req.query.limit, 10) || 0) : Infinity;
@@ -64,11 +83,17 @@ export default async function handler(req, res) {
   const force = onlyTickers.length > 0 && (req.query.force === "1" || req.query.force === "true");
 
   try {
+    const fmp = needsFmp ? createFmpProvider({ apiKey: process.env.FMP_API_KEY }) : null;
+    const sec = needsSec ? createSecProvider({ userAgent: process.env.SEC_USER_AGENT.trim() }) : null;
+    const provider = providerName === "fmp" ? fmp : providerName === "sec" ? sec : createSecFmpProvider({ sec, fmp });
+    // Tagesbudget je Anbieter: FMP (auch bei sec_fmp) mit SCREENING_DAILY_CALL_BUDGET;
+    // die SEC hat kein Tageslimit (Drosselung auf 8 Anfragen/s im Adapter).
+    const dailyCallBudget = providerName === "sec" ? Infinity : parseInt(process.env.SCREENING_DAILY_CALL_BUDGET || "200", 10);
     const summary = await runScreening({
       repo: createSupabaseRepo(createClient(url, serviceKey, { auth: { persistSession: false } })),
-      provider: createFmpProvider({ apiKey: process.env.FMP_API_KEY }),
+      provider,
       venues: createOpenFigiClient({ apiKey: process.env.OPENFIGI_API_KEY || null }),
-      dailyCallBudget: parseInt(process.env.SCREENING_DAILY_CALL_BUDGET || "200", 10),
+      dailyCallBudget,
       limit,
       dryRun,
       onlyTickers: onlyTickers.length ? onlyTickers : null,

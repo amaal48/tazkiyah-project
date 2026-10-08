@@ -27,6 +27,11 @@
  * @property {string|null} sector
  * @property {string|null} description
  * @property {string|null} currency
+ * Optional (SEC-Adapter, ./sec.js):
+ * @property {string|null} [cik]             10-stellig, z. B. "0000320193"
+ * @property {string|null} [sic]             SIC-Code der SEC, z. B. "3571"
+ * @property {string|null} [sicDescription]  z. B. "Electronic Computers"
+ * @property {string|null} [fiscalYearEnd]   Geschäftsjahresende "MM-TT"
  */
 
 /**
@@ -41,7 +46,7 @@
  * @property {string|null}  marketCapSource      null = vom Anbieter geliefert; "price_x_weighted_avg_shares" = aus Kurs und Aktienzahl gebildet (Näherung)
  * @property {number|null} fxToEurAtPeriodEnd   1 Einheit Berichtswährung in EUR am Stichtag
  * @property {number|null} sharesOutstanding
- * @property {string|null} sharesBasis          z. B. "weighted_average" — wird angezeigt
+ * @property {string|null} sharesBasis          z. B. "weighted_average", "period_end", "cover_page" — wird angezeigt
  * @property {Object} balance
  * @property {number|null} balance.interestBearingDebtExLeases  kurz- + langfristige Finanzschulden ohne Leasing
  * @property {number|null} balance.leaseLiabilities
@@ -62,6 +67,13 @@
  * @property {number|null} income.otherIncome    sonstige Erträge ohne Zinsen (≥ 0), für die Gesamteinnahmen
  * @property {number|null} income.netIncome
  * @property {number|null} income.distributions  Ausschüttungen der Periode (positiv)
+ * Optional (SEC-Adapter, ./sec.js; fehlen bei anderen Anbietern):
+ * @property {string|null} [sharesAsOf]   Datum der Aktienzahl (bei sharesBasis "cover_page" nach dem Stichtag)
+ * @property {Object|null} [sourceFiling] Fundstelle der Periode:
+ *   { accessionNumber, form, filingDate, reportDate, url } (url = Einreichung im EDGAR-Archiv)
+ * @property {Object} [sourceConcepts]    je Feld das verwendete Konzept:
+ *   { [feld]: { concept, accn, form, filed, derived?, classesSummed? } }
+ *   derived = "abgeleitet aus Jahres- und Quartalswerten" (viertes Quartal)
  */
 
 export function emptySnapshot(periodType, periodEnd) {

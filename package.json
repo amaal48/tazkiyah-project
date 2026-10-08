@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js src/screening/providers/fmp.test.js",
+    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js src/screening/providers/fmp.test.js src/screening/providers/sec.test.js",
     "test:scripts": "node --test scripts/lib/review.test.mjs scripts/lib/exchanges.test.mjs",
     "test:lib": "node --test src/lib/tradingView.test.js src/lib/questionDigest.test.js"
   },
