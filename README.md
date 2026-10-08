@@ -22,7 +22,7 @@ Eine Web-App für Halal-konformes Investieren: datenbasierte Sharia-Screening-An
 - [React](https://react.dev/) + [Vite](https://vitejs.dev/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 - [Supabase](https://supabase.com/) (Auth + Postgres)
-- Live-Marktdaten über Twelve Data (Kurse) und Financial Modeling Prep (Fundamentaldaten)
+- Fundamentaldaten über Financial Modeling Prep (Ersatz durch SEC/EDGAR geplant), Kurs-Chart und Marktdaten über TradingView-Widgets
 - Hosting über [Vercel](https://vercel.com/)
 
 ## Setup

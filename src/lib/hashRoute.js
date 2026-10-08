@@ -9,6 +9,7 @@
 //   #/aktie/AAPL       Detailseite
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
+//   #/kontakt          Kontaktformular
 
 import { useEffect, useState } from "react";
 
@@ -32,6 +33,7 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "kriterium" && parts[1]) return { name: "criterion", id: parts[1].toUpperCase() };
   if (parts[0] === "methodik") return { name: "methodik" };
   if (parts[0] === "screener") return { name: "screener" };
+  if (parts[0] === "kontakt") return { name: "kontakt" };
   return { name: "home" };
 }
 
@@ -41,6 +43,7 @@ export const routes = {
   stock: (ticker) => `#/aktie/${encodeURIComponent(ticker)}`,
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",
+  kontakt: () => "#/kontakt",
 };
 
 /** Wechselt die Adresse (neuer Verlaufseintrag, löst "hashchange" aus). */

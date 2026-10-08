@@ -5,7 +5,7 @@
 //
 // "Konto löschen" ist bewusst nur als Platzhalter vorhanden — das braucht
 // eine serverlose Funktion mit dem Supabase Service-Role-Key (nie im
-// Frontend!), ähnlich wie api/price-history.js. Kein Nutzer kann sich über
+// Frontend!), ähnlich wie api/run-screening.js. Kein Nutzer kann sich über
 // den normalen Client selbst löschen.
 
 import { useState } from "react";

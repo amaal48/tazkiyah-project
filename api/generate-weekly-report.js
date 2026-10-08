@@ -1,7 +1,7 @@
 // api/generate-weekly-report.js
 //
 // Wird einmal wöchentlich von Vercel Cron aufgerufen (siehe vercel.json).
-// Holt echte Marktnachrichten (FMP), Index-Kurse (Twelve Data) und
+// Holt echte Marktnachrichten (FMP) und
 // Screening-Statusänderungen (eigene Datenbasis + FMP-Fundamentaldaten),
 // baut daraus einen Wochenbericht und speichert ihn in Supabase.
 //
@@ -34,7 +34,6 @@ export default async function handler(req, res) {
   }
 
   const fmpKey = process.env.FMP_API_KEY;
-  const twelveKey = process.env.TWELVE_DATA_API_KEY;
   const supabaseAdmin = createClient(
     process.env.VITE_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -46,18 +45,7 @@ export default async function handler(req, res) {
     const newsData = await newsRes.json();
     const headlines = Array.isArray(newsData) ? newsData.slice(0, 5).map((n) => n.title).filter(Boolean) : [];
 
-    // 2. Index-Performance der Woche (S&P 500, NASDAQ) über Twelve Data
-    const indices = ["SPX", "IXIC"];
-    const indexResults = await Promise.all(
-      indices.map(async (symbol) => {
-        const r = await fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${twelveKey}`);
-        return r.json();
-      })
-    );
-    const indexSummary = indexResults
-      .map((d, i) => (d.percent_change ? `${indices[i]}: ${Number(d.percent_change) >= 0 ? "+" : ""}${d.percent_change}%` : null))
-      .filter(Boolean)
-      .join(", ");
+    // Index-Kurse (DAX, MSCI World, ISWD): Quelle beim Neubau des Generators festlegen. Twelve Data entfernt am 08.10.2026 (keine Anzeigelizenz).
 
     const today = new Date();
     const kw = getCalendarWeek(today);
@@ -67,14 +55,12 @@ export default async function handler(req, res) {
       week_label: `Wochenbericht KW ${kw}`,
       report_date: today.toISOString().slice(0, 10),
       highlight: headlines[0] ? headlines[0].slice(0, 80) : "Marktüberblick verfügbar",
-      marktueberblick: indexSummary
-        ? `Index-Performance dieser Woche: ${indexSummary}. ` + (headlines[0] || "")
-        : headlines[0] || "Keine aktuellen Marktdaten verfügbar.",
+      marktueberblick: headlines[0] || "Keine aktuellen Marktdaten verfügbar.",
       entwicklungen: headlines.length > 0 ? headlines : ["Keine aktuellen Schlagzeilen verfügbar."],
       screening_updates: [], // TODO: Woche-zu-Woche-Vergleich der Sharia-Status, sobald
                               // die Fundamentaldaten wöchentlich mit-geloggt werden
       sektor_fokus: null, // TODO: aus Screening-Updates ableiten, sobald diese befüllt sind
-      source_note: `Quelle: Financial Modeling Prep (General News), Twelve Data (Indizes) — automatisch generiert am ${dateLabel}`,
+      source_note: `Quelle: Financial Modeling Prep (General News) — automatisch generiert am ${dateLabel}`,
     };
 
     const { error } = await supabaseAdmin.from("weekly_reports").insert(report);

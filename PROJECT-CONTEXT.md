@@ -1,6 +1,6 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
@@ -11,10 +11,26 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - **Festlegungen vom 08.10.2026** (Details: Abschnitt 1, „Festlegungen 08.10.2026“): Zinserträge zweistufig (XBRL → Anhang aus der B3-Prüfung, nie ein Saldo); Bilanz-Abgleich für fehlende Posten; FMP-Null-Absicherung bei Zinserträgen; Rohdatenschutz vorbereitet, aber offen (`supabase_protect_raw_inputs.sql` NICHT ausgeführt). Engine 1.5.0.
 - **SQL auszuführen vor dem Merge von `sec-adapter`:** `supabase_manual_reviews_interest_notes.sql` (neue Spalte; der Cron läuft auch ohne sie). `supabase_protect_raw_inputs.sql` ist freigegeben (08.10.2026), aber **erst nach dem Merge von `sec-adapter` auf `main` ausführen**: Der Cron auf `main` liest `inputs` und `fingerprint` noch aus `screening_current` und würde danach abbrechen; `sec-adapter` liest die interne View (mit Rückfall).
 
+**Neu am 08.10.2026:**
+- **Tiingo-Antwort:** Der 50-$-Commercial-Tarif ist nur für interne Nutzung, keine öffentliche Anzeige. Auch Marktkapitalisierung und Quoten mit Marktkapitalisierung im Nenner (B1, B2) gelten als Kursanzeige (rückrechenbar). Öffentliche Anzeige nur mit Startup-Redistribution-Lizenz 250 $/Monat (<5 Vollzeitkräfte), Pflicht-Hinweis „Data powered by Tiingo.com“ mit Link.
+- **Geplanter Mittelweg** (noch von Tiingo zu bestätigen, Rückfrage am 08.10. verschickt): 50-$-Tarif intern, bei B1/B2 nur „unter/über 30 %“ ohne Wert und ohne Abstand zum Grenzwert anzeigen; Kurs, Chart und Marktkapitalisierung nur über TradingView-Widgets; Methodik-Seite erklärt, warum kein genauer Wert steht, mit Link auf den 10-K. B3, C1, Reinigung und Zakat sind nicht betroffen (nur SEC-Daten). Wechsel auf 250 $, sobald Einnahmen das tragen.
+- **Twelve Data entfernt** (Branch `twelve-data-entfernen`, am 08.10.2026 auf `main` gemergt): `api/price-history.js` gelöscht, Generator (`api/generate-weekly-report.js`) ohne Twelve Data. `TWELVE_DATA_API_KEY` danach in Vercel löschen.
+
+**Neu am 06.10.2026 (abends):**
+- **Screener pausiert**, bis die Antwort von Tiingo vorliegt (Anzeige von Status, Prozent-Kennzahlen und Marktkapitalisierung im Commercial-Tarif). Danach weiter mit Neuberechnung (`?limit=0`) auf Production, Kandidatenabfrage A2/B3, SEC- und Tiingo-Adapter.
+- **Wochenbericht:** Der Cron `/api/generate-weekly-report` schrieb noch das alte Format (highlight/marktueberblick, Schlagzeilen von FMP) und legte am 05.10.2026 einen leeren Bericht an („Wochenbericht KW 41“, tldr leer). Weil die Seite bei mindestens einem Datenbank-Eintrag nur diese zeigt, waren die vier Demo-Berichte ausgeblendet. Cron am 06.10. aus vercel.json entfernt (Commit `fa8b9f0`), `api/generate-weekly-report.js` bleibt erhalten. Leeren Eintrag in `weekly_reports` löschen, falls noch nicht geschehen. Später: Generator neu bauen (Format tldr/makroPolitik/indices/aktienFokus/ausblick, Referenzwerte DAX, MSCI World, ISWD, Quellen, Entwurfsstatus, Veröffentlichung erst nach Gegenlesen).
+- **Akademie-Fragen live** (auf `main`, Commit `1bf8998`): Feld „Frage nicht gefunden?“ speichert in `academy_questions` (Besucher dürfen nur einreichen, nicht lesen, Drossel 30 in 10 Minuten). Tägliche Sammel-Mail über Resend (`/api/notify-questions`, 5:00 UTC, nur bei neuen Fragen), am 06.10. getestet (`sent: true`). Absender noch `onboarding@resend.dev`, landete im Spam (als „Kein Spam“ markiert). Fragen werden nicht einzeln beantwortet, sondern ins FAQ / die Akademie übernommen, danach Status `beantwortet`.
+- **`CRON_SECRET` am 06.10. abends erneut erneuert** (per `openssl rand -hex 32`, 64 Zeichen). Ein früherer Wert ist im Chat gelandet und ungültig. Gilt für beide Crons.
+- **Kontaktformular** (Branch `kontakt-formular`, am 08.10.2026 auf `main` gemergt): `#/kontakt`, `api/contact.js`, Tabelle `contact_messages`, sofortige Benachrichtigung mit reply_to an den Absender (Antworten per „Antworten“ im Postfach), Löschung nach 6 Monaten (pg_cron `kontakt-nachrichten-loeschen`). Eingangsbestätigung programmiert, aber aus, bis `CONTACT_FROM_EMAIL` gesetzt ist. Vor dem Merge: SQL-Kontrolle (10 Spalten, Lösch-Auftrag vorhanden), Test in der Vorschau (Mail kommt, „Antworten“ geht an die Formular-Adresse, Eintrag in `contact_messages`).
+- **Domain (Entscheidung 06.10.2026):** Eigene Domain mit E-Mail-Postfach wird gemietet, auch für den Launch. Grobe Kosten: .de ca. 3–10 € im Jahr, Postfach ca. 1–3 € im Monat, insgesamt ca. 15–40 € im Jahr. Anforderungen: deutscher/EU-Anbieter, DNS-Einträge selbst bearbeitbar. Vorher Namen prüfen (Namenskonflikt wie bei amanah-invest.de vermeiden). Danach: Domain bei Resend bestätigen, `CONTACT_FROM_EMAIL` setzen (schaltet die Eingangsbestätigung ein), Absender der Fragen-Mail umstellen (gegen Spam), Domain mit Vercel verbinden, Projekt-Adresse statt privater Adresse nutzen (faceless).
+- **Datenschutzerklärung fehlt noch.** Der Link „Datenschutzerklärung“ im Kontaktformular führt vorerst auf die Konto-Seite „Datenschutz“ (Datenexport). Vor dem Launch eine echte Datenschutzerklärung mit: Kontaktformular, Akademie-Fragen, Resend, TradingView, Supabase, Vercel.
+- **Hinweis Claude Code:** In der App steht eine alte Sitzung „scratch-2026-10-05 … master“ mit −5.603 Zeilen und dem Knopf „Änderungen übernehmen“. Nicht übernehmen, bevor geklärt ist, was sie enthält.
+
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
 - **Akademie-Fragen** (Branch `akademie-fragen`, nicht auf `main`): „Frage nicht gefunden?“ speichert Fragen in der Supabase-Tabelle `academy_questions` (Spalten `question`, `page`). Besucher dürfen nur einreichen, nicht lesen (kein `.select()` nach dem insert); Drossel in der Datenbank: 30 Fragen in 10 Minuten, zusätzlich 30 Sekunden Pause je Sitzung im Browser (nur Arbeitsspeicher). 5–500 Zeichen. **Vor dem Launch in die Datenschutzerklärung aufnehmen.**
 - **Akademie-Fragen per E-Mail** (Branch `akademie-fragen`): `api/notify-questions.js`, Cron täglich 5:00 UTC. Schickt über Resend eine Sammel-Mail mit allen Fragen mit `status = 'neu'` und leerem `notified_at` (höchstens 100 je Lauf, Rest beim nächsten Lauf). Erst nach erfolgreichem Versand wird `notified_at` gesetzt. Absender `onboarding@resend.dev`, damit nur an die Adresse des Resend-Kontos möglich (für andere Empfänger eigene Domain bei Resend bestätigen). Neue Vercel-Variablen: `RESEND_API_KEY` (geheim), `QUESTIONS_NOTIFY_EMAIL`. Test: `?dryRun=1` (nur zählen). Betreff und Text: `src/lib/questionDigest.js` (Tests in `npm run test:lib`). **Resend vor dem Launch in die Datenschutzerklärung aufnehmen.**
+- **Kontaktformular** (Branch `kontakt-formular`, nicht auf `main`): Seite `#/kontakt`, Link „Kontakt“ in der Fußzeile. Besucher schreiben nur über `api/contact.js` (nur POST), nie direkt in Supabase; Tabelle `contact_messages` ohne Zugriff für Besucher (gespeichert mit Service-Role-Key, E-Mail klein und getrimmt). Felder: E-Mail (Pflicht), Name (freiwillig, max. 80), Thema (`allgemein`, `fehler`, `feedback`, `sonstiges`), Nachricht (10–2000 Zeichen); keine Zeilenumbrüche in E-Mail und Name. Spam-Falle: verstecktes Feld `website`; ausgefüllt → Antwort 200, aber nichts gespeichert, nichts gesendet. Drosseln: höchstens 20 Nachrichten insgesamt in 10 Minuten und 3 je E-Mail-Adresse in 24 Stunden (sonst 429). Benachrichtigung sofort über Resend an `CONTACT_NOTIFY_EMAIL` (optional, sonst `QUESTIONS_NOTIFY_EMAIL`), `reply_to` = Absender; bei Erfolg `notified_at`. Scheitert sie, meldet `api/notify-questions.js` die Nachricht im täglichen Sammellauf unter „Kontaktnachrichten ohne Benachrichtigung“ (ab 10 Minuten Alter). Eingangsbestätigung an den Absender nur, wenn `CONTACT_FROM_EMAIL` gesetzt ist (**erst nach eigener Domain bei Resend setzen**), höchstens eine je Adresse in 24 Stunden, ohne Namen und Nachrichtentext; bei Erfolg `confirmation_sent_at`. Löschung nach 6 Monaten per pg_cron-Job `kontakt-nachrichten-loeschen`. Prüfung und Mail-Aufbau: `src/lib/contact.js` (Tests in `npm run test:lib`). Der Link „Datenschutzerklärung“ unter dem Formular führt vorerst auf die Konto-Seite „Datenschutz“ (eine echte Datenschutzerklärung fehlt noch). **Vor dem Launch Datenschutzerklärung ergänzen** (Kontaktformular, Speicherdauer 6 Monate, Resend).
 - **Gegenprüfung:** `pass` nur nach vollständiger Gegenprüfung, „nicht konform“ auch per Stichprobe; festgehalten in `manual_reviews.verification`. Details: Abschnitt 4, „Gegenprüfung (Regel vom 06.10.2026)“.
 - **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“.
 - **Methodik-Seite:** Festlegung Arzneimittel bei „Drogen“, Absatz zur KI-gestützten Auswertung („Jede Auswertung nennt die genaue Fundstelle.“).
@@ -92,6 +108,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
   - Bilanz, GuV, Quartale, Aktienzahl am Bilanzstichtag: **SEC** (XBRL, kostenlos, kommerziell nutzbar). SEC als Quelle nennen, keine SEC- oder EDGAR-Logos verwenden.
   - Kurse zum Stichtag (für die Marktkapitalisierung): **Tiingo Commercial** (50 $/Monat, nur interne Nutzung). Buchen, wenn der Tiingo-Adapter gebaut wird.
   - Anfrage an Tiingo läuft: ob Status und Prozent-Kennzahlen und ob die Marktkapitalisierung mit dem Commercial-Tarif angezeigt werden dürfen. Eine eigene Kursanzeige braucht die Anzeige-Lizenz (Startups 250 $/Monat).
+  - **B1/B2-Werte dürfen ohne Redistribution-Lizenz nicht öffentlich mit Zahl erscheinen** (Antwort von Tiingo, 08.10.2026; Details und geplanter Mittelweg: Abschnitt 0, „Neu am 08.10.2026“).
   - Branche für A1: künftig SEC-Branchencode (SIC). Eine Zuordnung zu den Branchengruppen in `industryRules.js` wird nötig.
 - Reihenfolge: 1. Pilot A2/B3. 2. SEC- und Tiingo-Adapter bauen, für die Pilotaktien parallel zu FMP laufen lassen. 3. Zahlen vergleichen. 4. SIC-Zuordnung. 5. FMP abschalten. Bis dahin bleibt FMP Free in Betrieb und dient als Gegenprobe.
 - Die Adapter-Schicht (`providers/model.js`) ist dafür vorgesehen. `mapFmpProfile` und der Cron werden bis dahin nicht mehr erweitert.
@@ -140,7 +157,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 **Offene Punkte (Stand 05.10.2026):**
 - Cron: Ursache für die 9 Titel ist gefunden (Abschnitt 4, „Cron-Befund“). Lösung ist der Anbieterwechsel oben; im Code wurde nichts geändert.
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
-- Vor dem Launch: TradingView, die Akademie-Fragen (`academy_questions`) und Resend (E-Mail-Versand der Fragen) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
+- Vor dem Launch: TradingView, die Akademie-Fragen (`academy_questions`), das Kontaktformular (`contact_messages`, Löschung nach 6 Monaten) und Resend (E-Mail-Versand) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
 - Universum anpassen: AVB und EA delistet, EQR jetzt VMRK (siehe Kernfunktionen, TradingView).
 
 **Offene Punkte (Stand 06.10.2026, nach Commit `2ffc7a9` auf `ui-screening`):**
@@ -172,7 +189,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 **Übrige offene Punkte (unverändert):**
 - Backup-Strategie (Supabase Free vs. Pro / `pg_dump`)
 - E-Mail ändern mit Bestätigung, Versand-Provider (Supabase vs. Resend/Postmark), gebrandete E-Mail-Templates
-- Wöchentlicher E-Mail-Bericht (Tabelle `weekly_reports` und Cron existieren, Logik offen)
+- Wöchentlicher E-Mail-Bericht (Tabelle `weekly_reports` und Cron existieren, Logik offen; Stand und Plan: Abschnitt 0, „Neu am 06.10.2026 (abends)“, Punkt „Wochenbericht“)
 - Lokalisierung, OAuth (Google/Apple), 2FA, aktive Sitzungen, Konto löschen (serverlose Funktion mit Service-Role-Key)
 - Portfolio an echte Nutzerkonten koppeln
 - Reale AGB/Datenschutzerklärung (aktuell Platzhalter)
@@ -192,11 +209,11 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 **Backend/Infrastruktur:**
 - **Supabase** — Auth (E-Mail/Passwort) + Postgres. Projekt heißt im Dashboard noch **"Amanah"** (rein kosmetisch). Region `eu-central-1`. Tarif: Free.
 - **Vercel** — Hosting + Serverless Functions + Cron. Projekt **"tazkiyah"**, Produktions-URL `https://tazkiyah-project-kohl.vercel.app`. Automatisches Deployment bei Push auf `main`.
-  - Crons (`vercel.json`): `/api/generate-weekly-report` montags 6:00 UTC, `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s)
-  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, optional `SCREENING_FUNDAMENTALS_PROVIDER` (`fmp` Standard, `sec`, `sec_fmp`) und `SEC_USER_AGENT` (Pflicht bei `sec`/`sec_fmp`), `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
+  - Crons (`vercel.json`): `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s), `/api/notify-questions` täglich 5:00 UTC; `/api/generate-weekly-report` (früher montags 6:00 UTC) abgeschaltet seit 06.10.2026
+  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, optional `SCREENING_FUNDAMENTALS_PROVIDER` (`fmp` Standard, `sec`, `sec_fmp`) und `SEC_USER_AGENT` (Pflicht bei `sec`/`sec_fmp`), ~~`TWELVE_DATA_API_KEY`~~ (entfernt am 08.10.2026, in Vercel löschen), `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `CONTACT_NOTIFY_EMAIL` und `CONTACT_FROM_EMAIL` (Kontaktformular; `CONTACT_FROM_EMAIL` erst nach eigener Domain bei Resend, schaltet die Eingangsbestätigung ein); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
 
 **Externe APIs:**
-- Twelve Data (Kurse, `api/price-history.js`; seit 05.10. von der Oberfläche nicht mehr benutzt)
+- ~~Twelve Data~~: entfernt am 08.10.2026 (`api/price-history.js` gelöscht, keine Anzeigelizenz; war seit 05.10. von der Oberfläche nicht mehr benutzt)
 - Financial Modeling Prep Stable API (Fundamentaldaten). **Free-Tarif nur für Entwicklung/Test** (250 Abrufe/Tag, geteilt mit dem Wochenbericht). Vor dem öffentlichen Launch Wechsel auf einen Tarif, der öffentliche Anzeige und kommerzielle Nutzung erlaubt. Anbieter ist über die Adapter-Schicht austauschbar.
 - OpenFIGI (deutsche Handelsplätze per ISIN, kostenlos)
 - SEC / EDGAR (kostenlos, User-Agent mit Name und E-Mail Pflicht): 10-K und Satzung für A2/B3 (`scripts/sec-fetch.mjs`), Börse je Aktie (`scripts/sec-exchanges.mjs`). Abschlüsse per XBRL: SEC-Adapter `providers/sec.js` (seit 08.10.2026 auf Branch `sec-adapter`, noch nicht aktiv; ersetzt später FMP).
@@ -246,7 +263,8 @@ docs/
   BRIEFING-A2-B3.md      — Briefing für die A2/B3-Prüfung (neuer Chat)
 api/
   run-screening.js       — täglicher Screening-Cron (manuell: ?limit=2&dryRun=1 oder ?tickers=AAPL,MSFT&force=1, nur mit CRON_SECRET)
-  notify-questions.js    — tägliche Sammel-Mail mit neuen Akademie-Fragen über Resend (manuell: ?dryRun=1, nur mit CRON_SECRET)
+  notify-questions.js    — tägliche Sammel-Mail mit neuen Akademie-Fragen und nicht gemeldeten Kontaktnachrichten über Resend (manuell: ?dryRun=1, nur mit CRON_SECRET)
+  contact.js             — Kontaktformular (nur POST): prüfen, drosseln, speichern, Benachrichtigung über Resend
 scripts/
   import-etf-holdings.mjs — node scripts/import-etf-holdings.mjs <csv> [ETF-Ticker] [Stichtag]
   sec-exchanges.mjs      — Börse je Aktie aus der SEC-Liste → supabase_securities_exchange.sql (05.10.)
