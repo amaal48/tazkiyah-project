@@ -248,6 +248,15 @@ alter table public.manual_reviews add constraint manual_reviews_verification_che
 -- reviewer ist seit 06.10.2026 das Kürzel der prüfenden Person (z. B. 'AMI').
 alter table public.manual_reviews add column if not exists ai_draft boolean not null default false;
 
+-- Ergänzt 08.10.2026: Zinserträge laut Anhang je Periode (nur B3_SEGMENTS), siehe
+-- supabase_manual_reviews_interest_notes.sql. Nicht öffentlich lesbar (wie manual_reviews).
+alter table public.manual_reviews add column if not exists interest_income_notes jsonb;
+alter table public.manual_reviews drop constraint if exists manual_reviews_interest_income_notes_check;
+alter table public.manual_reviews add constraint manual_reviews_interest_income_notes_check check (
+  interest_income_notes is null
+  or (criterion = 'B3_SEGMENTS' and jsonb_typeof(interest_income_notes) = 'object')
+);
+
 -- Arbeitsliste: welche Pflichtprüfungen fehlen oder sind abgelaufen?
 -- Aktien: A2 und B3_SEGMENTS (A1 nur für Prüfbranchen — steht im Ergebnis
 -- als „nicht geprüft“ mit Begründung). ETFs: G2, G3, G4, G5_FUND_INCOME.

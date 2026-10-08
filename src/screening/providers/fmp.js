@@ -38,6 +38,10 @@
 //      betroffenen Prüfungen bleiben dann „nicht geprüft“. Nach der ersten
 //      Sperre fragt der Adapter diese Daten im selben Lauf nicht mehr ab.
 //   6. Leasing im Quartal (seit 02.10.2026): siehe applyLeaseEstimate.
+//   8. Zinserträge = 0 (seit 08.10.2026): FMP liefert 0 auch, wenn Zinserträge nur im Saldo
+//      stehen (Beispiel AAPL). 0 gilt deshalb nur, wenn das Unternehmen keine Anlagen hat
+//      (cash + shortTermInvestments + longTermInvestments = 0); sonst null → B3 „nicht geprüft“
+//      bzw. Zinserträge laut Anhang aus der B3-Prüfung. Siehe guardFmpInterestIncome.
 //   7. Anzahl Aktien: FMP liefert hier den gewichteten Durchschnitt der
 //      Periode, nicht den Bestand zum Stichtag. Wird in der Ausgabe als
 //      sharesBasis angezeigt.
@@ -81,6 +85,19 @@ export function pickPriceAt(history, periodEnd) {
   if (!hit) return null;
   const gapDays = (new Date(periodEnd) - new Date(hit.date)) / 86400000;
   return gapDays <= 7 ? num(hit.price) : null;
+}
+
+/**
+ * Zinserträge = 0 von FMP sind nicht „ausdrücklich null“, wenn das Unternehmen Cash oder Anlagen
+ * hat (cash + shortTermInvestments + longTermInvestments > 0) → null. Ändert den Abschluss direkt.
+ * Gilt auch für gespeicherte FMP-Eingangsdaten (Runner, Neuberechnung ohne Abruf).
+ */
+export function guardFmpInterestIncome(s) {
+  if (!s?.income || s.income.interestIncome !== 0) return s;
+  const b = s.balance || {};
+  const holdings = (b.cash ?? 0) + (b.shortTermInvestments ?? 0) + (b.longTermInvestments ?? 0);
+  if (holdings > 0) s.income.interestIncome = null;
+  return s;
 }
 
 /** Reine Übersetzungsfunktion — ohne Netzwerk, daher testbar. */
@@ -148,7 +165,7 @@ export function mapFmpPeriod({ balance, income, cashflow, marketCapHistory, pric
   const div = firstNum(cashflow, ["commonDividendsPaid", "netDividendsPaid", "dividendsPaid"]);
   s.income.distributions = div === null ? null : Math.abs(div);
 
-  return s;
+  return guardFmpInterestIncome(s);
 }
 
 export function mapFmpProfile(p) {

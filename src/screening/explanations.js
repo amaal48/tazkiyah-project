@@ -59,6 +59,18 @@ export const FLAG_TEXTS = {
     text: "Das Ergebnis hängt von der Leasing-Schätzung ab; der Quartalsbericht wird geprüft",
     criterion: "B1",
   },
+  zinsertraege_aus_anhang: {
+    text: "Zinserträge von Hand aus dem Anhang des Berichts übernommen, weil sie in den Finanzdaten nicht einzeln stehen",
+    criterion: "B3",
+  },
+  zinsertraege_vorsichtig: {
+    text: "Zinserträge vorsichtig vollständig gezählt: Die Angabe enthält auch Dividenden oder andere Erträge",
+    criterion: "B3",
+  },
+  posten_null_bilanzabgleich: {
+    text: "Ein nicht ausgewiesener Bilanzposten zählt als 0, weil die übrigen Posten die Bilanzsumme vollständig erklären",
+    criterion: "C1",
+  },
   auslegungsfrage: {
     text: "Auslegungsfrage: Der Standard lässt hier Spielraum, wir folgen der vorsichtigeren Lesart",
     criterion: "A1",

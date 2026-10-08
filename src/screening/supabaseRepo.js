@@ -16,22 +16,36 @@ async function fetchAll(makeQuery) {
   }
 }
 
+/**
+ * Liest mit der ersten Spaltenliste; fehlt eine Spalte oder View noch (SQL-Datei nicht ausgeführt),
+ * mit der zweiten. So läuft der Cron vor und nach den Datenbankänderungen.
+ */
+async function fetchAllWithFallback(primary, fallback) {
+  try {
+    return await fetchAll(primary);
+  } catch (err) {
+    if (!/does not exist|could not find|schema cache/i.test(String(err.message))) throw err;
+    return fetchAll(fallback);
+  }
+}
+
+const REVIEW_COLUMNS = "id,security_id,criterion,result,details,source_url,source_note,verification,reviewed_at,basis_annual_period_end";
+const RUN_COLUMNS = "security_id,id,run_at,status,quarter_period_end,engine_version,parameters_version,inputs,fingerprint";
+
 export function createSupabaseRepo(db) {
   return {
     async loadState({ provider, day }) {
       const [securities, runs, reviews, holdings, purification, usage] = await Promise.all([
         fetchAll(() => db.from("securities").select("*").order("ticker")),
-        fetchAll(() =>
-          db
-            .from("screening_current")
-            .select("security_id,id,run_at,status,quarter_period_end,engine_version,parameters_version,inputs,fingerprint")
-            .order("security_id")
+        // Rohdaten (inputs) nur über die interne View (supabase_protect_raw_inputs.sql), sonst wie bisher
+        fetchAllWithFallback(
+          () => db.from("screening_current_internal").select(RUN_COLUMNS).order("security_id"),
+          () => db.from("screening_current").select(RUN_COLUMNS).order("security_id")
         ),
-        fetchAll(() =>
-          db
-            .from("manual_reviews")
-            .select("id,security_id,criterion,result,details,source_url,source_note,verification,reviewed_at,basis_annual_period_end")
-            .order("id")
+        // Spalte interest_income_notes ab supabase_manual_reviews_interest_notes.sql
+        fetchAllWithFallback(
+          () => db.from("manual_reviews").select(`${REVIEW_COLUMNS},interest_income_notes`).order("id"),
+          () => db.from("manual_reviews").select(REVIEW_COLUMNS).order("id")
         ),
         fetchAll(() => db.from("etf_holdings").select("etf_id,holding_isin,holding_ticker,holding_country,weight,as_of").order("etf_id")),
         fetchAll(() =>

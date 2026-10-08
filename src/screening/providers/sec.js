@@ -49,13 +49,26 @@ export const CONCEPTS = {
       "SalesRevenueNet",
     ],
   },
-  // Zinserträge (FMP: interestIncome = Zinserträge der GuV, ohne Zinsaufwand).
-  // Hinweis: InterestAndDividendIncomeOperating enthält auch Dividenden → eher zu hoch
-  // (strenger); nur als letzte Möglichkeit. Viele Unternehmen weisen Zinserträge nur im
-  // Saldo („Other income/(expense), net“) aus → dann null → B3 „nicht geprüft“.
+  // Zinserträge (Festlegung 08.10.2026: zweistufig XBRL → Anhang aus der B3-Prüfung, kein Saldo).
+  // Reihenfolge = Vorrang. Konzepte in INCLUSIVE_INTEREST enthalten auch Dividenden oder andere
+  // Erträge: sie zählen vollständig als verboten und werden als „vorsichtig vollständig gezählt“
+  // gekennzeichnet (sourceConcepts.interestIncome.inclusive). Negative Werte → null.
+  // Den positiven Teil eines Saldos (NonoperatingIncomeExpense, OtherNonoperatingIncomeExpense)
+  // verwenden wir NICHT. Findet sich nichts: null → Zinserträge laut Anhang aus der B3-Prüfung,
+  // sonst B3 „nicht geprüft“.
+  // Geprüft am 08.10.2026: KO InvestmentIncomeInterest, GOOGL InterestIncomeOther,
+  // MSFT InvestmentIncomeNet (Zeile „Interest and dividends income“), AAPL keines.
   interestIncome: {
     kind: "flow",
-    concepts: ["InvestmentIncomeInterest", "InterestIncomeOther", "InterestAndDividendIncomeOperating"],
+    concepts: [
+      "InvestmentIncomeInterest",
+      "InterestIncomeOther",
+      "InvestmentIncomeInterestAndDividend",
+      "InterestAndOtherIncome",
+      "InvestmentIncomeNet",
+      "InterestAndDividendIncomeOperating",
+    ],
+    nonNegativeOnly: true,
   },
   // Sonstige Erträge (≥ 0) für den B3-Nenner „Gesamteinnahmen“. Nur eindeutige Erträge,
   // NICHT der Saldo NonoperatingIncomeExpense (fmp.js nimmt den positiven Saldo).
@@ -68,17 +81,30 @@ export const CONCEPTS = {
   distributions: { kind: "flow", concepts: ["PaymentsOfDividends", "PaymentsOfDividendsCommonStock"], absolute: true },
 
   cash: { kind: "instant", concepts: ["CashAndCashEquivalentsAtCarryingValue"] },
-  // Hinweis: Weist ein Unternehmen mehrere dieser Posten getrennt aus (z. B. „Short-term
-  // investments“ UND „Marketable securities“), zählt nur der erste → evtl. zu niedrig.
-  // Fehlt der Posten (weil das Unternehmen keine hat), bleibt er null → B2/C1 „nicht geprüft“
-  // (FMP liefert in diesem Fall 0).
+  // Anlagen: Summe über Gruppen, innerhalb einer Gruppe gilt der Vorrang (erstes Konzept mit Wert).
+  // Gruppen sind getrennte Bilanzzeilen (z. B. KO: „Short-term investments“ = OtherShortTermInvestments
+  // UND „Marketable securities“ = MarketableSecurities). MarketableSecurities (ohne Current/Noncurrent)
+  // nur, wenn weder MarketableSecuritiesCurrent noch MarketableSecuritiesNoncurrent gemeldet sind.
+  // Hinweis: Meldet ein Unternehmen eine Gesamtzeile UND deren Aufschlüsselung in verschiedenen
+  // Gruppen, wird doppelt gezählt (strenger für B2 und C1).
+  // Fehlt der Posten, bleibt er null → Bilanz-Abgleich (applyBalanceReconciliation) kann 0 setzen.
   shortTermInvestments: {
     kind: "instant",
-    concepts: ["ShortTermInvestments", "MarketableSecuritiesCurrent", "AvailableForSaleSecuritiesDebtSecuritiesCurrent"],
+    rule: "groups",
+    groups: [
+      ["ShortTermInvestments", "OtherShortTermInvestments"],
+      ["MarketableSecuritiesCurrent", "AvailableForSaleSecuritiesDebtSecuritiesCurrent", "MarketableSecurities"],
+    ],
   },
+  // EquityMethodInvestments (KO: 20,2 Mrd. $, wie FMP) nur, wenn keine Gesamtzeile LongTermInvestments /
+  // OtherLongTermInvestments gemeldet ist (MSFT: „Equity and other investments“ enthält sie schon).
   longTermInvestments: {
     kind: "instant",
-    concepts: ["LongTermInvestments", "MarketableSecuritiesNoncurrent", "AvailableForSaleSecuritiesDebtSecuritiesNoncurrent"],
+    rule: "groups",
+    groups: [
+      ["LongTermInvestments", "OtherLongTermInvestments", "EquityMethodInvestments"],
+      ["MarketableSecuritiesNoncurrent", "AvailableForSaleSecuritiesDebtSecuritiesNoncurrent"],
+    ],
   },
   // Forderungen: AccountsReceivableNetCurrent, dazu NontradeReceivablesCurrent, falls vorhanden
   // (fmp.js netReceivables = Forderungen aus Lieferungen und Leistungen + sonstige Forderungen).
@@ -92,18 +118,28 @@ export const CONCEPTS = {
   currentLiabilities: { kind: "instant", concepts: ["LiabilitiesCurrent"] },
 
   // Finanzschulden ohne Leasing = langfristig + kurzfristig.
-  // Kurzfristig: DebtCurrent, falls vorhanden (enthält oft LongTermDebtCurrent, CommercialPaper und
-  // ShortTermBorrowings → dann nur DebtCurrent, keine Doppelzählung); sonst Summe aus
-  // LongTermDebtCurrent, CommercialPaper, ShortTermBorrowings. Fehlt alles: null.
-  // Fehlt LongTermDebtNoncurrent, ist der Wert null (nicht die Teilsumme): Beispiel KO taggt die
-  // langfristigen Schulden als LongTermDebtAndCapitalLeaseObligations (inkl. Finanzierungsleasing);
-  // nur Commercial Paper (1,5 Mrd. statt ca. 44 Mrd. $) würde B1 stark unterschätzen (falsches „konform“).
-  // Hinweis: Unternehmen, die nur LongTermDebt (gesamt) oder LongTermDebtAndCapitalLeaseObligations
-  // taggen, bleiben damit null → B1 „nicht geprüft“.
+  // Langfristig (Pflicht): LongTermDebtNoncurrent, sonst LongTermDebtAndCapitalLeaseObligations (KO)
+  // minus FinanceLeaseLiabilityNoncurrent. Fehlt der langfristige Teil, ist der Wert null (nicht die
+  // Teilsumme): nur Commercial Paper (KO: 1,5 statt 45,5 Mrd. $) würde B1 stark unterschätzen.
+  // Kurzfristig: DebtCurrent, falls vorhanden (enthält oft die übrigen Posten → dann nur DebtCurrent,
+  // keine Doppelzählung); sonst LongTermDebtCurrent (bzw. LongTermDebtAndCapitalLeaseObligationsCurrent
+  // minus FinanceLeaseLiabilityCurrent) + CommercialPaper + ShortTermBorrowings + OtherShortTermBorrowings.
+  // Ist Finanzierungsleasing in den Posten enthalten, aber nicht getrennt gemeldet, bleibt es drin
+  // (vorsichtig, Vermerk in sourceConcepts.interestBearingDebtExLeases.financeLeaseIncluded).
+  // Geprüft am 08.10.2026: KO 42.119 + 1.822 + 1.495 + 56 = 45.492 Mio. $ (= FMP).
   interestBearingDebtExLeases: {
     kind: "instant",
     rule: "debt",
-    concepts: ["LongTermDebtNoncurrent", "DebtCurrent", "LongTermDebtCurrent", "CommercialPaper", "ShortTermBorrowings"],
+    concepts: [
+      "LongTermDebtNoncurrent",
+      "LongTermDebtAndCapitalLeaseObligations",
+      "DebtCurrent",
+      "LongTermDebtCurrent",
+      "LongTermDebtAndCapitalLeaseObligationsCurrent",
+      "CommercialPaper",
+      "ShortTermBorrowings",
+      "OtherShortTermBorrowings",
+    ],
   },
   // Leasing = operatives Leasing + Finanzierungsleasing, jeweils gesamt oder kurz- + langfristig.
   // leaseSeparateFromDebt: true, wenn nur operatives Leasing vorliegt (nach ASC 842 nie in den
@@ -126,6 +162,10 @@ export const CONCEPTS = {
   // erscheinen, ist je Unternehmen zu prüfen (z. B. GOOGL).
   sharesOutstanding: { kind: "instant", rule: "shares", concepts: ["us-gaap:CommonStockSharesOutstanding", "dei:EntityCommonStockSharesOutstanding"] },
 };
+
+// Konzepte, die neben Zinsen auch Dividenden oder andere Erträge enthalten (vorsichtig vollständig gezählt)
+export const INCLUSIVE_INTEREST = new Set(["InvestmentIncomeInterestAndDividend", "InterestAndOtherIncome", "InvestmentIncomeNet", "InterestAndDividendIncomeOperating"]);
+export const INCLUSIVE_NOTE = "vorsichtig vollständig gezählt";
 
 export const ALLOWED_FORMS = new Set(["10-K", "10-K/A", "10-Q", "10-Q/A"]);
 const ANNUAL_FORMS = new Set(["10-K", "10-K/A"]);
@@ -321,7 +361,7 @@ export function mapSecFinancials(companyfacts, filings, cik) {
           return null; // nicht eindeutig → unbekannt
         }
         if (def.absolute) v = Math.abs(v);
-        note(field, e, c);
+        note(field, e, c, INCLUSIVE_INTEREST.has(c) && field === "interestIncome" ? { inclusive: true, note: INCLUSIVE_NOTE } : {});
         return v;
       }
       // Viertes Quartal aus Jahr minus Q1–Q3
@@ -348,7 +388,8 @@ export function mapSecFinancials(companyfacts, filings, cik) {
         let v = num(year.val) - parts.reduce((a, p) => a + num(p.val), 0);
         if (def.nonNegativeOnly && v < 0) return null;
         if (def.absolute) v = Math.abs(v);
-        note(field, year, c, { derived: DERIVED_Q4, quarterAccns: parts.map((p) => p.accn) });
+        const extra = INCLUSIVE_INTEREST.has(c) && field === "interestIncome" ? { inclusive: true, note: INCLUSIVE_NOTE } : {};
+        note(field, year, c, { derived: DERIVED_Q4, quarterAccns: parts.map((p) => p.accn), ...extra });
         return v;
       }
       return null;
@@ -357,8 +398,27 @@ export function mapSecFinancials(companyfacts, filings, cik) {
     for (const field of ["revenue", "interestIncome", "otherIncome", "netIncome", "distributions"]) {
       s.income[field] = simple(field);
     }
-    for (const field of ["cash", "shortTermInvestments", "longTermInvestments", "inventory", "goodwill", "intangiblesExGoodwill", "totalAssets", "currentLiabilities"]) {
+    for (const field of ["cash", "inventory", "goodwill", "intangiblesExGoodwill", "totalAssets", "currentLiabilities"]) {
       s.balance[field] = simple(field);
+    }
+
+    // Anlagen: Summe über Gruppen (je Gruppe Vorrang)
+    for (const field of ["shortTermInvestments", "longTermInvestments"]) {
+      const used = [];
+      for (const group of CONCEPTS[field].groups) {
+        for (const c of group) {
+          if (c === "MarketableSecurities" && (one("MarketableSecuritiesCurrent") || one("MarketableSecuritiesNoncurrent"))) continue;
+          const e = one(c);
+          if (e) {
+            used.push([c, e]);
+            break;
+          }
+        }
+      }
+      if (used.length) {
+        s.balance[field] = used.reduce((a, [, e]) => a + num(e.val), 0);
+        note(field, used[0][1], used.map(([c]) => c).join(" + "));
+      }
     }
 
     // Forderungen: AccountsReceivableNetCurrent (+ NontradeReceivablesCurrent)
@@ -373,15 +433,61 @@ export function mapSecFinancials(companyfacts, filings, cik) {
 
     // Finanzschulden ohne Leasing
     {
-      const get = (c) => one(c);
-      const longNc = get("LongTermDebtNoncurrent");
-      const debtCurrent = get("DebtCurrent");
-      const parts = debtCurrent ? [debtCurrent] : ["LongTermDebtCurrent", "CommercialPaper", "ShortTermBorrowings"].map(get).filter(Boolean);
-      const all = [longNc, ...parts].filter(Boolean);
-      if (longNc) {
-        s.balance.interestBearingDebtExLeases = all.reduce((a, e) => a + num(e.val), 0);
-        const names = [longNc && "LongTermDebtNoncurrent", ...(debtCurrent ? ["DebtCurrent"] : ["LongTermDebtCurrent", "CommercialPaper", "ShortTermBorrowings"].filter((c) => get(c)))].filter(Boolean);
-        note("interestBearingDebtExLeases", all[0], names.join(" + "));
+      const v = (c) => {
+        const e = one(c);
+        return e ? num(e.val) : null;
+      };
+      const flNc = v("FinanceLeaseLiabilityNoncurrent");
+      const flC = v("FinanceLeaseLiabilityCurrent");
+      const flTotal = v("FinanceLeaseLiability");
+      const names = [];
+      let financeLeaseIncluded = false;
+      let total = null;
+      let anchor = null;
+
+      // Langfristiger Teil (Pflicht)
+      const ltd = one("LongTermDebtNoncurrent");
+      const ltdLease = ltd ? null : one("LongTermDebtAndCapitalLeaseObligations");
+      if (ltd || ltdLease) {
+        anchor = ltd || ltdLease;
+        total = num(anchor.val);
+        names.push(ltd ? "LongTermDebtNoncurrent" : "LongTermDebtAndCapitalLeaseObligations");
+        if (ltdLease) {
+          if (flNc !== null) {
+            total -= flNc;
+            names.push("− FinanceLeaseLiabilityNoncurrent");
+          } else if (flTotal !== null && flTotal !== 0) financeLeaseIncluded = true;
+        }
+
+        // Kurzfristiger Teil
+        const dc = one("DebtCurrent");
+        if (dc) {
+          total += num(dc.val);
+          names.push("DebtCurrent");
+        } else {
+          const ltdc = one("LongTermDebtCurrent");
+          const ltdcLease = ltdc ? null : one("LongTermDebtAndCapitalLeaseObligationsCurrent");
+          if (ltdc) {
+            total += num(ltdc.val);
+            names.push("LongTermDebtCurrent");
+          } else if (ltdcLease) {
+            total += num(ltdcLease.val);
+            names.push("LongTermDebtAndCapitalLeaseObligationsCurrent");
+            if (flC !== null) {
+              total -= flC;
+              names.push("− FinanceLeaseLiabilityCurrent");
+            } else if (flTotal !== null && flTotal !== 0) financeLeaseIncluded = true;
+          }
+          for (const c of ["CommercialPaper", "ShortTermBorrowings", "OtherShortTermBorrowings"]) {
+            const e = one(c);
+            if (e) {
+              total += num(e.val);
+              names.push(c);
+            }
+          }
+        }
+        s.balance.interestBearingDebtExLeases = total;
+        note("interestBearingDebtExLeases", anchor, names.join(" + ").replace(/\+ −/g, "−"), financeLeaseIncluded ? { financeLeaseIncluded: true } : {});
       }
     }
 
@@ -439,6 +545,157 @@ export function mapSecFinancials(companyfacts, filings, cik) {
   }
 }
 
+// ---------------------------------------------------------------- Bilanz-Abgleich
+//
+// Festlegung 08.10.2026: Fehlt einer der Posten in BALANCE_TARGETS, gilt er nur dann als 0, wenn
+// die Summe aller gemeldeten Aktivposten höchstens 1 % von Assets abweicht. Sonst bleibt er null.
+// „Gemeldete Aktivposten“ = die Bilanzzeilen laut Rechenstruktur des Unternehmens (Calculation
+// Linkbase der Einreichung: Kinder von Assets, Zwischensummen wie AssetsCurrent aufgelöst).
+// Eine bloße Summe aller gefundenen Konzepte wäre falsch (z. B. AAPL: Nutzungsrechte und latente
+// Steuern stecken in „Other non-current assets“, würden doppelt zählen).
+// Zusätzlich muss jede Bilanzzeile bekannt sein (LEAF_CLASS): Eine unbekannte Zeile könnte der
+// fehlende Posten unter anderem Namen sein (Beispiel KO: „Short-term investments“ als
+// OtherShortTermInvestments) → dann kein 0. Zeilen ohne Wert in companyfacts (eigene Konzepte des
+// Unternehmens) → Abgleich nicht möglich → null.
+// Sammelzeilen (CATCH_ALL, z. B. „Other non-current assets“) können den fehlenden Posten enthalten
+// (Beispiel AAPL: Firmenwert und immaterielle Werte stecken in „Other non-current assets“, 83,7 Mrd. $).
+// Sie zählen deshalb als ungeklärter Betrag: 0 nur, wenn Abweichung + Sammelzeilen ≤ 1 % von Assets.
+export const BALANCE_TARGETS = ["goodwill", "intangiblesExGoodwill", "shortTermInvestments", "longTermInvestments", "inventory", "netReceivables"];
+export const RECONCILIATION_NOTE = "0 per Bilanz-Abgleich";
+export const CATCH_ALL = new Set(["OtherAssetsCurrent", "OtherAssetsNoncurrent", "PrepaidExpenseAndOtherAssetsCurrent"]);
+const RECONCILIATION_TOLERANCE = 0.01;
+
+/** us-gaap-Bilanzzeile → Zielfeld (oder null = andere bekannte Zeile). Nicht aufgeführt = unbekannt. */
+export const LEAF_CLASS = Object.fromEntries([
+  ...["Goodwill"].map((c) => [c, "goodwill"]),
+  ...["IntangibleAssetsNetExcludingGoodwill", "IndefiniteLivedTrademarks", "IndefiniteLivedIntangibleAssetsExcludingGoodwill", "FiniteLivedIntangibleAssetsNet"].map((c) => [c, "intangiblesExGoodwill"]),
+  ...["ShortTermInvestments", "OtherShortTermInvestments", "MarketableSecuritiesCurrent", "AvailableForSaleSecuritiesDebtSecuritiesCurrent", "MarketableSecurities", "EquitySecuritiesFvNiCurrent", "HeldToMaturitySecuritiesCurrent"].map((c) => [c, "shortTermInvestments"]),
+  ...["LongTermInvestments", "OtherLongTermInvestments", "EquityMethodInvestments", "MarketableSecuritiesNoncurrent", "AvailableForSaleSecuritiesDebtSecuritiesNoncurrent", "EquitySecuritiesFvNiNoncurrent", "HeldToMaturitySecuritiesNoncurrent", "EquitySecuritiesWithoutReadilyDeterminableFairValueAmount"].map((c) => [c, "longTermInvestments"]),
+  ...["InventoryNet"].map((c) => [c, "inventory"]),
+  ...["AccountsReceivableNetCurrent", "NontradeReceivablesCurrent", "OtherReceivablesNetCurrent", "AccountsAndOtherReceivablesNetCurrent", "ReceivablesNetCurrent"].map((c) => [c, "netReceivables"]),
+  ...[
+    "CashAndCashEquivalentsAtCarryingValue",
+    "Cash",
+    "RestrictedCashCurrent",
+    "RestrictedCashAndCashEquivalentsAtCarryingValue",
+    "PrepaidExpenseCurrent",
+    "PrepaidExpenseAndOtherAssetsCurrent",
+    "OtherAssetsCurrent",
+    "OtherAssetsNoncurrent",
+    "PropertyPlantAndEquipmentNet",
+    "PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization",
+    "OperatingLeaseRightOfUseAsset",
+    "FinanceLeaseRightOfUseAsset",
+    "DeferredIncomeTaxAssetsNet",
+    "IncomeTaxesReceivable",
+    "AssetsOfDisposalGroupIncludingDiscontinuedOperationCurrent",
+    "AssetsOfDisposalGroupIncludingDiscontinuedOperation",
+  ].map((c) => [c, null]),
+]);
+
+function attrs(tag) {
+  const out = {};
+  for (const m of tag.matchAll(/([\w:-]+)="([^"]*)"/g)) out[m[1].replace(/^.*:/, "")] = m[2];
+  return out;
+}
+
+/** Calculation Linkbase (XML) → Bilanzzeilen [{ concept: "us-gaap:Goodwill", weight }] unter Assets. */
+export function balanceLeavesFromCalc(xml) {
+  const links = String(xml || "").matchAll(/<(?:\w+:)?calculationLink\b[^>]*>([\s\S]*?)<\/(?:\w+:)?calculationLink>/g);
+  for (const [, body] of links) {
+    const concepts = new Map();
+    for (const [tag] of body.matchAll(/<(?:\w+:)?loc\b[^>]*>/g)) {
+      const a = attrs(tag);
+      const frag = (a.href || "").split("#")[1] || "";
+      const i = frag.indexOf("_");
+      if (a.label && i > 0) concepts.set(a.label, `${frag.slice(0, i)}:${frag.slice(i + 1)}`);
+    }
+    const children = new Map();
+    for (const [tag] of body.matchAll(/<(?:\w+:)?calculationArc\b[^>]*>/g)) {
+      const a = attrs(tag);
+      const from = concepts.get(a.from);
+      const to = concepts.get(a.to);
+      if (!from || !to) continue;
+      if (!children.has(from)) children.set(from, []);
+      children.get(from).push({ concept: to, weight: Number(a.weight ?? 1) });
+    }
+    if (!children.has("us-gaap:Assets")) continue;
+    const leaves = [];
+    const walk = (concept, weight, seen) => {
+      const kids = children.get(concept);
+      if (!kids || seen.has(concept)) {
+        leaves.push({ concept, weight });
+        return;
+      }
+      for (const k of kids) walk(k.concept, weight * k.weight, new Set([...seen, concept]));
+    };
+    for (const k of children.get("us-gaap:Assets")) walk(k.concept, k.weight, new Set(["us-gaap:Assets"]));
+    return leaves;
+  }
+  return null;
+}
+
+/**
+ * Setzt fehlende Posten aus BALANCE_TARGETS auf 0, wenn der Abgleich gelingt (siehe oben).
+ * valueOf(concept) → Zahl oder null (Wert der Bilanzzeile zum Stichtag aus derselben Einreichung).
+ * Gibt { ok, reason, zeroed } zurück.
+ */
+export function applyBalanceReconciliation(snapshot, leaves, valueOf, accn = null) {
+  const b = snapshot?.balance;
+  if (!b || !Number.isFinite(b.totalAssets) || b.totalAssets <= 0) return { ok: false, reason: "Bilanzsumme fehlt", zeroed: [] };
+  const missing = BALANCE_TARGETS.filter((f) => b[f] === null || b[f] === undefined);
+  if (!missing.length) return { ok: true, reason: null, zeroed: [] };
+  if (!leaves?.length) return { ok: false, reason: "keine Rechenstruktur der Bilanz", zeroed: [] };
+  let sum = 0;
+  let catchAll = 0;
+  const present = new Set();
+  for (const leaf of leaves) {
+    const [ns, name] = leaf.concept.split(":");
+    if (ns !== "us-gaap" || !(name in LEAF_CLASS)) return { ok: false, reason: `unbekannte Bilanzzeile ${leaf.concept}`, zeroed: [] };
+    const v = valueOf(name);
+    if (v === null) return { ok: false, reason: `Bilanzzeile ${leaf.concept} ohne Wert`, zeroed: [] };
+    sum += leaf.weight * v;
+    if (CATCH_ALL.has(name)) catchAll += Math.abs(leaf.weight * v);
+    if (LEAF_CLASS[name]) present.add(LEAF_CLASS[name]);
+  }
+  const gap = Math.abs(sum - b.totalAssets) / b.totalAssets;
+  if (gap > RECONCILIATION_TOLERANCE) return { ok: false, reason: `Summe der Bilanzzeilen weicht ${(gap * 100).toFixed(1)} % von Assets ab`, zeroed: [] };
+  const unexplained = gap + catchAll / b.totalAssets;
+  if (unexplained > RECONCILIATION_TOLERANCE) {
+    return { ok: false, reason: `Sammelzeilen („Other assets“) ${((catchAll / b.totalAssets) * 100).toFixed(1)} % der Bilanzsumme, fehlender Posten kann darin stecken`, zeroed: [] };
+  }
+  const zeroed = missing.filter((f) => !present.has(f));
+  snapshot.sourceConcepts = snapshot.sourceConcepts || {};
+  for (const f of zeroed) {
+    b[f] = 0;
+    snapshot.sourceConcepts[f] = { concept: null, accn, note: RECONCILIATION_NOTE, reconciliationGapPct: Math.round(gap * 10000) / 100 };
+  }
+  return { ok: true, reason: null, zeroed };
+}
+
+/**
+ * Wert einer Bilanzzeile (instant, Stichtag) aus den Einreichungen dieser Periode.
+ * accns: Vorrang-Reihenfolge (jüngste Einreichung zuerst, z. B. 10-K/A vor 10-K).
+ */
+export function balanceValueOf(companyfacts, { end, accns, unit }) {
+  const order = Array.isArray(accns) ? accns : [accns];
+  return (name) => {
+    const list = (companyfacts?.facts?.["us-gaap"]?.[name]?.units?.[unit] || []).filter((x) => x.end === end && !x.start);
+    for (const a of order) {
+      const e = list.find((x) => x.accn === a);
+      if (e) return num(e.val);
+    }
+    return null;
+  };
+}
+
+/** Einreichungen, aus denen die Werte einer Periode stammen (jüngste zuerst). */
+function periodAccns(snapshot) {
+  const seen = new Map();
+  for (const c of Object.values(snapshot.sourceConcepts || {})) if (c?.accn && !seen.has(c.accn)) seen.set(c.accn, c.filed || "");
+  return [...seen.entries()].sort((a, b) => (a[1] < b[1] ? 1 : -1)).map(([a]) => a);
+}
+
 const FLOW_CONCEPTS = new Set(
   Object.values(CONCEPTS)
     .filter((d) => d.kind === "flow")
@@ -461,13 +718,27 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
     if (wait) await sleepImpl(wait);
   }
 
+  async function getText(url, what) {
+    return getRaw(url, what, (res) => res.text());
+  }
+
   async function getJson(url, what) {
+    return getRaw(url, what, async (res) => {
+      try {
+        return JSON.parse(await res.text());
+      } catch {
+        throw new ProviderError(`SEC ${what}: Antwort ist kein JSON`, "other");
+      }
+    });
+  }
+
+  async function getRaw(url, what, read) {
     for (let attempt = 0; attempt < 2; attempt++) {
       await throttle();
       calls++;
       let res;
       try {
-        res = await fetchImpl(url, { headers: { "User-Agent": userAgent, Accept: "application/json" } });
+        res = await fetchImpl(url, { headers: { "User-Agent": userAgent, Accept: "application/json, application/xml, */*" } });
       } catch (err) {
         throw new ProviderError(`SEC ${what}: Netzwerkfehler (${String(err?.message || err).slice(0, 120)})`, "other");
       }
@@ -480,11 +751,7 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
         const hint = res.status === 404 ? " (keine Daten bei der SEC)" : "";
         throw new ProviderError(`SEC ${what} ${res.status}${hint}`, kind);
       }
-      try {
-        return JSON.parse(await res.text());
-      } catch {
-        throw new ProviderError(`SEC ${what}: Antwort ist kein JSON`, "other");
-      }
+      return read(res);
     }
     throw new ProviderError(`SEC ${what}: keine Antwort`, "other");
   }
@@ -515,10 +782,47 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
     return submissionsCache.get(cik);
   }
 
+  // Bilanz-Abgleich: Rechenstruktur nur laden, wenn ein Posten fehlt (2 Abrufe je Einreichung)
+  const calcCache = new Map(); // accn → Promise<leaves|null>
+  function calcLeaves(cik, accn) {
+    if (!calcCache.has(accn)) {
+      const dir = `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accn.replace(/-/g, "")}`;
+      const p = (async () => {
+        const index = await getJson(`${dir}/index.json`, "Einreichungsverzeichnis");
+        const names = (index?.directory?.item || []).map((i) => i.name);
+        // Eigene Datei *_cal.xml, sonst in die Schemadatei *.xsd eingebettet (z. B. MSFT)
+        const cal = names.find((n) => /_cal\.xml$/i.test(n)) || names.find((n) => /\.xsd$/i.test(n));
+        if (!cal) return null;
+        const xml = await getText(`${dir}/${cal}`, "Calculation Linkbase");
+        return balanceLeavesFromCalc(xml);
+      })();
+      calcCache.set(accn, p);
+    }
+    return calcCache.get(accn);
+  }
+
+  async function reconcile(cik, facts, snapshots, notes) {
+    for (const s of snapshots) {
+      if (!BALANCE_TARGETS.some((f) => s.balance[f] === null) || !Number.isFinite(s.balance.totalAssets)) continue;
+      const accn = s.sourceConcepts?.totalAssets?.accn;
+      if (!accn || !s.currency) continue;
+      let leaves = null;
+      try {
+        leaves = await calcLeaves(cik, accn);
+      } catch (err) {
+        if (err?.kind === "limit") throw err;
+        notes.push(`SEC: Bilanz-Abgleich ${s.periodEnd} nicht möglich (Rechenstruktur nicht abrufbar)`);
+        continue;
+      }
+      const r = applyBalanceReconciliation(s, leaves, balanceValueOf(facts, { end: s.periodEnd, accns: periodAccns(s), unit: s.currency }), accn);
+      if (!r.ok) notes.push(`SEC: Bilanz-Abgleich ${s.periodEnd} nicht möglich (${r.reason})`);
+    }
+  }
+
   return {
     id: "sec",
     usageKey: "sec",
-    callsPerTitle: 2, // submissions + companyfacts (company_tickers.json 1× je Lauf)
+    callsPerTitle: 2, // submissions + companyfacts (company_tickers.json 1× je Lauf; Bilanz-Abgleich bei Bedarf +2 je Einreichung)
     getCallCount: () => calls,
 
     async getProfile(symbol) {
@@ -529,7 +833,9 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
     async getFinancialPeriods(symbol) {
       const cik = await cikFor(symbol);
       const [subs, facts] = await Promise.all([submissions(cik), getJson(`${DATA_URL}/api/xbrl/companyfacts/CIK${cik}.json`, "companyfacts")]);
-      return mapSecFinancials(facts, listFilings(subs), cik);
+      const result = mapSecFinancials(facts, listFilings(subs), cik);
+      await reconcile(cik, facts, [result.annual, ...result.quarters].filter(Boolean), result.notes);
+      return result;
     },
   };
 }

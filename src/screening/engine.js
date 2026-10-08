@@ -30,7 +30,8 @@ import {
   isShellCompany,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.4.0"; // 1.4.0 (06.10.2026): review ohne reviewer, mit verification
+export const ENGINE_VERSION = "1.5.0"; // 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich
+// vorher 1.4.0 (06.10.2026): review ohne reviewer, mit verification
 
 export const STATUS = {
   CONFORM: "konform",
@@ -380,7 +381,24 @@ function segmentAmount(review, s) {
 }
 
 /**
- * Verbotene Einnahmen einer Periode = Zinserträge (GuV-Zeile) + verbotene
+ * Zinserträge einer Periode (Festlegung 08.10.2026, zweistufig):
+ *   1. aus den Finanzdaten (income.interestIncome; bei SEC aus XBRL, nie aus einem Saldo),
+ *   2. fehlt der Wert: „Zinserträge laut Anhang“ aus der gültigen B3-Prüfung
+ *      (review.interestIncomeNotes["annual:JJJJ-MM-TT" | "quarter:JJJJ-MM-TT"] = { amount, source }).
+ * source: "data" | "data_inclusive" (enthält auch Dividenden u. a., vorsichtig vollständig gezählt) | "manual"
+ */
+function interestIncomeOf(s, segmentReview) {
+  const v = s?.income?.interestIncome;
+  if (isNum(v)) return { value: v, source: s.sourceConcepts?.interestIncome?.inclusive ? "data_inclusive" : "data" };
+  if (segmentReview?.state === "valid") {
+    const m = segmentReview.review?.interestIncomeNotes?.[`${s?.periodType}:${s?.periodEnd}`];
+    if (m && isNum(m.amount) && m.amount >= 0) return { value: m.amount, source: "manual" };
+  }
+  return { value: null, source: null };
+}
+
+/**
+ * Verbotene Einnahmen einer Periode = Zinserträge (siehe interestIncomeOf) + verbotene
  * Segmentumsätze aus der manuellen Prüfung B3_SEGMENTS:
  *   pass    → keine verbotenen Segmente (0)
  *   fail    → Beträge je Periode müssen vorliegen (siehe segmentAmount)
@@ -390,7 +408,7 @@ function prohibitedIncomeFor(s, segmentReview, p) {
   if (!s) return { value: null, missing: ["Abschluss"], categories: [] };
   const missing = [];
   let categories = [];
-  const interest = s.income?.interestIncome;
+  const { value: interest, source: interestSource } = interestIncomeOf(s, segmentReview);
   if (!isNum(interest)) missing.push("interestIncome");
 
   let segment = 0;
@@ -411,17 +429,17 @@ function prohibitedIncomeFor(s, segmentReview, p) {
     }
   }
   return missing.length
-    ? { value: null, missing, categories }
-    : { value: interest + segment, missing: [], categories };
+    ? { value: null, missing, categories, interestSource }
+    : { value: interest + segment, missing: [], categories, interestSource };
 }
 
 /**
  * Nenner für B3. "total_income" = Umsatz + Zinserträge + sonstige Erträge
  * (Wortlaut „total income“, SS 21, 3/4/4); "revenue" = nur Umsatz.
  */
-function incomeDenominator(s, p) {
+function incomeDenominator(s, p, segmentReview) {
   const keys = p.prohibitedIncomeDenominator === "total_income" ? ["revenue", "interestIncome", "otherIncome"] : ["revenue"];
-  return sumFields(s?.income || {}, keys);
+  return sumFields({ ...(s?.income || {}), interestIncome: interestIncomeOf(s, segmentReview).value }, keys);
 }
 
 function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
@@ -448,6 +466,7 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
   });
   b2.checks = [depositsCheck(annual, "annual", p, security), depositsCheck(latestQ, "quarter", p, security)];
   b2.result = combine(b2.checks);
+  if (usesReconciledZero([annual, latestQ], ["cash", "shortTermInvestments", "longTermInvestments"])) b2.flags.push("posten_null_bilanzabgleich");
 
   // Marktkapitalisierung selbst gebildet? → kennzeichnen (Datenabweichung, wenn Durchschnitts-Aktienzahl)
   const derivedCaps = [annual, latestQ].filter((x) => x?.marketCapSource);
@@ -474,7 +493,7 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
 
   // Jahresabschluss
   const annualProhibited = prohibitedIncomeFor(annual, segReview, p);
-  const annualDen = incomeDenominator(annual, p);
+  const annualDen = incomeDenominator(annual, p, segReview);
   b3.checks.push(
     ratioCheck({
       basis: "annual",
@@ -497,7 +516,7 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
     const pi = prohibitedIncomeFor(q, segReview, p);
     if (pi.value === null) ttmMissing.push(...pi.missing.map((m) => `${m} (${q.periodEnd})`));
     else ttmNum += pi.value;
-    const den = incomeDenominator(q, p);
+    const den = incomeDenominator(q, p, segReview);
     if (den.value !== null) ttmDen += den.value;
     else ttmMissing.push(...den.missing.map((m) => `${m} (${q.periodEnd})`));
   }
@@ -520,6 +539,10 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
   for (const q of quarters.slice(0, 4)) prohibitedIncomeFor(q, segReview, p).categories.forEach((c) => cats.add(c));
   b3.categories = [...cats].map((id) => ({ id, ...PROHIBITED_INCOME_CATEGORIES[id] }));
   if (b3.categories.some((c) => c.interpretation)) b3.flags.push("auslegungsfrage");
+  // Herkunft der Zinserträge kennzeichnen
+  const interestSources = [annual, ...quarters.slice(0, 4)].filter(Boolean).map((x) => interestIncomeOf(x, segReview).source);
+  if (interestSources.includes("manual")) b3.flags.push("zinsertraege_aus_anhang");
+  if (interestSources.includes("data_inclusive")) b3.flags.push("zinsertraege_vorsichtig");
 
   if (b3.result === RESULT.NOT_CHECKED && !b3.reason) {
     b3.reason = "Mindestens eine Einnahmequelle nicht klar ausgewiesen oder nicht geprüft (SS 21, 3/4/4)";
@@ -529,6 +552,11 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
 }
 
 // ---------------------------------------------------------- Stufe C
+
+/** Wurde ein verwendeter Bilanzposten per Bilanz-Abgleich auf 0 gesetzt (SEC-Adapter)? */
+function usesReconciledZero(snaps, fields) {
+  return snaps.some((x) => fields.some((f) => x?.balance?.[f] === 0 && x.sourceConcepts?.[f]?.note === "0 per Bilanz-Abgleich"));
+}
 
 function realAssetsCheck(s, basis, p) {
   const b = s?.balance || {};
@@ -566,6 +594,9 @@ function stageC({ annual, quarters, profile, p }) {
   });
   c1.checks = [realAssetsCheck(annual, "annual", p), realAssetsCheck(latestQ, "quarter", p)];
   c1.result = combine(c1.checks);
+  if (usesReconciledZero([annual, latestQ], ["shortTermInvestments", "longTermInvestments", "goodwill", "intangiblesExGoodwill", "netReceivables"])) {
+    c1.flags.push("posten_null_bilanzabgleich");
+  }
 
   // C2 / C3: ohne eigenen neuen Grenzwert. Belegt durch C1 (reale Werte
   // vorhanden) oder ausgeschlossen, wenn Branche = Shell Company (SPAC).

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, keywordHits, keywordCounts, keywordHitsMarkdown, validateDraft, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, keywordHits, keywordCounts, keywordHitsMarkdown, validateDraft, validateInterestIncomeNotes, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -357,4 +357,33 @@ test("keywordHits: Procter & Gamble ist kein Glücksspiel, Kredit an Kunden und 
   assert.equal(h.gambling.count, 1); // nur "Casino"
   assert.ok(h.interest_financial.count >= 3); // customer receivables, credit extended, interest and dividends income, ...
   assert.equal(keywordHits("Procter and Gamble and the gambling industry").gambling.count, 1);
+});
+
+test("B3: Zinserträge laut Anhang werden geprüft und als eigene Spalte eingetragen (08.10.2026)", () => {
+  const notes = {
+    "annual:2025-09-27": { amount: 3500000000, source: "10-K 2025, Note 5, S. 34" },
+    "quarter:2026-06-27": { amount: 900000000, source: "10-Q Q3 2026, Note 4, S. 12" },
+  };
+  assert.deepEqual(validateInterestIncomeNotes(notes), []);
+  assert.deepEqual(validateInterestIncomeNotes(undefined), []);
+  assert.ok(validateInterestIncomeNotes([]).length);
+  assert.ok(validateInterestIncomeNotes({ "jahr:2025": { amount: 1, source: "x" } }).some((p) => /Schlüssel/.test(p)));
+  assert.ok(validateInterestIncomeNotes({ "annual:2025-09-27": { amount: -1, source: "x" } }).some((p) => /amount/.test(p)));
+  assert.ok(validateInterestIncomeNotes({ "annual:2025-09-27": { amount: 1 } }).some((p) => /source/.test(p)));
+
+  const d = good();
+  Object.assign(d.B3, { result: "pass", quote: "The Company reports three segments.", sourceNote: "Item 8, Note 13", confidence: "high", confirmed: true, verification: "full", interestIncomeNotes: notes });
+  const { statements, skipped } = draftToSql(d, { reviewer: "AMI", currentAnnual: null });
+  assert.deepEqual(skipped, []);
+  const b3 = statements.find((x) => /B3_SEGMENTS/.test(x));
+  assert.match(b3, /verification, ai_draft, interest_income_notes\)/);
+  assert.match(b3, /"annual:2025-09-27":\{"amount":3500000000/);
+  // Ohne Anhang-Werte: Spalte nicht im insert (läuft auch vor der Datenbankänderung)
+  const plain = good();
+  Object.assign(plain.B3, { result: "pass", quote: "The Company reports three segments.", sourceNote: "Item 8, Note 13", confidence: "high", confirmed: true, verification: "full" });
+  assert.doesNotMatch(draftToSql(plain, { reviewer: "AMI", currentAnnual: null }).statements.join("\n"), /interest_income_notes/);
+  // Ungültige Anhang-Werte: B3 wird nicht eingetragen
+  const bad = good();
+  Object.assign(bad.B3, { result: "pass", quote: "The Company reports three segments.", sourceNote: "Item 8, Note 13", confidence: "high", confirmed: true, verification: "full", interestIncomeNotes: { "annual:2025-09-27": { amount: "viel", source: "x" } } });
+  assert.ok(draftToSql(bad, { reviewer: "AMI", currentAnnual: null }).skipped.some((x) => /B3.*amount/.test(x)));
 });

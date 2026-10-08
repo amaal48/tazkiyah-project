@@ -267,6 +267,42 @@ test("B3-Nenner: fehlende sonstige Erträge → nicht geprüft", () => {
   assert.equal(crit(r, "B3").result, RESULT.NOT_CHECKED);
 });
 
+test("B3: Zinserträge laut Anhang aus der B3-Prüfung, wenn der Datenwert fehlt (08.10.2026)", () => {
+  const noInterest = (x) => Object.assign(x, { income: { ...x.income, interestIncome: null } });
+  const annual = noInterest(snap("annual", ANNUAL_END));
+  const quarters = Q_ENDS.map((d) => noInterest(snap("quarter", d)));
+  // Ohne Anhang-Werte: nicht geprüft
+  assert.equal(crit(screenSecurity(base({ annual, quarters })), "B3").result, RESULT.NOT_CHECKED);
+  // Mit Anhang-Werten für Jahr und alle vier Quartale: gerechnet und gekennzeichnet
+  const notes = { [`annual:${ANNUAL_END}`]: { amount: 4, source: "10-K, Note 5" } };
+  for (const d of Q_ENDS) notes[`quarter:${d}`] = { amount: 1, source: "10-Q, Note 4" };
+  const reviews = [validReviews[0], { ...validReviews[1], interestIncomeNotes: notes }];
+  const b3 = crit(screenSecurity(base({ annual, quarters, manualReviews: reviews })), "B3");
+  assert.equal(b3.result, RESULT.PASS);
+  assert.equal(b3.checks[0].value, 0.99); // 4 / (400 + 4 + 0), gerundet
+  assert.ok(b3.flags.includes("zinsertraege_aus_anhang"));
+  // Datenwert hat Vorrang vor dem Anhang-Wert
+  const withData = crit(screenSecurity(base({ manualReviews: reviews })), "B3");
+  assert.ok(!withData.flags.includes("zinsertraege_aus_anhang"));
+  // Anhang-Wert einer abgelaufenen Prüfung gilt nicht
+  const expired = [validReviews[0], { ...validReviews[1], basisAnnualPeriodEnd: "2024-12-31", interestIncomeNotes: notes }];
+  assert.equal(crit(screenSecurity(base({ annual, quarters, manualReviews: expired })), "B3").result, RESULT.NOT_CHECKED);
+});
+
+test("B3: Zinserträge mit Dividenden (vorsichtig vollständig gezählt) werden gekennzeichnet", () => {
+  const annual = snap("annual", ANNUAL_END, { sourceConcepts: { interestIncome: { concept: "InvestmentIncomeNet", inclusive: true } } });
+  assert.ok(crit(screenSecurity(base({ annual })), "B3").flags.includes("zinsertraege_vorsichtig"));
+  assert.ok(!crit(screenSecurity(base()), "B3").flags.includes("zinsertraege_vorsichtig"));
+});
+
+test("C1/B2: Posten per Bilanz-Abgleich 0 → Kennzeichnung", () => {
+  const annual = snap("annual", ANNUAL_END, { balance: { goodwill: 0 }, sourceConcepts: { goodwill: { concept: null, note: "0 per Bilanz-Abgleich" } } });
+  const r = screenSecurity(base({ annual }));
+  assert.ok(crit(r, "C1").flags.includes("posten_null_bilanzabgleich"));
+  assert.ok(!crit(r, "B2").flags.includes("posten_null_bilanzabgleich"));
+  assert.ok(!crit(screenSecurity(base()), "C1").flags.includes("posten_null_bilanzabgleich"));
+});
+
 test("A1-Gruppen: Tabak Ausschluss mit Auslegungs-Flag", () => {
   const r = screenSecurity(base({ profile: { industry: "Tobacco" } }));
   assert.equal(crit(r, "A1").result, RESULT.FAIL);

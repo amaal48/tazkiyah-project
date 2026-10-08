@@ -134,6 +134,18 @@ test("Budget je Anbieter: eigene Abrufzahl je Titel (callsPerTitle) und eigener 
   assert.equal(repo.db.runs[0].inputs.provider, "sec");
 });
 
+test("Gespeicherte FMP-Daten: Zinserträge 0 bei vorhandenen Anlagen werden bei der Neuberechnung null", async () => {
+  const repo = memoryRepo([stocks[0]]);
+  await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 100 });
+  const run = repo.db.runs[0];
+  run.inputs.provider = "fmp";
+  run.inputs.annual.income.interestIncome = 0;
+  run.engine_version = "0.0.0"; // erzwingt Neuberechnung ohne Abruf
+  const s = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 100 });
+  assert.equal(s.rescreened.length, 1);
+  assert.equal(repo.db.runs.at(-1).inputs.annual.income.interestIncome, null);
+});
+
 test("Zweiter Lauf am selben Tag: kein Budget mehr, nichts doppelt", async () => {
   const repo = memoryRepo(stocks);
   await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 33 });

@@ -369,6 +369,28 @@ export const REVIEWER_CODE = /^[A-Z]{2,5}$/;
 const isDate = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const isText = (s) => typeof s === "string" && s.trim().length > 0;
 
+/**
+ * Zinserträge laut Anhang (B3, seit 08.10.2026): nur nötig, wenn die Finanzdaten keine Zinserträge
+ * enthalten (z. B. AAPL). Form wie prohibitedRevenueByPeriod:
+ *   { "annual:JJJJ-MM-TT": { amount: 3500000000, source: "10-K 2025, Note 5, S. 34" }, "quarter:…": … }
+ * amount in Einheiten der Berichtswährung (nicht Millionen), ≥ 0; source = genaue Fundstelle.
+ */
+export function validateInterestIncomeNotes(notes) {
+  if (notes === undefined || notes === null) return [];
+  if (typeof notes !== "object" || Array.isArray(notes)) return ["B3.interestIncomeNotes muss ein Objekt sein"];
+  const problems = [];
+  for (const [key, v] of Object.entries(notes)) {
+    if (!/^(annual|quarter):\d{4}-\d{2}-\d{2}$/.test(key)) problems.push(`B3.interestIncomeNotes: Schlüssel ${key} ungültig (annual:JJJJ-MM-TT oder quarter:JJJJ-MM-TT)`);
+    if (!v || typeof v !== "object") {
+      problems.push(`B3.interestIncomeNotes ${key}: Objekt mit amount und source nötig`);
+      continue;
+    }
+    if (typeof v.amount !== "number" || !Number.isFinite(v.amount) || v.amount < 0) problems.push(`B3.interestIncomeNotes ${key}: amount muss eine Zahl ≥ 0 sein`);
+    if (!isText(v.source)) problems.push(`B3.interestIncomeNotes ${key}: source (Fundstelle) fehlt`);
+  }
+  return problems;
+}
+
 /** Prüft die Form eines Entwurfs. Liefert eine Liste von Problemen, leer = in Ordnung. */
 export function validateDraft(d) {
   const problems = [];
@@ -391,6 +413,7 @@ export function validateDraft(d) {
     }
   }
   const b3 = d.B3;
+  problems.push(...validateInterestIncomeNotes(b3?.interestIncomeNotes));
   if (b3?.result === "fail") {
     const by = b3.prohibitedRevenueByPeriod;
     if (!by || typeof by !== "object") {
@@ -609,13 +632,15 @@ export function draftToSql(draft, { reviewer, sources = null, currentAnnual }) {
     if (key === "B3" && c.result === "fail") details.prohibitedRevenueByPeriod = c.prohibitedRevenueByPeriod;
     if (key === "B3") details.segments = c.segments ?? null;
     const basis = `${sqlString(draftDate)}::date`;
+    // Zinserträge laut Anhang: eigene Spalte (supabase_manual_reviews_interest_notes.sql), nur wenn vorhanden
+    const notesJson = key === "B3" && c.interestIncomeNotes && Object.keys(c.interestIncomeNotes).length ? JSON.stringify(c.interestIncomeNotes) : null;
     statements.push(
       [
-        `-- ${draft.ticker} ${criterion}: ${c.result}`,
+        `-- ${draft.ticker} ${criterion}: ${c.result}${notesJson ? " (mit Zinserträgen laut Anhang)" : ""}`,
         `insert into public.manual_reviews`,
-        `  (security_id, criterion, result, details, source_url, source_note, reviewer, basis_annual_period_end, verification, ai_draft)`,
+        `  (security_id, criterion, result, details, source_url, source_note, reviewer, basis_annual_period_end, verification, ai_draft${notesJson ? ", interest_income_notes" : ""})`,
         `select s.id, ${sqlString(criterion)}, ${sqlString(c.result)}, ${sqlString(JSON.stringify(details))}::jsonb,`,
-        `       ${sqlString(c.sourceUrl ?? null)}, ${sqlString(c.sourceNote ?? null)}, ${sqlString(reviewer)}, ${basis}, ${sqlString(c.verification)}, true`,
+        `       ${sqlString(c.sourceUrl ?? null)}, ${sqlString(c.sourceNote ?? null)}, ${sqlString(reviewer)}, ${basis}, ${sqlString(c.verification)}, true${notesJson ? `, ${sqlString(notesJson)}::jsonb` : ""}`,
         `from public.securities s`,
         `left join public.screening_current sc on sc.security_id = s.id`,
         `where s.ticker = ${sqlString(draft.ticker)}`,

@@ -187,3 +187,14 @@ test("Nicht erkennbar, ob getrennt (kein totalDebt): Ergänzung wird gemacht und
   applyLeaseEstimate(annual, [q]);
   assert.equal(q.balance.leaseEstimate.amount, 13);
 });
+
+test("Zinserträge = 0 von FMP gelten nur ohne Cash und Anlagen als 0, sonst null (08.10.2026)", () => {
+  const map = (inc, bal) => mapFmpPeriod({ balance: { date: "2025-09-27", ...bal }, income: { date: "2025-09-27", revenue: 400, ...inc }, periodType: "annual" });
+  // AAPL-Fall: 0 Zinserträge, aber Cash und Wertpapiere → null (B3 nicht geprüft bzw. Anhang)
+  assert.equal(map({ interestIncome: 0 }, { cashAndCashEquivalents: 35934, shortTermInvestments: 18763 }).income.interestIncome, null);
+  assert.equal(map({ interestIncome: 0 }, { longTermInvestments: 5 }).income.interestIncome, null);
+  // Keine Anlagen: 0 bleibt 0
+  assert.equal(map({ interestIncome: 0 }, { cashAndCashEquivalents: 0, shortTermInvestments: 0, longTermInvestments: 0 }).income.interestIncome, 0);
+  // Positiver Wert bleibt unverändert
+  assert.equal(map({ interestIncome: 3301 }, { cashAndCashEquivalents: 20935 }).income.interestIncome, 3301);
+});

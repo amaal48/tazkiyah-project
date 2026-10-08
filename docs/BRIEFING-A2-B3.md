@@ -39,10 +39,12 @@ Tabelle `public.manual_reviews`:
 | `source_url`, `source_note` | mindestens eins ist Pflicht, z. B. Link zum Dokument und „10-K FY2025, Note 13, S. 52“ |
 | `reviewer` | Text, z. B. „KI-Entwurf (Claude), kontrolliert von …“ (Namen legen wir fest) |
 | `basis_annual_period_end` | **muss genau dem aktuellen Jahresabschluss der Aktie entsprechen** (`screening_current.annual_period_end`), sonst gilt die Prüfung als abgelaufen |
+| `interest_income_notes` | nur `B3_SEGMENTS`, seit 08.10.2026 (`supabase_manual_reviews_interest_notes.sql`): **Zinserträge laut Anhang** je Periode, siehe unten |
 
 Wirkung auf den Status:
 - **A2:** `pass` oder `fail` zählt. `unclear` oder fehlend = „nicht geprüft“.
-- **B3:** `pass` = keine verbotenen Segmente (Beträge 0). `fail` = Beträge je Periode müssen vorliegen: `details.prohibitedRevenueByPeriod` mit Schlüsseln `"annual:YYYY-MM-DD"` und `"quarter:YYYY-MM-DD"` für den Jahresabschluss **und jedes der letzten vier Quartale**, je Zahl oder Objekt nach Kategorie (z. B. `{"music": 120, "derivatives": 40}`). `unclear` = „nicht geprüft“. Zinserträge nicht eintragen, die zählt die Engine selbst.
+- **B3:** `pass` = keine verbotenen Segmente (Beträge 0). `fail` = Beträge je Periode müssen vorliegen: `details.prohibitedRevenueByPeriod` mit Schlüsseln `"annual:YYYY-MM-DD"` und `"quarter:YYYY-MM-DD"` für den Jahresabschluss **und jedes der letzten vier Quartale**, je Zahl oder Objekt nach Kategorie (z. B. `{"music": 120, "derivatives": 40}`). `unclear` = „nicht geprüft“. Zinserträge gehören nicht in `prohibitedRevenueByPeriod`, die zählt die Engine selbst.
+- **Zinserträge laut Anhang (seit 08.10.2026, Festlegung „zweistufig“):** Die Engine nimmt Zinserträge zuerst aus den Finanzdaten (bei SEC aus XBRL, nie aus einem Saldo wie „Other income/(expense), net“). Fehlen sie dort (Beispiel AAPL), trägt die B3-Prüfung sie aus dem Anhang des 10-K/10-Q ein: `interestIncomeNotes` im Entwurf → Spalte `interest_income_notes`. Je Periode ein Eintrag mit **Betrag, Periode und Fundstelle**: Schlüssel `"annual:YYYY-MM-DD"` bzw. `"quarter:YYYY-MM-DD"` (Jahresabschluss und die letzten vier Quartale), Wert `{"amount": 3500000000, "source": "10-K FY2025, Note 5 Other Income, S. 34"}`. Betrag in Einheiten der Berichtswährung (nicht in Millionen). Steht eine Angabe mit Dividenden oder anderen Erträgen zusammen („Interest and dividend income“), vollständig eintragen (vorsichtig vollständig gezählt) und das in `source` vermerken. Nur Bruttoerträge, keinen Saldo. Fehlt eine Periode, bleibt B3 „nicht geprüft“. Die Website zeigt dann „Zinserträge von Hand aus dem Anhang übernommen“.
 - Kategorien verbotener Einnahmen (`PROHIBITED_INCOME_CATEGORIES` in `src/screening/industryRules.js`): `interest_in_revenue`, `riba_other`, `derivatives`, `securities_lending`, `conventional_fund_fees`, `alcohol`, `pork`, `gambling`, `adult`, `drugs`, `tobacco`, `weapons`, `music`, `other`.
 
 SQL-Muster, das die aktuelle Jahresbasis automatisch einsetzt (Platzhalter in spitzen Klammern füllt unser Skript, nicht ich von Hand):
@@ -104,6 +106,7 @@ Eine JSON-Datei je Aktie, z. B. `review-work/<TICKER>/draft.json`:
     "result": "pass | fail | unclear",
     "segments": [ { "name": "…", "revenue": 0, "currency": "USD", "category": null, "note": "" } ],
     "prohibitedRevenueByPeriod": null,
+    "interestIncomeNotes": null,
     "quote": "wörtliche Stelle(n) zur Segmentbeschreibung",
     "sourceUrl": "…",
     "sourceNote": "z. B. 10-K FY2025, Note 13, S. 52",

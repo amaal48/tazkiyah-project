@@ -5,6 +5,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   CONCEPTS,
+  CATCH_ALL,
+  RECONCILIATION_NOTE,
+  applyBalanceReconciliation,
+  balanceLeavesFromCalc,
+  balanceValueOf,
   buildTickerIndex,
   createSecProvider,
   listFilings,
@@ -30,10 +35,12 @@ test("Perioden: letzter 10-K als Jahr, vier Quartale neuestes zuerst, 8-K ignori
   assert.equal(r.annual.currency, "USD");
 });
 
-test("Konzept-Vorrang: Revenues vor RevenueFromContract…, ShortTermInvestments vor MarketableSecuritiesCurrent", () => {
+test("Konzept-Vorrang: Revenues vor RevenueFromContract…; Anlagen: getrennte Bilanzzeilen werden addiert", () => {
   assert.equal(q("2025-12-31").income.revenue, 270);
   assert.equal(q("2025-12-31").sourceConcepts.revenue.concept, "Revenues");
-  assert.equal(r.annual.balance.shortTermInvestments, 70);
+  // ShortTermInvestments (Gruppe 1) + MarketableSecuritiesCurrent (Gruppe 2)
+  assert.equal(r.annual.balance.shortTermInvestments, 70 + 50);
+  assert.equal(r.annual.sourceConcepts.shortTermInvestments.concept, "ShortTermInvestments + MarketableSecuritiesCurrent");
   assert.deepEqual(CONCEPTS.revenue.concepts.slice(0, 2), ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax"]);
 });
 
@@ -213,4 +220,147 @@ test("sec_fmp: Kurs von FMP × Aktienzahl der SEC, als gebildeter Wert gekennzei
   assert.equal(snaps[1].marketCapAtPeriodEnd, 9 * 990000000);
   assert.equal(snaps[1].marketCapSource, "price_x_period_end_shares");
   assert.equal(snaps[2].marketCapAtPeriodEnd, null); // keine Aktienzahl → nichts gebildet
+});
+
+// ------------------------------------------------------------ Einzelfälle mit kleinen Beispieldaten (08.10.2026)
+
+const ACC = "0000000001-26-000001";
+const FILINGS = [{ accn: ACC, form: "10-K", filed: "2026-02-20", reportDate: "2025-12-31", primaryDocument: "x.htm" }];
+/** companyfacts mit einer Einreichung; values: { Konzept: Zahl } (Bilanz) bzw. { Konzept: [Zahl, "flow"] } */
+function facts(values) {
+  const g = {};
+  for (const [c, v] of Object.entries(values)) {
+    const flow = Array.isArray(v);
+    const val = flow ? v[0] : v;
+    g[c] = { units: { USD: [{ ...(flow ? { start: "2025-01-01" } : {}), end: "2025-12-31", val, accn: ACC, form: "10-K", filed: "2026-02-20" }] } };
+  }
+  return { facts: { "us-gaap": { Assets: { units: { USD: [{ end: "2025-12-31", val: 1000, accn: ACC, form: "10-K", filed: "2026-02-20" }] } }, ...g } } };
+}
+const annualOf = (values) => mapSecFinancials(facts(values), FILINGS, "0000000001").annual;
+
+test("Schulden wie KO: LongTermDebtAndCapitalLeaseObligations + kurzfristig + CP + sonstige kurzfristige Kredite", () => {
+  const a = annualOf({ LongTermDebtAndCapitalLeaseObligations: 42119, LongTermDebtAndCapitalLeaseObligationsCurrent: 1822, CommercialPaper: 1495, OtherShortTermBorrowings: 56 });
+  assert.equal(a.balance.interestBearingDebtExLeases, 45492);
+  assert.equal(a.sourceConcepts.interestBearingDebtExLeases.financeLeaseIncluded, undefined);
+});
+
+test("Schulden: Finanzierungsleasing wird herausgerechnet; nicht trennbar → vorsichtig enthalten", () => {
+  const a = annualOf({ LongTermDebtAndCapitalLeaseObligations: 500, LongTermDebtAndCapitalLeaseObligationsCurrent: 60, FinanceLeaseLiabilityNoncurrent: 40, FinanceLeaseLiabilityCurrent: 10 });
+  assert.equal(a.balance.interestBearingDebtExLeases, 500 - 40 + 60 - 10);
+  assert.equal(a.balance.leaseLiabilities, 50);
+  const b = annualOf({ LongTermDebtAndCapitalLeaseObligations: 500, FinanceLeaseLiability: 50 });
+  assert.equal(b.balance.interestBearingDebtExLeases, 500);
+  assert.equal(b.sourceConcepts.interestBearingDebtExLeases.financeLeaseIncluded, true);
+});
+
+test("Schulden: nur kurzfristige Posten ohne langfristigen Teil → null", () => {
+  assert.equal(annualOf({ CommercialPaper: 1495, OtherShortTermBorrowings: 56 }).balance.interestBearingDebtExLeases, null);
+});
+
+test("Anlagen wie KO: OtherShortTermInvestments + MarketableSecurities; EquityMethodInvestments nur ohne Gesamtzeile", () => {
+  const ko = annualOf({ OtherShortTermInvestments: 3602, MarketableSecurities: 1934, EquityMethodInvestments: 20235 });
+  assert.equal(ko.balance.shortTermInvestments, 5536);
+  assert.equal(ko.balance.longTermInvestments, 20235);
+  // MSFT: Gesamtzeile LongTermInvestments enthält die Beteiligungen schon
+  const msft = annualOf({ LongTermInvestments: 36348, EquityMethodInvestments: 12000 });
+  assert.equal(msft.balance.longTermInvestments, 36348);
+  // MarketableSecurities ohne Current/Noncurrent nur, wenn keine Aufteilung gemeldet ist
+  const split = annualOf({ MarketableSecuritiesCurrent: 100, MarketableSecuritiesNoncurrent: 300, MarketableSecurities: 400 });
+  assert.equal(split.balance.shortTermInvestments, 100);
+  assert.equal(split.balance.longTermInvestments, 300);
+});
+
+test("Zinserträge: Vorrang, Konzept mit Dividenden vorsichtig vollständig gezählt, Saldo nie, negativ → null", () => {
+  const ko = annualOf({ InvestmentIncomeInterest: [786], InvestmentIncomeNet: [900] });
+  assert.equal(ko.income.interestIncome, 786);
+  assert.equal(ko.sourceConcepts.interestIncome.inclusive, undefined);
+  const msft = annualOf({ InvestmentIncomeNet: [3301] });
+  assert.equal(msft.income.interestIncome, 3301);
+  assert.equal(msft.sourceConcepts.interestIncome.inclusive, true);
+  assert.equal(msft.sourceConcepts.interestIncome.note, "vorsichtig vollständig gezählt");
+  assert.equal(annualOf({ NonoperatingIncomeExpense: [670], OtherNonoperatingIncomeExpense: [120] }).income.interestIncome, null);
+  assert.equal(annualOf({ InvestmentIncomeNet: [-50] }).income.interestIncome, null);
+  for (const c of ["InvestmentIncomeInterest", "InterestIncomeOther", "InvestmentIncomeInterestAndDividend", "InterestAndOtherIncome"]) {
+    assert.ok(CONCEPTS.interestIncome.concepts.includes(c), c);
+  }
+});
+
+// Bilanz-Abgleich
+const CAL = `<?xml version="1.0"?><link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase">
+<link:calculationLink xlink:role="http://example.com/role/BALANCESHEET" xlink:type="extended">
+ <link:loc xlink:type="locator" xlink:href="https://xbrl.fasb.org/us-gaap-2025.xsd#us-gaap_Assets" xlink:label="a"/>
+ <link:loc xlink:type="locator" xlink:href="https://xbrl.fasb.org/us-gaap-2025.xsd#us-gaap_AssetsCurrent" xlink:label="ac"/>
+ <link:loc xlink:type="locator" xlink:href="https://xbrl.fasb.org/us-gaap-2025.xsd#us-gaap_CashAndCashEquivalentsAtCarryingValue" xlink:label="cash"/>
+ <link:loc xlink:type="locator" xlink:href="https://xbrl.fasb.org/us-gaap-2025.xsd#us-gaap_AccountsReceivableNetCurrent" xlink:label="ar"/>
+ <link:loc xlink:type="locator" xlink:href="https://xbrl.fasb.org/us-gaap-2025.xsd#us-gaap_PropertyPlantAndEquipmentNet" xlink:label="ppe"/>
+ <link:calculationArc xlink:type="arc" xlink:from="a" xlink:to="ac" weight="1.0"/>
+ <link:calculationArc xlink:type="arc" xlink:from="a" xlink:to="ppe" weight="1.0"/>
+ <link:calculationArc xlink:type="arc" xlink:from="ac" xlink:to="cash" weight="1.0"/>
+ <link:calculationArc xlink:type="arc" xlink:from="ac" xlink:to="ar" weight="1.0"/>
+</link:calculationLink>
+<link:calculationLink xlink:role="http://example.com/role/OTHER" xlink:type="extended"></link:calculationLink>
+</link:linkbase>`;
+
+test("Rechenstruktur: Bilanzzeilen unter Assets, Zwischensummen aufgelöst (auch ohne Präfix, eingebettet in .xsd)", () => {
+  const leaves = balanceLeavesFromCalc(CAL);
+  assert.deepEqual(leaves.map((l) => l.concept).sort(), ["us-gaap:AccountsReceivableNetCurrent", "us-gaap:CashAndCashEquivalentsAtCarryingValue", "us-gaap:PropertyPlantAndEquipmentNet"]);
+  const xsd = `<xs:schema><xs:annotation><xs:appinfo>${CAL.replace(/<(\/?)link:/g, "<$1")}</xs:appinfo></xs:annotation></xs:schema>`;
+  assert.equal(balanceLeavesFromCalc(xsd).length, 3);
+  assert.equal(balanceLeavesFromCalc("<x/>"), null);
+});
+
+test("Bilanz-Abgleich: Zeilen erklären Assets (≤ 1 %) → fehlende Posten 0 mit Vermerk", () => {
+  const a = annualOf({ CashAndCashEquivalentsAtCarryingValue: 300, AccountsReceivableNetCurrent: 200, PropertyPlantAndEquipmentNet: 495 });
+  const leaves = balanceLeavesFromCalc(CAL);
+  const res = applyBalanceReconciliation(a, leaves, balanceValueOf(facts({ CashAndCashEquivalentsAtCarryingValue: 300, AccountsReceivableNetCurrent: 200, PropertyPlantAndEquipmentNet: 495 }), { end: "2025-12-31", accns: [ACC], unit: "USD" }), ACC);
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.zeroed.sort(), ["goodwill", "intangiblesExGoodwill", "inventory", "longTermInvestments", "shortTermInvestments"]);
+  assert.equal(a.balance.goodwill, 0);
+  assert.equal(a.sourceConcepts.goodwill.note, RECONCILIATION_NOTE);
+  assert.equal(a.balance.netReceivables, 200); // vorhanden, bleibt
+});
+
+test("Bilanz-Abgleich: Abweichung > 1 %, unbekannte Zeile, Zeile ohne Wert oder große Sammelzeile → null", () => {
+  const leaves = balanceLeavesFromCalc(CAL);
+  const run = (values, lv = leaves) => {
+    const a = annualOf(values);
+    const r = applyBalanceReconciliation(a, lv, balanceValueOf(facts(values), { end: "2025-12-31", accns: [ACC], unit: "USD" }), ACC);
+    return { r, a };
+  };
+  const gap = run({ CashAndCashEquivalentsAtCarryingValue: 300, AccountsReceivableNetCurrent: 200, PropertyPlantAndEquipmentNet: 400 });
+  assert.equal(gap.r.ok, false);
+  assert.equal(gap.a.balance.goodwill, null);
+  const unknown = run({ CashAndCashEquivalentsAtCarryingValue: 300, AccountsReceivableNetCurrent: 200, PropertyPlantAndEquipmentNet: 495 }, [...leaves, { concept: "abc:SpecialAssets", weight: 1 }]);
+  assert.match(unknown.r.reason, /unbekannte Bilanzzeile/);
+  const noValue = run({ CashAndCashEquivalentsAtCarryingValue: 300, PropertyPlantAndEquipmentNet: 495 });
+  assert.match(noValue.r.reason, /ohne Wert/);
+  // Sammelzeile „Other non-current assets“ 20 % → fehlender Firmenwert kann darin stecken
+  const other = run(
+    { CashAndCashEquivalentsAtCarryingValue: 300, AccountsReceivableNetCurrent: 200, PropertyPlantAndEquipmentNet: 295, OtherAssetsNoncurrent: 200 },
+    [...leaves, { concept: "us-gaap:OtherAssetsNoncurrent", weight: 1 }]
+  );
+  assert.equal(other.r.ok, false);
+  assert.match(other.r.reason, /Sammelzeilen/);
+  assert.equal(other.a.balance.goodwill, null);
+  assert.ok(CATCH_ALL.has("OtherAssetsNoncurrent"));
+});
+
+test("Abruf: Bilanz-Abgleich lädt die Rechenstruktur nur bei fehlenden Posten (index.json, dann *_cal.xml)", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    if (url.endsWith("company_tickers.json")) return json(200, SAMPLE.tickers);
+    if (url.includes("/submissions/")) return json(200, SAMPLE.submissions);
+    if (url.includes("/companyfacts/")) return json(200, SAMPLE.companyfacts);
+    if (url.endsWith("/index.json")) return json(200, { directory: { item: [{ name: "bspl-20250930_cal.xml" }, { name: "bspl-20250930.xsd" }] } });
+    if (url.endsWith("_cal.xml")) return { ok: true, status: 200, text: async () => CAL };
+    return json(404, {});
+  };
+  const p = createSecProvider({ userAgent: "Tazkiyah test@example.org", fetchImpl, sleepImpl: async () => {} });
+  const res = await p.getFinancialPeriods("BSPL");
+  assert.ok(urls.some((u) => u.endsWith("/000123456725000052/index.json"))); // Einreichung der Bilanzsumme (10-K/A)
+  assert.ok(urls.some((u) => u.endsWith("bspl-20250930_cal.xml")));
+  // Beispielfirma: Zeilen erklären Assets nicht → Hinweis, Posten bleiben null
+  assert.equal(res.annual.balance.goodwill, null);
+  assert.ok(res.notes.some((n) => /Bilanz-Abgleich 2025-09-30 nicht möglich/.test(n)));
 });

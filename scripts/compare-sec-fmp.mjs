@@ -37,7 +37,7 @@ if (missing.length) {
 async function storedFmp(ticker) {
   const q = `screening_current?select=ticker,run_at,inputs&ticker=eq.${encodeURIComponent(ticker)}`;
   const res = await fetch(`${SB_URL}/rest/v1/${q}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
-  if (!res.ok) throw new Error(`Supabase ${res.status}`);
+  if (!res.ok) throw new Error(`Supabase ${res.status}${res.status === 400 || res.status === 401 ? " (Rohdaten nicht öffentlich lesbar, FMP_API_KEY in .env.local nötig)" : ""}`);
   const row = (await res.json())[0];
   if (!row?.inputs) throw new Error("kein gespeicherter Lauf");
   if (row.inputs.provider !== "fmp") throw new Error(`gespeicherte Daten stammen von ${row.inputs.provider}`);

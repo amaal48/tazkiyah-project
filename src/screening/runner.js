@@ -31,6 +31,7 @@
 import { createHash } from "node:crypto";
 import { screenSecurity, ENGINE_VERSION } from "./engine.js";
 import { PARAMETERS_VERSION } from "./parameters.js";
+import { guardFmpInterestIncome } from "./providers/fmp.js";
 
 // Profil (1) + Bilanz/GuV/Cashflow je Jahr und Quartal (6) + Kursverlauf (1) — FMP.
 // Andere Adapter geben ihre Zahl selbst an (provider.callsPerTitle, z. B. SEC: 2) und
@@ -132,6 +133,8 @@ export function toEngineReview(r) {
     sourceUrl: r.source_url,
     sourceNote: r.source_note,
     verification: r.verification ?? null, // reviewer und ai_draft bleiben intern (nicht ins Ergebnis)
+    // Zinserträge laut Anhang (B3_SEGMENTS, seit 08.10.2026): { "annual:JJJJ-MM-TT": { amount, source }, … }
+    interestIncomeNotes: r.interest_income_notes ?? null,
     reviewedAt: r.reviewed_at,
     basisAnnualPeriodEnd: r.basis_annual_period_end,
   };
@@ -293,6 +296,11 @@ async function runScreeningUnlocked({
   async function screenAndSave(sec, inputsIn, holdings = []) {
     const multi = sec.asset_type === "stock" && isMultiClass(sec.id);
     const inputs = sec.asset_type === "stock" ? { ...(inputsIn || {}), multiClassIssuer: multi } : inputsIn;
+    // Gespeicherte FMP-Daten (vor 08.10.2026) nachträglich absichern: Zinserträge 0 bei vorhandenen Anlagen → null
+    if (inputs?.provider === "fmp") {
+      inputs.annual = inputs.annual ? guardFmpInterestIncome(structuredClone(inputs.annual)) : inputs.annual;
+      inputs.quarters = (inputs.quarters || []).map((q) => guardFmpInterestIncome(structuredClone(q)));
+    }
     const result = screenSecurity({
       security: toEngineSecurity(sec, { multiClassIssuer: multi }),
       profile: inputs?.profile ?? null,
