@@ -380,3 +380,61 @@ test("Eindeutig belegte reale Werte: nur Sachanlagen, Vorräte, Forderungen, Rec
   );
   assert.equal(gross.tangible, 500);
 });
+
+test("AAPL: eigene Bilanzzeile …Noncurrent zählt über den us-gaap-Gesamtwert, höchstens einmal", () => {
+  const values = { IntangibleAssetsNetExcludingGoodwill: 25417, PropertyPlantAndEquipmentNet: 51431, OtherAssetsCurrent: 17420 };
+  const leaves = [
+    { concept: "aapl:IntangibleAssetsNetExcludingGoodwillNoncurrent", weight: 1 },
+    { concept: "us-gaap:PropertyPlantAndEquipmentNet", weight: 1 },
+    { concept: "us-gaap:OtherAssetsCurrent", weight: 1 },
+  ];
+  const ir = identifiedRealAssets(leaves, (n) => values[n] ?? null);
+  assert.equal(ir.rights, 25417);
+  assert.equal(ir.tangible, 51431);
+  assert.equal(ir.lines.find((l) => l.line).line, "aapl:IntangibleAssetsNetExcludingGoodwillNoncurrent");
+  // Kurzfristiger und langfristiger Teil als eigene Zeilen: Gesamtwert nur einmal
+  const both = identifiedRealAssets([...leaves, { concept: "aapl:IntangibleAssetsNetExcludingGoodwillCurrent", weight: 1 }], (n) => values[n] ?? null);
+  assert.equal(both.rights, 25417);
+  // Gesamtwert ist selbst Bilanzzeile → eigene Zeile nicht zusätzlich
+  const dup = identifiedRealAssets([...leaves, { concept: "us-gaap:IntangibleAssetsNetExcludingGoodwill", weight: 1 }], (n) => values[n] ?? null);
+  assert.equal(dup.rights, 25417);
+  // Unbekanntes eigenes Konzept zählt nicht
+  assert.equal(identifiedRealAssets([{ concept: "aapl:SomethingNoncurrent", weight: 1 }], () => 99).rights, 0);
+});
+
+test("Q4-Ableitung: Quartal unter anderem Konzept gemeldet → Vergleichszahl desselben Konzepts aus späterer Einreichung (GOOGL)", () => {
+  const F = (accn, form, filed, reportDate) => ({ accn, form, filed, reportDate, primaryDocument: "x.htm" });
+  const filings = [
+    F("q1", "10-Q", "2025-04-25", "2025-03-31"),
+    F("q2", "10-Q", "2025-07-24", "2025-06-30"),
+    F("q3", "10-Q", "2025-10-30", "2025-09-30"),
+    F("k", "10-K", "2026-02-05", "2025-12-31"),
+    F("q1b", "10-Q", "2026-04-30", "2026-03-31"),
+  ];
+  const e = (accn, start, end, val, form = "10-Q", filed = "2025-01-01") => ({ start, end, val, accn, form, filed });
+  const assets = (accn, end) => ({ end, val: 1000, accn, form: accn === "k" ? "10-K" : "10-Q", filed: "2025-01-01" });
+  const facts = {
+    facts: {
+      "us-gaap": {
+        Assets: { units: { USD: [assets("q1", "2025-03-31"), assets("q2", "2025-06-30"), assets("q3", "2025-09-30"), assets("k", "2025-12-31"), assets("q1b", "2026-03-31")] } },
+        Revenues: {
+          units: {
+            USD: [
+              e("q2", "2025-04-01", "2025-06-30", 96428, "10-Q", "2025-07-24"),
+              e("q3", "2025-07-01", "2025-09-30", 102346, "10-Q", "2025-10-30"),
+              e("k", "2025-01-01", "2025-12-31", 402836, "10-K", "2026-02-05"),
+              e("q1b", "2025-01-01", "2025-03-31", 90234, "10-Q", "2026-04-30"), // Vergleichszahl
+              e("q1b", "2026-01-01", "2026-03-31", 109000, "10-Q", "2026-04-30"),
+            ],
+          },
+        },
+        RevenueFromContractWithCustomerExcludingAssessedTax: { units: { USD: [e("q1", "2025-01-01", "2025-03-31", 90234, "10-Q", "2025-04-25")] } },
+      },
+    },
+  };
+  const res = mapSecFinancials(facts, filings, "0000000002");
+  const q4 = res.quarters.find((x) => x.periodEnd === "2025-12-31");
+  assert.equal(q4.income.revenue, 402836 - (90234 + 96428 + 102346));
+  assert.equal(q4.sourceConcepts.revenue.derived, "abgeleitet aus Jahres- und Quartalswerten");
+  assert.deepEqual(q4.sourceConcepts.revenue.quarterAccns, ["q1b", "q2", "q3"]);
+});

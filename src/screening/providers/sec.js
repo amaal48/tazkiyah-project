@@ -113,6 +113,9 @@ export const CONCEPTS = {
   // Hinweis: Unternehmen ohne Firmenwert taggen Goodwill oft gar nicht → null → C1 „nicht geprüft“.
   goodwill: { kind: "instant", concepts: ["Goodwill"] },
   // Hinweis: Manche Unternehmen taggen nur FiniteLivedIntangibleAssetsNet (nicht in der Liste) → null.
+  // AAPL (Quartale ab 2026): Bilanzzeile als eigenes Konzept aapl:IntangibleAssetsNetExcludingGoodwillNoncurrent
+  // (20.342 Mio.), nicht in companyfacts. Dieses Feld nimmt den us-gaap-Gesamtwert laut Anhang (25.417 Mio.,
+  // inkl. 5.075 Mio. kurzfristig in „Other current assets“). Für C1 siehe identifiedRealAssets.
   intangiblesExGoodwill: { kind: "instant", concepts: ["IntangibleAssetsNetExcludingGoodwill"] },
   totalAssets: { kind: "instant", concepts: ["Assets"] },
   currentLiabilities: { kind: "instant", concepts: ["LiabilitiesCurrent"] },
@@ -381,7 +384,16 @@ export function mapSecFinancials(companyfacts, filings, cik) {
           const qFilings = (byEnd.get(qEnd) || []).filter((f) => QUARTER_FORMS.has(f.form));
           if (!qFilings.length) continue;
           const rank = new Map(qFilings.map((f, i) => [f.accn, i]));
-          const q = pickEntry(units, { end: qEnd, accnRank: rank, test: (e) => isQuarterDuration(e) && e.start >= year.start });
+          const test = (e) => isQuarterDuration(e) && e.start >= year.start;
+          // Erst aus dem 10-Q dieses Quartals; fehlt das Konzept dort (Beispiel GOOGL: Q1 2025 als
+          // RevenueFromContract…, Jahr und Q2/Q3 als Revenues), dann derselbe Wert DESSELBEN Konzepts
+          // als Vergleichszahl aus einer späteren Einreichung (jüngste zuerst). Nie ein anderes Konzept.
+          const q =
+            pickEntry(units, { end: qEnd, accnRank: rank, test }) ||
+            units
+              .filter((e) => e.end === qEnd && test(e) && ALLOWED_FORMS.has(e.form) && num(e.val) !== null)
+              .sort((a, b) => (a.filed < b.filed ? 1 : -1))[0] ||
+            null;
           parts.push(q);
         }
         if (parts.length !== 3 || parts.some((p) => !p)) return null; // nicht alle drei Quartale → unbekannt
@@ -705,14 +717,32 @@ export const REAL_CLASS = Object.fromEntries([
 export function identifiedRealAssets(leaves, valueOf) {
   if (!leaves?.length) return null;
   const out = { tangible: 0, receivables: 0, rights: 0, lines: [] };
+  const usGaapLeaves = new Set(leaves.filter((l) => l.concept.startsWith("us-gaap:")).map((l) => l.concept.slice(8)));
+  const aliased = new Set();
   for (const leaf of leaves) {
     const [ns, name] = leaf.concept.split(":");
-    const cls = ns === "us-gaap" ? REAL_CLASS[name] : undefined;
-    const v = ns === "us-gaap" ? valueOf(name) : null;
+    let concept = name;
+    let alias = null;
+    if (ns !== "us-gaap") {
+      // Eigene Bilanzzeile des Unternehmens = langfristiger oder kurzfristiger Teil eines us-gaap-Postens
+      // (Beispiel AAPL: aapl:IntangibleAssetsNetExcludingGoodwillNoncurrent, 20.342 Mio.). Eigene Konzepte
+      // stehen nicht in companyfacts; gezählt wird der us-gaap-Gesamtwert (AAPL 25.417 Mio. laut Anhang).
+      // Keine Doppelzählung: der übrige Teil steckt in einer Sammelzeile (AAPL: 5.075 Mio. in
+      // OtherAssetsCurrent), und Sammelzeilen zählen nicht; jeder Gesamtwert höchstens einmal, und nur,
+      // wenn er nicht selbst als Bilanzzeile vorkommt.
+      const m = /^(.+?)(Noncurrent|Current)$/.exec(name);
+      if (m && REAL_CLASS[m[1]] && !usGaapLeaves.has(m[1]) && !aliased.has(m[1]) && leaf.weight > 0) {
+        concept = m[1];
+        alias = leaf.concept;
+        aliased.add(concept);
+      } else concept = null;
+    }
+    const cls = concept ? REAL_CLASS[concept] : undefined;
+    const v = concept ? valueOf(concept) : null;
     if (leaf.weight < 0 && (!cls || v === null)) return null;
     if (!cls || v === null) continue;
     out[cls] += leaf.weight * v;
-    out.lines.push({ concept: name, value: v, weight: leaf.weight, class: cls });
+    out.lines.push({ concept, value: v, weight: leaf.weight, class: cls, ...(alias ? { line: alias, note: "Gesamtwert laut Anhang, übriger Teil in einer Sammelzeile (nicht mitgezählt)" } : {}) });
   }
   return out;
 }
