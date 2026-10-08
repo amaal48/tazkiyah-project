@@ -68,8 +68,13 @@ test("Finanzschulden: DebtCurrent ersetzt LongTermDebtCurrent und CommercialPape
   assert.equal(r.annual.sourceConcepts.interestBearingDebtExLeases.concept, "LongTermDebtNoncurrent + DebtCurrent");
   // Ohne DebtCurrent: Summe der Einzelposten
   assert.equal(q("2025-06-30").balance.interestBearingDebtExLeases, 850 + 100 + 120);
-  // Kein Posten: null, nicht 0
+  // Nur Commercial Paper, kein langfristiger Teil: null statt Teilsumme (sonst Schulden unterschätzt)
   assert.equal(q("2025-03-31").balance.interestBearingDebtExLeases, null);
+});
+
+test("Einreichung noch nicht in companyfacts: Periode übersprungen, Hinweis", () => {
+  assert.equal(r.quarters[0].periodEnd, "2025-12-31"); // nicht der leere 10-Q zum 31.03.2026
+  assert.ok(r.notes.some((n) => /10-Q vom 2026-05-01 .*noch nicht in den XBRL-Daten/.test(n)));
 });
 
 test("Fehlende Felder bleiben null (nie 0); andere Währung wird nicht gemischt", () => {

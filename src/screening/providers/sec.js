@@ -95,7 +95,11 @@ export const CONCEPTS = {
   // Kurzfristig: DebtCurrent, falls vorhanden (enthält oft LongTermDebtCurrent, CommercialPaper und
   // ShortTermBorrowings → dann nur DebtCurrent, keine Doppelzählung); sonst Summe aus
   // LongTermDebtCurrent, CommercialPaper, ShortTermBorrowings. Fehlt alles: null.
-  // Hinweis: Unternehmen, die nur LongTermDebt (gesamt) taggen, bleiben null.
+  // Fehlt LongTermDebtNoncurrent, ist der Wert null (nicht die Teilsumme): Beispiel KO taggt die
+  // langfristigen Schulden als LongTermDebtAndCapitalLeaseObligations (inkl. Finanzierungsleasing);
+  // nur Commercial Paper (1,5 Mrd. statt ca. 44 Mrd. $) würde B1 stark unterschätzen (falsches „konform“).
+  // Hinweis: Unternehmen, die nur LongTermDebt (gesamt) oder LongTermDebtAndCapitalLeaseObligations
+  // taggen, bleiben damit null → B1 „nicht geprüft“.
   interestBearingDebtExLeases: {
     kind: "instant",
     rule: "debt",
@@ -236,7 +240,16 @@ function pickEntry(entries, { end, accnRank, test }) {
 export function mapSecFinancials(companyfacts, filings, cik) {
   const facts = companyfacts?.facts || {};
   const notes = [];
-  const usable = (filings || []).filter((f) => ALLOWED_FORMS.has(f.form) && f.reportDate && f.filed);
+  // Nur Einreichungen, deren Werte schon in companyfacts stehen. Neue Einreichungen erscheinen dort
+  // erst mit Verzögerung; ohne diesen Filter wäre die jüngste Periode komplett leer.
+  const accnsWithFacts = new Set();
+  for (const ns of Object.values(facts)) {
+    for (const c of Object.values(ns || {})) for (const list of Object.values(c?.units || {})) for (const e of list) accnsWithFacts.add(e.accn);
+  }
+  const candidates = (filings || []).filter((f) => ALLOWED_FORMS.has(f.form) && f.reportDate && f.filed);
+  const usable = candidates.filter((f) => accnsWithFacts.has(f.accn));
+  const pending = candidates.filter((f) => !accnsWithFacts.has(f.accn) && (!usable.length || f.filed > usable.map((u) => u.filed).sort().reverse()[0]));
+  for (const f of pending) notes.push(`SEC: ${f.form} vom ${f.filed} (Periode ${f.reportDate}) noch nicht in den XBRL-Daten, nicht berücksichtigt`);
 
   // Einreichungen je Periode, jüngste zuerst
   const byEnd = new Map();
@@ -365,7 +378,7 @@ export function mapSecFinancials(companyfacts, filings, cik) {
       const debtCurrent = get("DebtCurrent");
       const parts = debtCurrent ? [debtCurrent] : ["LongTermDebtCurrent", "CommercialPaper", "ShortTermBorrowings"].map(get).filter(Boolean);
       const all = [longNc, ...parts].filter(Boolean);
-      if (all.length) {
+      if (longNc) {
         s.balance.interestBearingDebtExLeases = all.reduce((a, e) => a + num(e.val), 0);
         const names = [longNc && "LongTermDebtNoncurrent", ...(debtCurrent ? ["DebtCurrent"] : ["LongTermDebtCurrent", "CommercialPaper", "ShortTermBorrowings"].filter((c) => get(c)))].filter(Boolean);
         note("interestBearingDebtExLeases", all[0], names.join(" + "));
