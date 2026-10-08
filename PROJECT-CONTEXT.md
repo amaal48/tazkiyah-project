@@ -6,6 +6,11 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
+**Neu am 08.10.2026:**
+- **Tiingo-Antwort:** Der 50-$-Commercial-Tarif ist nur für interne Nutzung, keine öffentliche Anzeige. Auch Marktkapitalisierung und Quoten mit Marktkapitalisierung im Nenner (B1, B2) gelten als Kursanzeige (rückrechenbar). Öffentliche Anzeige nur mit Startup-Redistribution-Lizenz 250 $/Monat (<5 Vollzeitkräfte), Pflicht-Hinweis „Data powered by Tiingo.com“ mit Link.
+- **Geplanter Mittelweg** (noch von Tiingo zu bestätigen, Rückfrage am 08.10. verschickt): 50-$-Tarif intern, bei B1/B2 nur „unter/über 30 %“ ohne Wert und ohne Abstand zum Grenzwert anzeigen; Kurs, Chart und Marktkapitalisierung nur über TradingView-Widgets; Methodik-Seite erklärt, warum kein genauer Wert steht, mit Link auf den 10-K. B3, C1, Reinigung und Zakat sind nicht betroffen (nur SEC-Daten). Wechsel auf 250 $, sobald Einnahmen das tragen.
+- **Twelve Data entfernt** (Branch `twelve-data-entfernen`): `api/price-history.js` gelöscht, Generator (`api/generate-weekly-report.js`) ohne Twelve Data. `TWELVE_DATA_API_KEY` danach in Vercel löschen.
+
 **Neu am 06.10.2026:**
 - **06.10.2026: `ui-screening` per Fast-Forward auf `main` gemergt (Engine 1.4.0 live). `CRON_SECRET` am 06.10.2026 erneuert.** Der Branch `ui-screening` bleibt bestehen.
 - **Akademie-Fragen** (Branch `akademie-fragen`, nicht auf `main`): „Frage nicht gefunden?“ speichert Fragen in der Supabase-Tabelle `academy_questions` (Spalten `question`, `page`). Besucher dürfen nur einreichen, nicht lesen (kein `.select()` nach dem insert); Drossel in der Datenbank: 30 Fragen in 10 Minuten, zusätzlich 30 Sekunden Pause je Sitzung im Browser (nur Arbeitsspeicher). 5–500 Zeichen. **Vor dem Launch in die Datenschutzerklärung aufnehmen.**
@@ -87,6 +92,7 @@ Stand: 06.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
   - Bilanz, GuV, Quartale, Aktienzahl am Bilanzstichtag: **SEC** (XBRL, kostenlos, kommerziell nutzbar). SEC als Quelle nennen, keine SEC- oder EDGAR-Logos verwenden.
   - Kurse zum Stichtag (für die Marktkapitalisierung): **Tiingo Commercial** (50 $/Monat, nur interne Nutzung). Buchen, wenn der Tiingo-Adapter gebaut wird.
   - Anfrage an Tiingo läuft: ob Status und Prozent-Kennzahlen und ob die Marktkapitalisierung mit dem Commercial-Tarif angezeigt werden dürfen. Eine eigene Kursanzeige braucht die Anzeige-Lizenz (Startups 250 $/Monat).
+  - **B1/B2-Werte dürfen ohne Redistribution-Lizenz nicht öffentlich mit Zahl erscheinen** (Antwort von Tiingo, 08.10.2026; Details und geplanter Mittelweg: Abschnitt 0, „Neu am 08.10.2026“).
   - Branche für A1: künftig SEC-Branchencode (SIC). Eine Zuordnung zu den Branchengruppen in `industryRules.js` wird nötig.
 - Reihenfolge: 1. Pilot A2/B3. 2. SEC- und Tiingo-Adapter bauen, für die Pilotaktien parallel zu FMP laufen lassen. 3. Zahlen vergleichen. 4. SIC-Zuordnung. 5. FMP abschalten. Bis dahin bleibt FMP Free in Betrieb und dient als Gegenprobe.
 - Die Adapter-Schicht (`providers/model.js`) ist dafür vorgesehen. `mapFmpProfile` und der Cron werden bis dahin nicht mehr erweitert.
@@ -147,10 +153,10 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 - **Supabase** — Auth (E-Mail/Passwort) + Postgres. Projekt heißt im Dashboard noch **"Amanah"** (rein kosmetisch). Region `eu-central-1`. Tarif: Free.
 - **Vercel** — Hosting + Serverless Functions + Cron. Projekt **"tazkiyah"**, Produktions-URL `https://tazkiyah-project-kohl.vercel.app`. Automatisches Deployment bei Push auf `main`.
   - Crons (`vercel.json`): `/api/generate-weekly-report` montags 6:00 UTC, `/api/run-screening` täglich 3:00 UTC (`maxDuration` 60 s)
-  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, `TWELVE_DATA_API_KEY`, `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
+  - Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `FMP_API_KEY`, ~~`TWELVE_DATA_API_KEY`~~ (entfernt am 08.10.2026, in Vercel löschen), `RESEND_API_KEY` und `QUESTIONS_NOTIFY_EMAIL` (Akademie-Fragen, ab Branch `akademie-fragen`); optional `SCREENING_DAILY_CALL_BUDGET` (Standard 200) und `OPENFIGI_API_KEY`
 
 **Externe APIs:**
-- Twelve Data (Kurse, `api/price-history.js`; seit 05.10. von der Oberfläche nicht mehr benutzt)
+- ~~Twelve Data~~: entfernt am 08.10.2026 (`api/price-history.js` gelöscht, keine Anzeigelizenz; war seit 05.10. von der Oberfläche nicht mehr benutzt)
 - Financial Modeling Prep Stable API (Fundamentaldaten). **Free-Tarif nur für Entwicklung/Test** (250 Abrufe/Tag, geteilt mit dem Wochenbericht). Vor dem öffentlichen Launch Wechsel auf einen Tarif, der öffentliche Anzeige und kommerzielle Nutzung erlaubt. Anbieter ist über die Adapter-Schicht austauschbar.
 - OpenFIGI (deutsche Handelsplätze per ISIN, kostenlos)
 - SEC / EDGAR (kostenlos, User-Agent mit Name und E-Mail Pflicht): 10-K und Satzung für A2/B3 (`scripts/sec-fetch.mjs`), Börse je Aktie (`scripts/sec-exchanges.mjs`). Abschlüsse per XBRL: geplant (ersetzt FMP).
