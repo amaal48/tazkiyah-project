@@ -6,6 +6,20 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
+**Neu am 09.10.2026 (Branch `sic-zuordnung`, noch NICHT gemergt; Anbieter bleibt `fmp`):**
+- **A1 über SIC-Codes für SEC-Daten.** Jede Gruppe in `src/screening/industryRules.js` hat zusätzlich `sicCodes` (Einzelcodes und Bereiche, mit der Behandlung der Gruppe), `reviewSicCodes` (immer manuelle Prüfung) und `interpretationSicCodes` (Kennzeichen „Auslegungsfrage“). Die Prüflogik exclude/review/b3_focus/allow bleibt gleich. Gilt nur bei `sec` und `sec_fmp` (dort ausdrücklich SIC statt FMP-Profil, damit beide Modi gleich prüfen). Im FMP-Modus ist alles wie bisher. Engine 1.6.0.
+  - Ausschluss: Alkohol 2082/2084/2085/5180/5813/5921; Tabak 2100–2141, 5194; Riba: Banken 6021–6099, Kreditgeber 6111–6163, Versicherer 6311–6399 (inkl. 6324), Makler 6411; Waffen/Munition 3480–3489, 3795. C2: 6770 Blank Checks → C2 nicht bestanden.
+  - Manuelle Prüfung: Luft- und Raumfahrt, Schiffbau, Lenkflugkörper, Militärelektronik 3720–3728, 3730–3732, 3760–3769, 3812 (defense); Film/TV 4833, 4841, 7812–7841; Fleischverarbeitung 2011–2015 (pork); 6199, 6719, 6799 (riba: Kreditgeber/Kartenaussteller → Ausschluss, sonst B3). A3: 5094 Edelmetall-Großhandel → A3 manuell.
+  - Über B3: 6200–6289 und Zahlungsnetzwerke laut `PAYMENT_NETWORK_TICKERS` (V, MA, PYPL, FISV, FIS, GPN, CPAY; alle unter SIC 7389) → financial_other; Lebensmittel und Getränke 2000–2099 außer Alkohol (auch 2080/2086), Restaurants 5800–5812, Hotels 7011, 5411, 5311, 5331, 5912, Immobilien 6500–6553, REITs 6798 → consumer_realestate; Musik 2741, 3652, 7929.
+  - Erlaubt: alle übrigen Codes, ausdrücklich Pharma 2834/2836. Fehlt der SIC-Code: A1 „nicht geprüft“ („SIC-Code fehlt“).
+  - Codes, die nicht in der aktuellen SEC-Liste stehen (trotzdem aufgenommen, falls ältere Einträge sie tragen): 2084, 2085, 5813, 5921, 5194, 3795, 6719, 7929; in Bereichen fehlen einzelne Codes ohnehin.
+- **Festlegungen vom 09.10.2026** (als `decision` an den Gruppen, Methodik-Seite „Unsere Festlegung“, jeweils Auslegungsfrage):
+  - riba: Krankenversicherer und Versicherungsmakler werden wie Versicherer behandelt und ausgeschlossen. Makler versichern nicht selbst, ihr Geschäft ist aber die Vermittlung konventioneller Versicherungen.
+  - financial_other: Zahlungsnetzwerke (z. B. Visa, Mastercard, PayPal) werden nicht pauschal ausgeschlossen. Ihr Kerngeschäft sind Transaktionsgebühren. Zinserträge und Kreditanteile werden über die Segmentprüfung (B3) erfasst.
+  - defense: Luft- und Raumfahrt, Schiffbau und Militärelektronik werden manuell geprüft, weil zivile und militärische Tätigkeit gemischt sind. Ausgeschlossen wird, wenn Rüstung das Kerngeschäft ist.
+- **Stichworte jetzt im 10-K:** Die SEC liefert keine Unternehmensbeschreibung. Die A1-Stichworte (Schweinefleisch, Cannabis, Casino, Erwachsenenunterhaltung, Video Games, Musik, umstrittene Waffen …; `A1_TEXT_KEYWORDS`) laufen in `scripts/keyword-scan.mjs` und `sec-fetch.mjs` mit (Abschnitt „A1-Hinweise“ in `keyword-hits.md`). Jeder A1-Treffer wird in der A2/B3-Prüfung bewertet; betrifft er das Kerngeschäft, A1 manuell prüfen (`manual_reviews` A1). Casino-Hotels (7011) fallen über B3 auf. Briefing ergänzt (`docs/BRIEFING-A2-B3.md`).
+- **Gegenprobe:** `node scripts/sic-check.mjs` → `docs/sic-check.md` (503 Aktien: 50 Ausschluss, 24 manuelle Prüfung, 85 über B3, 340 erlaubt, 4 ohne SIC). Offene Fragen zu unsicheren Zuordnungen siehe dort und Abschnitt 1.
+
 **Neu am 08.10.2026 (Branch `sec-adapter`, am 08.10.2026 auf `main` gemergt; SEC-Adapter noch nicht aktiv, Standard bleibt `fmp`):**
 - **SEC-Adapter** für Bilanz- und Umsatzzahlen direkt von der SEC (EDGAR XBRL), ersetzt später FMP. Standard bleibt `fmp`; umschaltbar über `SCREENING_FUNDAMENTALS_PROVIDER`. Details: Abschnitt 1, „SEC-Adapter (08.10.2026)“. Offene Punkte dort.
 - **Festlegungen vom 08.10.2026** (Details: Abschnitt 1, „Festlegungen 08.10.2026“): Zinserträge zweistufig (XBRL → Anhang aus der B3-Prüfung, nie ein Saldo); Bilanz-Abgleich für fehlende Posten; FMP-Null-Absicherung bei Zinserträgen; Rohdatenschutz vorbereitet, aber offen (`supabase_protect_raw_inputs.sql` NICHT ausgeführt). Engine 1.5.0.
@@ -123,7 +137,7 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 - Viertes Quartal: Jahreswert minus Q1–Q3 desselben Geschäftsjahres, nur wenn alle drei vorliegen (sonst null); gekennzeichnet als „abgeleitet aus Jahres- und Quartalswerten“. Bilanz Q4 = Bilanz des 10-K.
 - Marktkapitalisierung und Kurs liefert die SEC nicht (null → B1/B2 „nicht geprüft“). Aktienzahl: Bestand zum Stichtag (`CommonStockSharesOutstanding`, `period_end`), sonst Deckblatt (`dei:EntityCommonStockSharesOutstanding`, `cover_page`, mit Datum `sharesAsOf`); mehrere Aktiengattungen werden addiert.
 - Fundstellen: je Periode `sourceFiling` (Accession Number, Formular, Einreichungsdatum, Link ins EDGAR-Archiv) und je Feld `sourceConcepts` (Konzept, Einreichung), damit die Detailseite später „Quelle: 10-K vom …“ zeigen kann. Optionale Felder in `model.js` ergänzt (`sic`, `sicDescription`, `fiscalYearEnd`, `sharesAsOf`, `sourceFiling`, `sourceConcepts`); bestehende Felder unverändert.
-- Profil: Branche (`industry`) bleibt null, bis die SIC-Zuordnung steht → A1 „Branche unbekannt“ (nicht geprüft). ISIN weiter von OpenFIGI.
+- Profil: Branche (`industry`) bleibt null; A1 läuft seit 09.10.2026 über den SIC-Code (`classifySic` in `industryRules.js`, Branch `sic-zuordnung`). ISIN weiter von OpenFIGI.
 - Umschalten: `SCREENING_FUNDAMENTALS_PROVIDER` = `fmp` (Standard, wie bisher), `sec` (nur SEC, kein Tageslimit, gedrosselt), `sec_fmp` (Zahlen von der SEC, Kurs und Marktkapitalisierung von FMP = Schlusskurs × SEC-Aktienzahl, Profil von FMP mit SIC; nur Entwicklung/Vergleich, `providers/secFmp.js`). Tagesbudget je Anbieter (`provider.usageKey`, `provider.callsPerTitle` im Runner). `SEC_USER_AGENT` Pflicht bei `sec` und `sec_fmp`.
 - Vergleich: `node scripts/compare-sec-fmp.mjs [Ticker …]` (Standard AAPL, MSFT, KO; liest `SEC_USER_AGENT` und `FMP_API_KEY` aus `.env.local`). Tabelle Feld | FMP | SEC | Abweichung, über 2 % markiert; danach B3 (mit Annahme „keine verbotenen Segmente“) und C1 über die Engine.
 
@@ -154,7 +168,7 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
   - KO: 10-Q vom 29.07.2026 am 08.10. noch nicht in companyfacts (neuestes Quartal daher 03.04.2026).
   - AAPL: kein `Goodwill`, keine Zinserträge einzeln (`InvestmentIncomeInterest` fehlt, nur Saldo `NonoperatingIncomeExpense`) → B3 und C1 „nicht geprüft“. Immaterielle Werte im 10-K nicht getaggt (nur in 10-Q). MSFT: B3 „nicht geprüft“ (Zinserträge, sonstige Erträge), C1 69,3 % (bestanden).
 - Bekannte Lücken: Fehlt ein Posten im XBRL (z. B. kein Firmenwert, keine kurzfristigen Anlagen), bleibt er null statt 0 → C1/B2 „nicht geprüft“. Zinserträge und sonstige Erträge (`OtherNonoperatingIncome`) werden oft nicht einzeln getaggt → B3 „nicht geprüft“. Ausschüttungen im Quartal meist null (10-Q-Cashflows nur kumuliert). Entscheidung nötig, wie damit umzugehen ist.
-- SIC → Branchengruppen (`industryRules.js`) zuordnen, damit A1 mit SEC-Daten geprüft werden kann.
+- ~~SIC → Branchengruppen (`industryRules.js`) zuordnen~~ erledigt 09.10.2026 (Branch `sic-zuordnung`), offene Einzelfragen in `docs/sic-check.md`.
 - Umschalten auf `sec` (danach FMP abschalten).
 - Kursquelle für B1/B2 offen (Tiingo-Rückfrage vom 08.10.2026).
 
@@ -315,7 +329,7 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Status:** konform nach AAOIFI SS 21 / nicht konform / nicht geprüft. Rangfolge: belegtes Durchfallen → nicht konform (auch wenn andere Daten fehlen); sonst fehlende oder unklare Daten → nicht geprüft; sonst konform. Fehlende Daten führen nie zu "konform". "Grenzwertig" und der Score entfallen.
 
 **Prüfstufen (Aktien):**
-- **A Tätigkeit:** A1 Kerngeschäft (Branchengruppen in `industryRules.js`: Ausschluss / manuelle Prüfung / Prüfung über B3), A2 Unternehmenszweck laut Satzung (manuell), A3 Gold-/Silber-/Währungshandel (Ausschluss)
+- **A Tätigkeit:** A1 Kerngeschäft (Branchengruppen in `industryRules.js`: Ausschluss / manuelle Prüfung / Prüfung über B3; FMP über Branche und Beschreibung, SEC über SIC-Code), A2 Unternehmenszweck laut Satzung (manuell), A3 Gold-/Silber-/Währungshandel (Ausschluss)
 - **B Kennzahlen:** B1 zinstragende Schulden inkl. Leasing ≤ 30 % der Marktkapitalisierung zum Bilanzstichtag; B2 Cash und alle Anlagen ≤ 30 % (außer Daten belegen Unverzinslichkeit); B3 verbotene Einnahmen (Zinserträge + Segmente aus manueller Prüfung, nach Kategorien) ≤ 5 % der Gesamteinnahmen (Umsatz + Zinserträge + sonstige Erträge). B1/B2 auf letztem Jahresabschluss UND letztem Quartal; B3 auf letzten 4 Quartalen UND letztem Jahresabschluss.
 - **C Vermögensstruktur:** C1 reale Vermögenswerte und Rechte ≥ 33,3 % der Gesamtaktiva (Buchwerte als Näherung für Marktwerte, Goodwill zählt nicht, immaterielle Werte zählen, Forderungen aus dem laufenden Geschäft zählen seit 01.10. nach SS 59, 8/1 mit), C2 keine Nur-Cash-Unternehmen/SPACs, C3 keine Nur-Forderungs-Unternehmen (belegt über C1, so in der Doku festgelegt; SS 21, 3/18; SS 59, 8/1 und 8/3)
 - **D Wertpapierart:** keine Vorzugsaktien mit finanziellem Vorrang, keine Tamattu'-Aktien, keine Anleihen

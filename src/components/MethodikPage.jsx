@@ -240,7 +240,10 @@ export function IndustryGroups() {
               <p>{nb(g.rationale)}</p>
               {g.decision && (
                 <div className="mt-3 rounded-[10px] border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
-                  <p className="font-semibold text-[var(--text)]">Unsere Festlegung ({formatDate(g.decision.date)})</p>
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-[var(--text)]">
+                    <span>Unsere Festlegung ({formatDate(g.decision.date)})</span>
+                    {g.decision.interpretation && !g.interpretation && <Tag tone="amber">Auslegungsfrage</Tag>}
+                  </p>
                   <p className="pt-1">{nb(g.decision.text)}</p>
                 </div>
               )}

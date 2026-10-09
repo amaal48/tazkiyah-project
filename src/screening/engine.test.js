@@ -376,6 +376,46 @@ test("A1-Gruppen: Film/Streaming (Entertainment) → manuelle Prüfung", () => {
   assert.equal(crit(r, "A1").result, RESULT.NOT_CHECKED);
 });
 
+test("A1 über SIC (sec, sec_fmp): Code statt FMP-Branche, Prüfwert „SIC-Code“", () => {
+  const profile = { symbol: "TEST", industry: "Software - Infrastructure", sic: "6021", sicDescription: "NATIONAL COMMERCIAL BANKS" };
+  for (const dataProvider of ["sec", "sec_fmp"]) {
+    const a1 = crit(screenSecurity(base({ profile, dataProvider })), "A1");
+    assert.equal(a1.result, RESULT.FAIL, dataProvider);
+    assert.equal(a1.checks[0].label, "SIC-Code");
+    assert.equal(a1.checks[0].value, "SIC 6021 NATIONAL COMMERCIAL BANKS");
+    assert.equal(a1.checks[0].group, "riba");
+  }
+  // FMP-Modus unverändert: Branche zählt, SIC-Code wird ignoriert
+  const fmp = screenSecurity(base({ profile, dataProvider: "fmp" }));
+  assert.equal(crit(fmp, "A1").result, RESULT.PASS);
+  assert.equal(crit(fmp, "A1").checks[0].label, "Branche");
+  assert.equal(fmp.status, STATUS.CONFORM);
+});
+
+test("A1 über SIC: fehlender Code → nicht geprüft; Pharma erlaubt; Zahlungsnetzwerk B3 mit Auslegung", () => {
+  const none = crit(screenSecurity(base({ profile: { industry: "Banks" }, dataProvider: "sec" })), "A1");
+  assert.equal(none.result, RESULT.NOT_CHECKED);
+  assert.equal(none.reason, "SIC-Code fehlt");
+  assert.equal(crit(screenSecurity(base({ profile: { sic: "2834" }, dataProvider: "sec" })), "A1").result, RESULT.PASS);
+  const visa = crit(screenSecurity(base({ security: { ...base().security, ticker: "V" }, profile: { sic: "7389" }, dataProvider: "sec" })), "A1");
+  assert.equal(visa.result, RESULT.PASS);
+  assert.ok(visa.flags.includes("b3_schwerpunkt"));
+  assert.ok(visa.flags.includes("auslegungsfrage"));
+  const aero = crit(screenSecurity(base({ profile: { sic: "3721" }, dataProvider: "sec" })), "A1");
+  assert.equal(aero.result, RESULT.NOT_CHECKED);
+});
+
+test("C2 und A3 über SIC: 6770 Blank Check → C2 nicht bestanden; 5094 → A3 manuell", () => {
+  assert.equal(crit(screenSecurity(base({ profile: { sic: "6770" }, dataProvider: "sec" })), "C2").result, RESULT.FAIL);
+  assert.equal(crit(screenSecurity(base({ profile: { sic: "7372" }, dataProvider: "sec" })), "C2").result, RESULT.PASS);
+  const a3 = crit(screenSecurity(base({ profile: { sic: "5094" }, dataProvider: "sec" })), "A3");
+  assert.equal(a3.result, RESULT.NOT_CHECKED);
+  const reviewed = [...validReviews, { criterion: "A3", result: "pass", reviewer: "A.", reviewedAt: "2026-03-01", basisAnnualPeriodEnd: ANNUAL_END, sourceUrl: "x" }];
+  assert.equal(crit(screenSecurity(base({ profile: { sic: "5094" }, dataProvider: "sec", manualReviews: reviewed })), "A3").result, RESULT.PASS);
+  // FMP-Modus: SIC 6770 ohne Branche „Shell“ ändert C2 nicht
+  assert.equal(crit(screenSecurity(base({ profile: { industry: "Software", sic: "6770" }, dataProvider: "fmp" })), "C2").result, RESULT.PASS);
+});
+
 test("G5: Abdeckung unter 95 % → nicht geprüft, darüber hochgerechnet", () => {
   const etf = { ticker: "X", isin: "IE0", assetType: "etf", productType: "standard", isUcits: true, hasKid: true, fundAnnualReportDate: "2026-05-31" };
   const fund = { criterion: "G5_FUND_INCOME", result: "pass", details: { interestIncomePctOfAssets: 0 }, reviewer: "A.", reviewedAt: "2026-06-10", basisAnnualPeriodEnd: "2026-05-31", sourceUrl: "x" };

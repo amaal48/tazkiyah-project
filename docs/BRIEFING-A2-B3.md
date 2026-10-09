@@ -77,6 +77,9 @@ Eine Aktie erscheint dort erst, wenn der Cron sie abgerufen hat (ca. 24 Titel pr
 - **B3 `pass`** nur, wenn aus den ausgewiesenen Segmenten und Produktlinien kein verbotener Anteil erkennbar ist. **`fail`** nur mit belegten Beträgen je Periode. Gemischte oder nicht aufgeschlüsselte Segmente (Beispiel Apple: Musik steckt in den Dienstleistungen) = `unclear`. So steht es in `prohibitedIncomeSources`.
 - Der Standardtext wird nicht abgedruckt, nur sinngemäß wiedergegeben mit Fundstelle. Zitate aus Unternehmensunterlagen bleiben kurz.
 - Auslegungsfragen entscheide ich. Bitte nicht stillschweigend entscheiden, sondern fragen.
+- **A1-Hinweise im 10-K (seit 09.10.2026):** Mit SEC-Daten läuft A1 über den SIC-Code, eine Unternehmensbeschreibung gibt es dort nicht. Die Stichworte zum Kerngeschäft (Schweinefleisch, Cannabis, Casino, Erwachsenenunterhaltung, Video Games, Musik, umstrittene Waffen usw.) stehen deshalb in `keyword-hits.md` im Abschnitt **„A1-Hinweise“** (`node scripts/keyword-scan.mjs`, bei `sec-fetch.mjs` automatisch). **Jeder A1-Treffer muss in der A2/B3-Prüfung bewertet werden.** Betrifft er das Kerngeschäft, ist A1 manuell zu prüfen (Ergebnis in `manual_reviews`, criterion `A1`, mit Zitat und Quelle wie bei A2). Treffer in Risikofaktoren oder Nebensätzen kurz als „kein Kerngeschäft“ vermerken.
+- **Casino-Hotels (SIC 7011)** stehen über SIC bei „Hotels“ (B3-Schwerpunkt), nicht automatisch im Ausschluss. Sie fallen über B3 auf: Casino-Umsätze sind verbotene Einnahmen (Kategorie `gambling`) und zählen zur 5-%-Grenze.
+- Im FMP-Modus (Standard) bleibt die bisherige Stichwortprüfung an der Unternehmensbeschreibung des FMP-Profils unverändert.
 
 ### 5. Stichproben nach dem großen Lauf
 

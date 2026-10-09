@@ -3,7 +3,8 @@
 // Modus "sec_fmp" (SCREENING_FUNDAMENTALS_PROVIDER), nur für Entwicklung und Vergleich:
 // Bilanz- und Umsatzzahlen von der SEC (./sec.js), nur Kurs und daraus die
 // Marktkapitalisierung von FMP (Schlusskurs am Stichtag × Aktienzahl der SEC).
-// Profil: FMP-Profil (Branche für A1), ergänzt um SIC-Code und CIK der SEC.
+// Profil: FMP-Profil, ergänzt um SIC-Code und CIK der SEC. A1 läuft auch hier über den SIC-Code
+// (nicht über die FMP-Branche), damit "sec" und "sec_fmp" gleich prüfen.
 //
 // FMP-Abrufe je Titel: 2 (Profil, Kursverlauf); dazu 1 je Lauf für EUR/USD.
 // Das Tagesbudget zählt nur diese FMP-Abrufe (usageKey "fmp"). SEC-Abrufe werden

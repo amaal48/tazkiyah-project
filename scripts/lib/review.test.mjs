@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   htmlToText, decodeEntities, findCik, pickLatest10K, filingBaseUrl, findCharterLinks, charterSlices, businessSlice,
-  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, keywordHits, keywordCounts, keywordHitsMarkdown, validateDraft, validateInterestIncomeNotes, draftToSql, verificationSql, reviewSheet, sqlString,
+  segmentSlices, revenueSlices, amendmentSlices, buildSlicesMarkdown, decodeBytes, fixControlChars, unwrapParagraphs, isHardWrapped, normalizeForQuote, findQuote, findLaterCharterChanges, checkSegmentSums, keywordHits, a1KeywordHits, keywordCounts, keywordHitsMarkdown, validateDraft, validateInterestIncomeNotes, draftToSql, verificationSql, reviewSheet, sqlString,
 } from "./review.mjs";
 
 test("htmlToText: Inline-XBRL-Kopf entfernt, Zellen getrennt, Entitäten decodiert", () => {
@@ -386,4 +386,18 @@ test("B3: Zinserträge laut Anhang werden geprüft und als eigene Spalte eingetr
   const bad = good();
   Object.assign(bad.B3, { result: "pass", quote: "The Company reports three segments.", sourceNote: "Item 8, Note 13", confidence: "high", confirmed: true, verification: "full", interestIncomeNotes: { "annual:2025-09-27": { amount: "viel", source: "x" } } });
   assert.ok(draftToSql(bad, { reviewer: "AMI", currentAnnual: null }).skipped.some((x) => /B3.*amount/.test(x)));
+});
+
+test("a1KeywordHits: A1-Hinweise (Casino, Games, Schweinefleisch) und eigener Abschnitt in keyword-hits.md", () => {
+  const text = "Our casinos in Macau grew. We publish video games. The pork segment is small. Software.";
+  const a1 = a1KeywordHits(text);
+  assert.equal(a1.gambling.count, 1);
+  assert.equal(a1.film_streaming_games.count, 1);
+  assert.equal(a1.pork.count, 1);
+  assert.equal(a1.adult.count, 0);
+  const md = keywordHitsMarkdown("X", keywordHits(text), a1);
+  assert.match(md, /## A1-Hinweise \(Kerngeschäft\)/);
+  assert.match(md, /manual_reviews, criterion A1/);
+  assert.match(md, /### Glücksspiel \(1 Treffer/);
+  assert.doesNotMatch(keywordHitsMarkdown("X", keywordHits(text)), /A1-Hinweise/);
 });

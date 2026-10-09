@@ -21,7 +21,7 @@
 
 import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
-import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, findLaterCharterChanges, htmlToText, buildSlicesMarkdown, keywordHits, keywordCounts, keywordHitsMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
+import { findCik, pickLatest10K, filingBaseUrl, findCharterLinks, findLaterCharterChanges, htmlToText, buildSlicesMarkdown, keywordHits, a1KeywordHits, keywordCounts, keywordHitsMarkdown, decodeBytes, unwrapParagraphs, isHardWrapped } from "./lib/review.mjs";
 
 const UA = process.env.SEC_USER_AGENT || "";
 const args = process.argv.slice(2);
@@ -85,7 +85,7 @@ async function processTicker(t, tickersJson) {
   const tenK = htmlToText(html);
   await writeFile(path.join(dir, "10k.txt"), tenK);
   const kHits = keywordHits(tenK);
-  await writeFile(path.join(dir, "keyword-hits.md"), keywordHitsMarkdown(t, kHits));
+  await writeFile(path.join(dir, "keyword-hits.md"), keywordHitsMarkdown(t, kHits, a1KeywordHits(tenK)));
   await writeFile(path.join(dir, "keyword-hits.json"), JSON.stringify(keywordCounts(kHits), null, 2));
 
   const candidates = findCharterLinks(html, base);

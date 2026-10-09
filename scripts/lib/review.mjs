@@ -9,6 +9,8 @@
 //   review-sheet.mjs  erzeugt den Kontrollbogen für die Nutzerin
 //   review-to-sql.mjs erzeugt aus bestätigten Entwürfen eine SQL-Datei für manual_reviews
 
+import { A1_TEXT_KEYWORDS } from "../../src/screening/industryRules.js";
+
 // ------------------------------------------------------------------ Text
 
 const ENTITIES = {
@@ -459,33 +461,53 @@ export const KEYWORD_CATEGORIES = {
 const KEYWORD_EXCLUDE = { gambling: /procter\s*(?:&|&amp;|and)\s*$/i };
 
 /** Zählt Treffer je Kategorie und merkt sich einige Fundstellen mit Umgebung. */
-export function keywordHits(text, { maxContexts = 10, context = 160 } = {}) {
-  const t = String(text);
+export function keywordHits(text, opts = {}) {
   const out = {};
   for (const [cat, re] of Object.entries(KEYWORD_CATEGORIES)) {
-    const contexts = [];
-    let count = 0;
-    let lastEnd = -1;
-    for (const m of t.matchAll(new RegExp(re.source, re.flags))) {
-      if (KEYWORD_EXCLUDE[cat]?.test(t.slice(Math.max(0, m.index - 30), m.index))) continue;
-      count++;
-      if (contexts.length < maxContexts && m.index > lastEnd) {
-        const from = Math.max(0, m.index - context);
-        const to = Math.min(t.length, m.index + m[0].length + context);
-        contexts.push({ index: m.index, text: t.slice(from, to).replace(/\s+/g, " ").trim() });
-        lastEnd = to;
-      }
-    }
-    out[cat] = { count, contexts };
+    out[cat] = matchContexts(String(text), new RegExp(re.source, re.flags), KEYWORD_EXCLUDE[cat], opts);
   }
   return out;
+}
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * A1-Hinweise: Stichworte zum Kerngeschäft (Schweinefleisch, Cannabis, Casino, Erwachsenenunterhaltung, Games,
+ * Musik, umstrittene Waffen …) aus industryRules.js. Bei SEC-Daten fehlt die Unternehmensbeschreibung, deshalb
+ * laufen sie im 10-K mit. Jeder Treffer wird in der A2/B3-Prüfung bewertet; betrifft er das Kerngeschäft,
+ * ist A1 manuell zu prüfen (manual_reviews, criterion A1).
+ */
+export function a1KeywordHits(text, opts = {}) {
+  const out = {};
+  for (const g of A1_TEXT_KEYWORDS) {
+    const re = new RegExp(`\\b(?:${g.keywords.map(escapeRe).join("|")})\\w*`, "gi");
+    out[g.id] = { label: g.label, ...matchContexts(String(text), re, null, opts) };
+  }
+  return out;
+}
+
+function matchContexts(t, re, exclude, { maxContexts = 10, context = 160 } = {}) {
+  const contexts = [];
+  let count = 0;
+  let lastEnd = -1;
+  for (const m of t.matchAll(re)) {
+    if (exclude?.test(t.slice(Math.max(0, m.index - 30), m.index))) continue;
+    count++;
+    if (contexts.length < maxContexts && m.index > lastEnd) {
+      const from = Math.max(0, m.index - context);
+      const to = Math.min(t.length, m.index + m[0].length + context);
+      contexts.push({ index: m.index, text: t.slice(from, to).replace(/\s+/g, " ").trim() });
+      lastEnd = to;
+    }
+  }
+  return { count, contexts };
 }
 
 export function keywordCounts(hits) {
   return Object.fromEntries(Object.entries(hits).map(([k, v]) => [k, v.count]));
 }
 
-export function keywordHitsMarkdown(ticker, hits) {
+export function keywordHitsMarkdown(ticker, hits, a1Hits = null) {
   const lines = [
     `# ${ticker}: Stichwort-Treffer im 10-K (verbotene Kategorien)`,
     "",
@@ -501,6 +523,24 @@ export function keywordHitsMarkdown(ticker, hits) {
     lines.push(`## ${k} (${v.count} Treffer, zeige ${v.contexts.length})`, "");
     v.contexts.forEach((c) => lines.push(`- (Zeichen ${c.index}) …${c.text}…`));
     lines.push("");
+  }
+  if (a1Hits) {
+    lines.push(
+      "## A1-Hinweise (Kerngeschäft)",
+      "",
+      "Stichworte zum Kerngeschäft. Bei SEC-Daten gibt es keine Unternehmensbeschreibung, deshalb laufen sie hier im 10-K mit. Jeder Treffer muss in der A2/B3-Prüfung bewertet werden. Betrifft er das Kerngeschäft, ist A1 manuell zu prüfen (Ergebnis in manual_reviews, criterion A1).",
+      "",
+      "| Gruppe | Treffer |",
+      "| --- | --- |",
+      ...Object.values(a1Hits).map((v) => `| ${v.label} | ${v.count} |`),
+      ""
+    );
+    for (const v of Object.values(a1Hits)) {
+      if (!v.count) continue;
+      lines.push(`### ${v.label} (${v.count} Treffer, zeige ${v.contexts.length})`, "");
+      v.contexts.forEach((c) => lines.push(`- (Zeichen ${c.index}) …${c.text}…`));
+      lines.push("");
+    }
   }
   return lines.join("\n");
 }

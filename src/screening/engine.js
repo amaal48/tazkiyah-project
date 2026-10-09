@@ -25,12 +25,16 @@ import {
 } from "./parameters.js";
 import {
   PROHIBITED_INCOME_CATEGORIES,
-  classifyIndustry,
+  classifyProfile,
   isGoldSilverCurrencyDealer,
   isShellCompany,
+  isShellSic,
+  needsGoldDealerReviewSic,
+  usesSic,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.5.0"; // 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich,
+export const ENGINE_VERSION = "1.6.0"; // 1.6.0 (09.10.2026): A1/A3/C2 über SIC-Codes bei SEC-Daten (sec, sec_fmp), FMP unverändert
+// vorher 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich,
 // B3-Nenner ohne fehlende sonstige Erträge, C1 nur mit eindeutig belegten realen Werten (beide nur „bestanden“ oder „nicht geprüft“)
 // vorher 1.4.0 (06.10.2026): review ohne reviewer, mit verification
 
@@ -192,16 +196,20 @@ export function evaluateUniverse(security) {
 
 // ---------------------------------------------------------- Stufe A
 
-function stageA({ profile, reviews, annualBasis, p }) {
-  const industry = profile?.industry ?? null;
-  const cls = classifyIndustry(industry, profile?.description ?? "");
+function stageA({ profile, reviews, annualBasis, p, dataProvider, symbol }) {
+  // SEC-Daten: Zuordnung über den SIC-Code (keine Unternehmensbeschreibung); FMP: über Branche und Beschreibung
+  const bySic = usesSic(dataProvider);
+  const sic = profile?.sic ?? null;
+  const sicLabel = sic ? `SIC ${sic}${profile?.sicDescription ? ` ${profile.sicDescription}` : ""}` : null;
+  const industry = bySic ? sicLabel : profile?.industry ?? null;
+  const cls = classifyProfile(profile, dataProvider, { symbol });
 
   // A1 Kerngeschäft
   const a1 = makeCriterion("A1", "Kerngeschäft erlaubt", "SS 21, 2/1; SS 21, 3/2", {
     parameterRefs: ["industryGroups"],
   });
-  a1.checks.push({ label: "Branche", value: industry, classification: cls.class, group: cls.group?.id ?? null });
-  if (cls.group?.interpretation) a1.flags.push("auslegungsfrage");
+  a1.checks.push({ label: bySic ? "SIC-Code" : "Branche", value: industry, classification: cls.class, group: cls.group?.id ?? null });
+  if (bySic ? cls.interpretation : cls.group?.interpretation) a1.flags.push("auslegungsfrage");
   if (cls.class === "exclude") {
     a1.result = RESULT.FAIL;
     a1.reason = `Verbotene Haupttätigkeit: ${cls.why}`;
@@ -213,7 +221,7 @@ function stageA({ profile, reviews, annualBasis, p }) {
     });
   } else if (cls.class === "unknown") {
     a1.result = RESULT.NOT_CHECKED;
-    a1.reason = "Branche unbekannt";
+    a1.reason = bySic ? "SIC-Code fehlt" : "Branche unbekannt";
   } else {
     // allow und b3_focus: kein Branchenausschluss
     a1.result = RESULT.PASS;
@@ -235,12 +243,15 @@ function stageA({ profile, reviews, annualBasis, p }) {
     parameterRefs: ["goldSilverCurrencyDealers"],
   });
   const a3Review = pickReview(reviews, "A3", annualBasis);
-  const dealerByIndustry = isGoldSilverCurrencyDealer(industry);
+  const dealerByIndustry = bySic ? false : isGoldSilverCurrencyDealer(industry);
   const dealerByReview = a3Review.state === "valid" && a3Review.review.result === "fail";
   a3.review = reviewInfo(a3Review);
   if (!industry && a3Review.state !== "valid") {
     a3.result = RESULT.NOT_CHECKED;
-    a3.reason = "Branche unbekannt";
+    a3.reason = bySic ? "SIC-Code fehlt" : "Branche unbekannt";
+  } else if (bySic && needsGoldDealerReviewSic(sic) && a3Review.state !== "valid") {
+    a3.result = RESULT.NOT_CHECKED;
+    a3.reason = `Großhandel mit Edelmetallen (${sicLabel}): Handel mit Gold oder Silber manuell prüfen`;
   } else if (dealerByIndustry || dealerByReview) {
     a3.flags.push("sarf");
     if (p.goldSilverCurrencyDealers === "exclude") {
@@ -646,7 +657,7 @@ function identifiedRealAssetsCheck(s, basis, p) {
   return check;
 }
 
-function stageC({ annual, quarters, profile, p }) {
+function stageC({ annual, quarters, profile, p, dataProvider }) {
   const latestQ = quarters[0] || null;
 
   const c1 = makeCriterion("C1", "Reale Vermögenswerte", "SS 21, 3/19; Fußnote zu SS 21, 3/1", {
@@ -661,7 +672,7 @@ function stageC({ annual, quarters, profile, p }) {
 
   // C2 / C3: ohne eigenen neuen Grenzwert. Belegt durch C1 (reale Werte
   // vorhanden) oder ausgeschlossen, wenn Branche = Shell Company (SPAC).
-  const shell = isShellCompany(profile?.industry);
+  const shell = usesSic(dataProvider) ? isShellSic(profile?.sic) : isShellCompany(profile?.industry);
   const c2 = makeCriterion("C2", "Kein Nur-Cash-Unternehmen", "SS 21, 3/17");
   const c3 = makeCriterion("C3", "Kein Nur-Forderungs-Unternehmen", "SS 21, 3/18; SS 59, 8/1 und 8/3");
   if (shell) {
@@ -1045,9 +1056,9 @@ export function screenSecurity(input) {
     criteria = [...stageG({ security, holdings, reviews: manualReviews, p }), ...stageH({ security })];
   } else {
     criteria = [
-      ...stageA({ profile, reviews: manualReviews, annualBasis, p }),
+      ...stageA({ profile, reviews: manualReviews, annualBasis, p, dataProvider, symbol: security.ticker ?? null }),
       ...stageB({ annual, quarters: qs, reviews: manualReviews, annualBasis, security, p }),
-      ...stageC({ annual, quarters: qs, profile, p }),
+      ...stageC({ annual, quarters: qs, profile, p, dataProvider }),
       ...stageD({ security }),
       ...stageH({ security }),
     ];

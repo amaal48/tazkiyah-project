@@ -241,7 +241,7 @@ export function mapSecProfile(submissions, symbol) {
     name: submissions.name ?? null,
     isin: null, // ISIN kommt weiter von OpenFIGI
     cik: submissions.cik !== undefined ? padCik(submissions.cik) : null,
-    // Branche bleibt null, bis die SIC → Branchengruppen-Zuordnung steht (A1 dann „nicht geprüft“)
+    // Keine Branche und Beschreibung bei der SEC: A1 läuft über den SIC-Code (industryRules.js, classifySic)
     industry: null,
     sector: null,
     description: null,
