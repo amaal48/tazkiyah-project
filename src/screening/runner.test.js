@@ -1,7 +1,7 @@
 // src/screening/runner.test.js — ausführen mit: node --test src/screening/runner.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runScreening, needsFreshData, needsRescreen, withDeadline, CALLS_PER_TITLE, INPUT_DATA_VERSION } from "./runner.js";
+import { runScreening, needsFreshData, needsRescreen, withDeadline, errorFromOtherSource, CALLS_PER_TITLE, INPUT_DATA_VERSION } from "./runner.js";
 import { emptySnapshot } from "./providers/model.js";
 import { germanVenuesFromMapping } from "./providers/openfigi.js";
 import { STATUS } from "./engine.js";
@@ -490,4 +490,25 @@ test("Ohne Ersatz (fmp) stoppt ein leeres Budget den Abruf wie bisher", async ()
   const s = await runScreening({ repo: memoryRepo(stocks), provider: fakeProvider(), now: NOW, dailyCallBudget: 17 });
   assert.equal(s.fetched.length, 2);
   assert.equal(s.pricesPending, undefined);
+});
+
+test("Fehler vom früheren Anbieter: sofort neu versuchen statt 7 Tage warten", () => {
+  const sec = { data_fetched_at: NOW.toISOString(), last_error: "FMP income-statement 402" };
+  assert.equal(needsFreshData(sec, null, NOW.getTime(), "sec_fmp"), true);
+  assert.equal(needsFreshData(sec, null, NOW.getTime(), "sec"), true);
+  assert.equal(needsFreshData(sec, null, NOW.getTime(), "fmp"), false); // gleicher Anbieter: Wartezeit
+  assert.equal(needsFreshData({ ...sec, last_error: "SEC companyfacts 404 (keine Daten bei der SEC)" }, null, NOW.getTime(), "sec_fmp"), false);
+  assert.equal(needsFreshData(sec, null, NOW.getTime()), false); // ohne Anbieterangabe wie bisher
+  assert.equal(errorFromOtherSource("SEC submissions 404", "fmp"), true);
+  assert.equal(errorFromOtherSource(null, "sec"), false);
+});
+
+test("Wartend zählt auch Titel, die aus Zeitmangel nicht drankamen (Ersatz ohne Budget)", async () => {
+  const repo = memoryRepo(stocks);
+  const s = await runScreening({ repo, provider: budgetProvider(), now: NOW, dailyCallBudget: 5, limit: 4 });
+  assert.equal(s.fetched.length, 4);
+  assert.equal(s.pending.fetch, 2);
+  const slow = await runScreening({ repo: memoryRepo(stocks), provider: budgetProvider(), now: NOW, dailyCallBudget: 1000, timeBudgetMs: 0 });
+  assert.equal(slow.fetched.length, 0);
+  assert.equal(slow.pending.fetch, 6);
 });

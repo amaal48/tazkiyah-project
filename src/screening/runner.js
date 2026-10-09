@@ -80,8 +80,23 @@ function addMonths(iso, months) {
   return d;
 }
 
+/**
+ * Stammt der letzte Fehler von einer Quelle, die der aktuelle Anbieter nicht nutzt? Beispiel: „FMP
+ * income-statement 402“ (Free-Tarif gesperrt) und jetzt sec/sec_fmp mit Bilanzen von der SEC.
+ */
+export function errorFromOtherSource(lastError, providerId) {
+  if (!lastError || !providerId) return false;
+  const fromFmp = /^FMP\b/.test(lastError);
+  if (providerId === "fmp") return !fromFmp && /^SEC\b/.test(lastError);
+  if (providerId === "sec" || providerId === "sec_fmp") return fromFmp;
+  return false;
+}
+
 /** Braucht diese Aktie neue Finanzdaten? */
-export function needsFreshData(security, run, now) {
+export function needsFreshData(security, run, now, providerId = null) {
+  // Noch nie erfolgreich abgerufen und der Fehler kam vom früheren Anbieter: sofort neu versuchen
+  // statt 7 Tage zu warten (neuer Fehler des aktuellen Anbieters → wieder normale Wartezeit)
+  if (!run?.inputs && errorFromOtherSource(security.last_error, providerId)) return true;
   // Eingangsdaten aus älterer Datenaufbereitung: sofort neu abrufen. Läufe ab Engine 1.2.0 tragen
   // das Feld multiClassIssuer und gelten ohne eigene Versionsnummer als Version 2.
   if (run?.inputs) {
@@ -278,7 +293,7 @@ async function runScreeningUnlocked({
       if (only && force) return true;
       // Kurs fehlt noch: fällig, sobald wieder Budget da ist (ohne Budget nicht noch einmal nur SEC)
       if (pricesPendingOf(s)) return budgetForTitle;
-      return needsFreshData(s, state.currentRuns.get(s.id), nowMs);
+      return needsFreshData(s, state.currentRuns.get(s.id), nowMs, provider.id);
     })
     .sort((a, b) => {
       // Titel mit fehlendem Kurs zuerst, dann nie geprüfte, dann älteste Daten
@@ -294,7 +309,6 @@ async function runScreeningUnlocked({
   // Mit Ersatz ohne Budget begrenzt nur die Zeit (und limit) die Zahl der Titel
   const maxTitles = fallback ? limit : Math.min(limit, Math.floor(Math.max(0, budgetLeft - fxCalls) / callsPerTitle));
   const toFetch = fetchDue.slice(0, maxTitles);
-  summary.pending.fetch = fetchDue.length - toFetch.length;
   if (fallback) summary.pricesPending = [];
   let budgetExhausted = false;
   function useFallback(reason) {
@@ -459,6 +473,9 @@ async function runScreeningUnlocked({
       }
     });
   }
+
+  // Wartend: fällige Titel, die in diesem Lauf nicht abgerufen wurden (Budget, Zeit, Anbieter-Limit)
+  summary.pending.fetch = Math.max(0, fetchDue.length - summary.fetched.length - summary.fetchErrors.length);
 
   // 2. Aus gespeicherten Daten neu rechnen
   const fetchedIds = new Set(toFetch.map((s) => s.id));
