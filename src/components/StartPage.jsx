@@ -99,7 +99,8 @@ function ExampleRatio({ id, value, limit }) {
         </span>
       </div>
       <LimitBar value={value} limit={limit} result={pass ? "pass" : "fail"} className="mt-2" />
-      <p className="mt-2 text-sm">
+      {/* relative z-10: Quellenlink liegt über dem Karten-Link (keine verschachtelten Links) */}
+      <p className="relative z-10 mt-2 text-sm">
         <SourceLink source={EXPLANATIONS[id].source} criterion={id} />
       </p>
     </div>
@@ -113,10 +114,19 @@ function ExampleCard() {
   if (!ex) return null;
   const p = defaultParameterValues();
   return (
-    <a href={routes.stock(ex.ticker)} className="card block space-y-4 transition-colors hover:border-[var(--primary)]" aria-label={`Beispiel: ${ex.name}, Detailseite öffnen`}>
+    // Ganze Karte klickbar über einen gestreckten Link (after:inset-0); die Quellenlinks liegen darüber
+    <div className="card relative space-y-4 transition-colors hover:border-[var(--primary)] has-[a:focus-visible]:border-[var(--primary)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[18px] font-semibold text-[var(--text)]">{ex.name}</p>
+          <p className="text-[18px] font-semibold text-[var(--text)]">
+            <a
+              href={routes.stock(ex.ticker)}
+              className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+              aria-label={`Beispiel: ${ex.name}, Detailseite öffnen`}
+            >
+              {ex.name}
+            </a>
+          </p>
           <p className="font-[IBM_Plex_Mono] text-sm text-[var(--muted)]">{ex.ticker}</p>
         </div>
         <StatusBadge status={ex.status} />
@@ -124,7 +134,7 @@ function ExampleCard() {
       <ExampleRatio id="B1" value={ex.debtPct} limit={p.debtMaxPct} />
       <ExampleRatio id="B2" value={ex.depositsPct} limit={p.depositsMaxPct} />
       <p className="text-sm text-[var(--faint)]">Maßgeblich ist der höhere Wert aus Jahresabschluss und Quartal.</p>
-    </a>
+    </div>
   );
 }
 
