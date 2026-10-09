@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js src/screening/industryRules.test.js src/screening/providers/fmp.test.js src/screening/providers/sec.test.js",
-    "test:scripts": "node --test scripts/lib/review.test.mjs scripts/lib/exchanges.test.mjs",
+    "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/holdingsCsv.test.js src/screening/industryRules.test.js src/screening/providers/fmp.test.js src/screening/providers/sec.test.js src/screening/providers/secFmp.test.js",
+    "test:scripts": "node --test scripts/lib/review.test.mjs scripts/lib/exchanges.test.mjs scripts/lib/universum.test.mjs",
     "test:lib": "node --test src/lib/tradingView.test.js src/lib/questionDigest.test.js src/lib/contact.test.js"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "exceljs": "^4.4.0",
     "oxlint": "^1.75.0",
     "vite": "^8.2.0"
   }

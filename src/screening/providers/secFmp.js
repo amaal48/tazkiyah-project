@@ -39,8 +39,16 @@ export function createSecFmpProvider({ sec, fmp }) {
     getFxToEurSeries: (opts) => fmp.getFxToEurSeries(opts),
 
     async getProfile(symbol) {
-      const [f, s] = await Promise.all([fmp.getProfile(symbol), sec.getProfile(symbol).catch(() => null)]);
-      if (!f) return s;
+      // Liefert FMP kein Profil (z. B. Fehler 402 im Free-Tarif), mit dem SEC-Profil weiter: A1 läuft
+      // ohnehin über den SIC-Code. Nur „Limit erreicht“ bricht ab (Titel beim nächsten Lauf erneut).
+      const [f, s] = await Promise.all([
+        fmp.getProfile(symbol).catch((err) => {
+          if (err?.kind === "limit") throw err;
+          return null;
+        }),
+        sec.getProfile(symbol).catch(() => null),
+      ]);
+      if (!f) return s ? { ...s, profileSource: "sec" } : null;
       return { ...f, cik: f.cik || s?.cik || null, sic: s?.sic ?? null, sicDescription: s?.sicDescription ?? null, fiscalYearEnd: s?.fiscalYearEnd ?? null };
     },
 

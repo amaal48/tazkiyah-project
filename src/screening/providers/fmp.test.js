@@ -198,3 +198,10 @@ test("Zinserträge = 0 von FMP gelten nur ohne Cash und Anlagen als 0, sonst nul
   // Positiver Wert bleibt unverändert
   assert.equal(map({ interestIncome: 3301 }, { cashAndCashEquivalents: 20935 }).income.interestIncome, 3301);
 });
+
+test("Abruf: Zeitgrenze je Anfrage → Fehler „keine Antwort“", async () => {
+  const impl = (url, { signal }) =>
+    new Promise((_, reject) => signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "TimeoutError" }))));
+  const p = createFmpProvider({ apiKey: "k", fetchImpl: impl, timeoutMs: 20 });
+  await assert.rejects(p.getProfile("AAPL"), (err) => err.kind === "other" && /keine Antwort nach/.test(err.message));
+});

@@ -778,7 +778,17 @@ const FLOW_CONCEPTS = new Set(
 
 // ---------------------------------------------------------------- Abrufe
 
-export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+/** Zeitgrenze je Anfrage (inkl. Lesen der Antwort), damit ein hängender Abruf den Cron nicht blockiert. */
+export const SEC_REQUEST_TIMEOUT_MS = 10000;
+
+const isTimeout = (err) => err?.name === "TimeoutError" || err?.name === "AbortError";
+
+export function createSecProvider({
+  userAgent,
+  fetchImpl = fetch,
+  sleepImpl = (ms) => new Promise((r) => setTimeout(r, ms)),
+  timeoutMs = SEC_REQUEST_TIMEOUT_MS,
+} = {}) {
   if (!userAgent || !/@/.test(userAgent)) {
     throw new Error("SEC_USER_AGENT fehlt oder enthält keine E-Mail-Adresse (Format: \"Tazkiyah kontakt@…\")");
   }
@@ -811,9 +821,11 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
       await throttle();
       calls++;
       let res;
+      const signal = AbortSignal.timeout(timeoutMs);
       try {
-        res = await fetchImpl(url, { headers: { "User-Agent": userAgent, Accept: "application/json, application/xml, */*" } });
+        res = await fetchImpl(url, { headers: { "User-Agent": userAgent, Accept: "application/json, application/xml, */*" }, signal });
       } catch (err) {
+        if (isTimeout(err)) throw new ProviderError(`SEC ${what}: keine Antwort nach ${timeoutMs / 1000} s`, "other");
         throw new ProviderError(`SEC ${what}: Netzwerkfehler (${String(err?.message || err).slice(0, 120)})`, "other");
       }
       if ((res.status === 429 || res.status === 503) && attempt === 0) {
@@ -825,7 +837,12 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
         const hint = res.status === 404 ? " (keine Daten bei der SEC)" : "";
         throw new ProviderError(`SEC ${what} ${res.status}${hint}`, kind);
       }
-      return read(res);
+      try {
+        return await read(res);
+      } catch (err) {
+        if (isTimeout(err)) throw new ProviderError(`SEC ${what}: Antwort nicht vollständig nach ${timeoutMs / 1000} s`, "other");
+        throw err;
+      }
     }
     throw new ProviderError(`SEC ${what}: keine Antwort`, "other");
   }
@@ -902,7 +919,7 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
   return {
     id: "sec",
     usageKey: "sec",
-    callsPerTitle: 2, // submissions + companyfacts (company_tickers.json 1× je Lauf; Bilanz-Abgleich bei Bedarf +2 je Einreichung)
+    callsPerTitle: 2, // submissions + companyfacts (company_tickers.json 1× je Lauf; Bilanz-Abgleich bei Bedarf +2 je Einreichung, höchstens 2 Einreichungen)
     getCallCount: () => calls,
 
     async getProfile(symbol) {
@@ -914,7 +931,10 @@ export function createSecProvider({ userAgent, fetchImpl = fetch, sleepImpl = (m
       const cik = await cikFor(symbol);
       const [subs, facts] = await Promise.all([submissions(cik), getJson(`${DATA_URL}/api/xbrl/companyfacts/CIK${cik}.json`, "companyfacts")]);
       const result = mapSecFinancials(facts, listFilings(subs), cik);
-      await reconcile(cik, facts, [result.annual, ...result.quarters].filter(Boolean), result.notes);
+      // Bilanz-Abgleich nur für die Perioden, deren Bilanz die Engine nutzt (Jahresabschluss und jüngstes
+      // Quartal: B1, B2, C1, Zakat). Ältere Quartale braucht sie nur für die GuV (B3, Reinigung).
+      const latestQ = [...result.quarters].filter(Boolean).sort((a, b) => (a.periodEnd < b.periodEnd ? 1 : -1))[0] || null;
+      await reconcile(cik, facts, [result.annual, latestQ].filter(Boolean), result.notes);
       return result;
     },
   };

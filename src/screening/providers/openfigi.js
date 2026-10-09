@@ -46,6 +46,7 @@ export function createOpenFigiClient({ apiKey = null, fetchImpl = fetch } = {}) 
           method: "POST",
           headers: { "Content-Type": "application/json", ...(apiKey ? { "X-OPENFIGI-APIKEY": apiKey } : {}) },
           body: JSON.stringify(batch.map((isin) => ({ idType: "ID_ISIN", idValue: isin }))),
+          signal: AbortSignal.timeout(10000), // Zeitgrenze je Anfrage
         });
         if (!res.ok) throw new Error(`OpenFIGI ${res.status}`);
         const data = await res.json();

@@ -226,7 +226,10 @@ export function classifyFmpError(status, message = "") {
   return "other";
 }
 
-export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = {}) {
+/** Zeitgrenze je Anfrage (inkl. Lesen der Antwort). */
+export const FMP_REQUEST_TIMEOUT_MS = 10000;
+
+export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {}, timeoutMs = FMP_REQUEST_TIMEOUT_MS } = {}) {
   if (!apiKey) throw new Error("FMP_API_KEY fehlt");
 
   // Merkt sich je Lauf, welche Daten im Tarif gesperrt sind (spart Abrufe)
@@ -235,16 +238,19 @@ export function createFmpProvider({ apiKey, fetchImpl = fetch, options = {} } = 
   async function get(path, params) {
     const qs = new URLSearchParams({ ...params, apikey: apiKey });
     let res;
+    const timedOut = (err) => err?.name === "TimeoutError" || err?.name === "AbortError";
     try {
-      res = await fetchImpl(`${BASE_URL}/${path}?${qs}`);
+      res = await fetchImpl(`${BASE_URL}/${path}?${qs}`, { signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
+      if (timedOut(err)) throw new ProviderError(`FMP ${path}: keine Antwort nach ${timeoutMs / 1000} s`, "other");
       throw new ProviderError(`FMP ${path}: Netzwerkfehler (${String(err?.message || err).slice(0, 120)})`, "other");
     }
     let data = null;
     try {
       const text = await res.text();
       data = text ? JSON.parse(text) : null;
-    } catch {
+    } catch (err) {
+      if (timedOut(err)) throw new ProviderError(`FMP ${path}: Antwort nicht vollständig nach ${timeoutMs / 1000} s`, "other");
       data = null;
     }
     const message = data && !Array.isArray(data) ? data["Error Message"] || data.message || data.error || "" : "";

@@ -1,7 +1,7 @@
 // src/screening/runner.test.js — ausführen mit: node --test src/screening/runner.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runScreening, needsFreshData, needsRescreen, CALLS_PER_TITLE, INPUT_DATA_VERSION } from "./runner.js";
+import { runScreening, needsFreshData, needsRescreen, withDeadline, CALLS_PER_TITLE, INPUT_DATA_VERSION } from "./runner.js";
 import { emptySnapshot } from "./providers/model.js";
 import { germanVenuesFromMapping } from "./providers/openfigi.js";
 import { STATUS } from "./engine.js";
@@ -390,4 +390,25 @@ test("Neu abgerufene Titel tragen die Datenversion; ein zweiter Lauf ruft sie ni
   const p = fakeProvider();
   await runScreening({ repo, provider: p, now: new Date(NOW.getTime() + 10 * DAY_MS), dailyCallBudget: 200 });
   assert.equal(p.calls.length, 0);
+});
+
+test("Inaktive Titel (active = false) werden nicht abgerufen", async () => {
+  const repo = memoryRepo(stocks.map((x) => (x.id === "BBB" ? { ...x, active: false } : x)));
+  const s = await runScreening({ repo, provider: fakeProvider(), now: NOW, dailyCallBudget: 1000 });
+  assert.equal(s.fetched.length, 5);
+  assert.ok(!s.fetched.some((f) => f.ticker === "BBB"));
+});
+
+test("withDeadline: hängender Abruf endet rechtzeitig mit kind „deadline“", async () => {
+  await assert.rejects(withDeadline(new Promise(() => {}), 10), (e) => e.kind === "deadline");
+  assert.equal(await withDeadline(Promise.resolve(7), 1000), 7);
+});
+
+test("Zeitlimit des Laufs: hängender Titel wird übersprungen, nicht als Fehler markiert", async () => {
+  const repo = memoryRepo(stocks.slice(0, 1));
+  const provider = { ...fakeProvider(), getFinancialPeriods: () => new Promise(() => {}) };
+  const s = await runScreening({ repo, provider, now: NOW, dailyCallBudget: 1000, timeBudgetMs: 3150, titleStartReserveMs: 0 });
+  assert.deepEqual(s.deadlineSkipped, ["AAA"]);
+  assert.equal(s.fetchErrors.length, 0);
+  assert.equal(repo.db.securities.find((x) => x.id === "AAA").last_error ?? null, null);
 });

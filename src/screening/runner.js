@@ -37,6 +37,18 @@ import { guardFmpInterestIncome } from "./providers/fmp.js";
 // Andere Adapter geben ihre Zahl selbst an (provider.callsPerTitle, z. B. SEC: 2) und
 // zählen ihr Tagesbudget unter provider.usageKey (Standard: provider.id).
 export const CALLS_PER_TITLE = 8;
+
+/**
+ * Wartet höchstens ms Millisekunden auf promise. Danach Fehler mit kind "deadline": Der Lauf beendet
+ * den Titel rechtzeitig vor der Vercel-Grenze (60 s), der Titel gilt nicht als fehlerhaft.
+ */
+export function withDeadline(promise, ms) {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error("Zeitlimit des Laufs erreicht"), { kind: "deadline" })), Math.max(0, ms));
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
 // Stand der Datenaufbereitung im Adapter. Ergebnisse mit älterem Stand werden einmal neu abgerufen,
 // auch wenn die Daten jünger als 7 Tage sind (z. B. 30.09.: Ergebnisse ohne Marktkapitalisierung).
 // Bei jeder Änderung, die gespeicherte Eingangsdaten unbrauchbar macht, hochzählen.
@@ -188,6 +200,7 @@ async function runScreeningUnlocked({
   dailyCallBudget = 200,
   limit = Infinity,
   timeBudgetMs = 45000,
+  titleStartReserveMs = 8000, // kein neuer Titel, wenn weniger Zeit übrig ist
   dryRun = false,
   onlyTickers = null, // manueller Lauf: nur diese Ticker abrufen
   force = false, // nur zusammen mit onlyTickers: auch frische Daten neu abrufen
@@ -246,7 +259,9 @@ async function runScreeningUnlocked({
 
   // Planen: zuerst nie geprüfte, dann älteste Daten zuerst
   const only = onlyTickers?.length ? new Set(onlyTickers.map((t) => String(t).trim().toUpperCase()).filter(Boolean)) : null;
-  const candidates = only ? stocks.filter((s) => only.has(String(s.ticker).toUpperCase())) : stocks;
+  // Inaktive Titel (securities.active = false, z. B. delistet) werden weder abgerufen noch neu gerechnet
+  const activeStocks = stocks.filter((s) => s.active !== false);
+  const candidates = only ? activeStocks.filter((s) => only.has(String(s.ticker).toUpperCase())) : activeStocks;
   if (only) {
     const known = new Set(candidates.map((s) => String(s.ticker).toUpperCase()));
     summary.unknownTickers = [...only].filter((t) => !known.has(t));
@@ -346,7 +361,7 @@ async function runScreeningUnlocked({
     }
     await mapLimit(toFetch, 3, async (sec) => {
       if (stopFetching) return;
-      if (timeLeft() < 8000) {
+      if (timeLeft() < titleStartReserveMs) {
         summary.stoppedEarly = true;
         return;
       }
@@ -356,7 +371,10 @@ async function runScreeningUnlocked({
       }
       const symbol = sec.provider_symbol || sec.ticker;
       try {
-        const [profile, periods] = await Promise.all([provider.getProfile(symbol), provider.getFinancialPeriods(symbol)]);
+        const [profile, periods] = await withDeadline(
+          Promise.all([provider.getProfile(symbol), provider.getFinancialPeriods(symbol)]),
+          timeLeft() - 3000
+        );
         if (!profile && !periods.annual) throw new Error("Keine Daten beim Anbieter");
         setCik(sec.id, profile?.cik);
         for (const snap of [periods.annual, ...periods.quarters].filter(Boolean)) {
@@ -381,6 +399,12 @@ async function runScreeningUnlocked({
         const { result } = await screenAndSave(sec, inputs);
         summary.fetched.push({ ticker: sec.ticker, status: result.status });
       } catch (err) {
+        if (err?.kind === "deadline") {
+          // Zeit des Laufs aufgebraucht: Titel nicht als fehlerhaft markieren, beim nächsten Lauf erneut
+          summary.stoppedEarly = true;
+          summary.deadlineSkipped = [...(summary.deadlineSkipped || []), sec.ticker];
+          return;
+        }
         if (err?.kind === "limit") {
           // Kontingent beim Anbieter erschöpft: kein Fehler des Titels → beim nächsten Lauf erneut
           stop("Tageslimit beim Datenanbieter erreicht");
@@ -395,7 +419,7 @@ async function runScreeningUnlocked({
 
   // 2. Aus gespeicherten Daten neu rechnen
   const fetchedIds = new Set(toFetch.map((s) => s.id));
-  for (const sec of stocks) {
+  for (const sec of activeStocks) {
     if (fetchedIds.has(sec.id) || timeLeft() < 3000) continue;
     const run = state.currentRuns.get(sec.id);
     if (!needsRescreen(sec, run, state.lastReviewAt.get(sec.id), isMultiClass(sec.id))) continue;

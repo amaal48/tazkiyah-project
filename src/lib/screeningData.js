@@ -54,11 +54,18 @@ function governing(id, expectedId, a, q) {
 async function fetchList() {
   let securities;
   try {
-    securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type,exchange").order("ticker"));
+    securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type,exchange,active").order("ticker"));
   } catch {
-    // Spalte exchange noch nicht angelegt (supabase_securities_exchange.sql): ohne Börse weiter
-    securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type").order("ticker"));
+    try {
+      // Spalte active noch nicht angelegt (SQL aus scripts/import-universum.mjs): ohne weiter
+      securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type,exchange").order("ticker"));
+    } catch {
+      // Spalte exchange noch nicht angelegt (supabase_securities_exchange.sql): ohne Börse weiter
+      securities = await fetchAll(() => supabase.from("securities").select("id,ticker,name,asset_type").order("ticker"));
+    }
   }
+  // Inaktive Titel (delistet o. Ä.) nicht anzeigen
+  securities = securities.filter((s) => s.active !== false);
 
   let current;
   let sortable = true;

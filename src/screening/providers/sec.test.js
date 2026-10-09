@@ -438,3 +438,29 @@ test("Q4-Ableitung: Quartal unter anderem Konzept gemeldet → Vergleichszahl de
   assert.equal(q4.sourceConcepts.revenue.derived, "abgeleitet aus Jahres- und Quartalswerten");
   assert.deepEqual(q4.sourceConcepts.revenue.quarterAccns, ["q1b", "q2", "q3"]);
 });
+
+test("Abruf: Zeitgrenze je Anfrage → Fehler statt Hängen", async () => {
+  const fetchImpl = (url, { signal }) =>
+    new Promise((_, reject) => signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "TimeoutError" }))));
+  const p = createSecProvider({ userAgent: "Tazkiyah test@example.org", fetchImpl, sleepImpl: async () => {}, timeoutMs: 20 });
+  await assert.rejects(p.getProfile("BSPL"), (err) => err.kind === "other" && /keine Antwort nach/.test(err.message));
+});
+
+test("Abruf: Bilanz-Abgleich nur für Jahresabschluss und jüngstes Quartal", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    if (url.endsWith("company_tickers.json")) return json(200, SAMPLE.tickers);
+    if (url.includes("/submissions/")) return json(200, SAMPLE.submissions);
+    if (url.includes("/companyfacts/")) return json(200, SAMPLE.companyfacts);
+    if (url.endsWith("/index.json")) return json(200, { directory: { item: [{ name: "x_cal.xml" }] } });
+    if (url.endsWith("_cal.xml")) return { ok: true, status: 200, text: async () => CAL };
+    return json(404, {});
+  };
+  const p = createSecProvider({ userAgent: "Tazkiyah test@example.org", fetchImpl, sleepImpl: async () => {} });
+  const res = await p.getFinancialPeriods("BSPL");
+  const allowed = new Set([res.annual, res.quarters[0]].map((s) => s?.sourceConcepts?.totalAssets?.accn?.replace(/-/g, "")).filter(Boolean));
+  const indexAccns = urls.filter((u) => u.endsWith("/index.json")).map((u) => u.split("/").at(-2));
+  assert.ok(indexAccns.length <= 2);
+  for (const a of indexAccns) assert.ok(allowed.has(a), a);
+});
