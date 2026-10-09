@@ -9,9 +9,9 @@ Gilt nur für die Datenquellen „sec“ und „sec_fmp“. Im FMP-Modus bleibt 
 
 | Behandlung | Anzahl |
 | --- | --- |
-| Ausschluss (exclude) | 59 |
+| Ausschluss (exclude) | 63 |
 | manuelle Prüfung (review) | 31 |
-| über B3 (b3_focus) | 77 |
+| über B3 (b3_focus) | 73 |
 | erlaubt (allow) | 333 |
 | ohne SIC (unknown) | 3 |
 
@@ -23,7 +23,7 @@ Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):
 | --- | --- | --- | --- |
 | ALCOHOL_TICKERS | Ausschluss | alcohol | STZ, BF-B |
 | CASINO_TICKERS | Ausschluss | gambling | LVS, WYNN, MGM, *CZR* |
-| RIBA_TICKERS | Ausschluss | riba | GS, MS, SCHW, APO |
+| RIBA_TICKERS | Ausschluss | riba | GS, MS, SCHW, APO, AMP, RJF, KKR, IBKR |
 | GAMES_TICKERS | manuelle Prüfung | film_streaming_games | EA, TTWO |
 | DEFENSE_REVIEW_TICKERS | manuelle Prüfung | defense | GE, HWM |
 | PAYMENT_NETWORK_TICKERS | über B3 | financial_other | V, MA, PYPL, FISV, FIS, GPN, CPAY, XYZ |
@@ -40,7 +40,7 @@ Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):
 
 ## c) Ausschluss und manuelle Prüfung, nach Gruppe
 
-### Ausschluss (59)
+### Ausschluss (63)
 
 | Gruppe | Ticker | Name | SIC | Ticker-Liste |
 | --- | --- | --- | --- | --- |
@@ -57,6 +57,7 @@ Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):
 | riba | AIZ | Assurant, Inc. | 6399 Insurance Carriers, NEC |  |
 | riba (Auslegung) | AJG | Arthur J. Gallagher & Co. | 6411 Insurance Agents, Brokers & Service |  |
 | riba | ALL | Allstate Corporation (The) | 6331 Fire, Marine & Casualty Insurance |  |
+| riba (Auslegung) | AMP | Ameriprise Financial, Inc. | 6282 Investment Advice | RIBA_TICKERS |
 | riba (Auslegung) | AON | Aon plc | 6411 Insurance Agents, Brokers & Service |  |
 | riba (Auslegung) | APO | Apollo Global Management, Inc. | 6282 Investment Advice | RIBA_TICKERS |
 | riba | BAC | Bank of America Corporation | 6021 National Commercial Banks |  |
@@ -79,8 +80,10 @@ Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):
 | riba | HBAN | Huntington Bancshares Incorpora | 6021 National Commercial Banks |  |
 | riba | HIG | The Hartford Insurance Group, I | 6331 Fire, Marine & Casualty Insurance |  |
 | riba (Auslegung) | HUM | Humana Inc. | 6324 Hospital & Medical Service Plans |  |
+| riba (Auslegung) | IBKR | Interactive Brokers Group, Inc. | 6211 Security Brokers, Dealers & Flotation Companies | RIBA_TICKERS |
 | riba | JPM | JP Morgan Chase & Co. | 6021 National Commercial Banks |  |
 | riba | KEY | KeyCorp | 6021 National Commercial Banks |  |
+| riba (Auslegung) | KKR | KKR & Co. Inc. | 6282 Investment Advice | RIBA_TICKERS |
 | riba | L | Loews Corporation | 6331 Fire, Marine & Casualty Insurance |  |
 | riba | MET | MetLife, Inc. | 6311 Life Insurance |  |
 | riba (Auslegung) | MRSH | Marsh | 6411 Insurance Agents, Brokers & Service |  |
@@ -92,6 +95,7 @@ Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):
 | riba | PNC | PNC Financial Services Group, I | 6021 National Commercial Banks |  |
 | riba | PRU | Prudential Financial, Inc. | 6311 Life Insurance |  |
 | riba | RF | Regions Financial Corporation | 6021 National Commercial Banks |  |
+| riba (Auslegung) | RJF | Raymond James Financial, Inc. | 6211 Security Brokers, Dealers & Flotation Companies | RIBA_TICKERS |
 | riba (Auslegung) | SCHW | Charles Schwab Corporation (The | 6211 Security Brokers, Dealers & Flotation Companies | RIBA_TICKERS |
 | riba | STT | State Street Corporation | 6022 State Commercial Banks |  |
 | riba | TFC | Truist Financial Corporation | 6021 National Commercial Banks |  |

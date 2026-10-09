@@ -25,10 +25,10 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
   4. `GAMES_TICKERS` EA, TTWO → film_streaming_games, manuelle Prüfung (EA auch ohne SIC-Code). Keine weiteren Spielefirmen im Universum.
   5. `CASINO_TICKERS` LVS, WYNN, MGM, CZR → gambling, Ausschluss (CZR derzeit nicht im Universum; keine weiteren Casino-Betreiber gefunden).
   6. `DEFENSE_REVIEW_TICKERS` GE, HWM → defense, manuelle Prüfung.
-  7. `RIBA_TICKERS` GS, MS, SCHW, APO → riba, Ausschluss (Bank-Holdings mit Zinsgeschäft als Kerngeschäft bzw. Versicherungsanteil über Athene). Vorschläge aus den 10-K der übrigen 6200–6289-Titel (offen, nicht aufgenommen): AMP, RJF, KKR; Grenzfälle IBKR, HOOD.
+  7. `RIBA_TICKERS` GS, MS, SCHW, APO → riba, Ausschluss (Bank-Holdings mit Zinsgeschäft als Kerngeschäft bzw. Versicherungsanteil über Athene). Ergänzt am 09.10.2026 um AMP, RJF (Bank-Holding), KKR (Versicherer Global Atlantic), IBKR (Zinserträge über 50 % der Einnahmen). Regel (Methodik, „Unsere Festlegung“): Finanzdienstleister werden ausgeschlossen, wenn sie Bank-Holding-Gesellschaft sind, ein Versicherer einen wesentlichen Teil des Geschäfts ausmacht oder Zinserträge mehr als die Hälfte der Einnahmen ausmachen; sonst B3. HOOD bleibt B3, HAS bleibt erlaubt.
   8. Kreditauskunfteien SIC 7320 (EFX, MCO, SPGI): erlaubt, als Auslegungsfrage gekennzeichnet, „für die Gegenlesung durch eine gelehrte Person“.
   9. 5094 und 6770 unverändert.
-- **Gegenprobe:** `node scripts/sic-check.mjs` → `docs/sic-check.md` (503 Aktien nach den Ticker-Listen: 59 Ausschluss, 31 manuelle Prüfung, 77 über B3, 333 erlaubt, 3 ohne SIC: AVB, EQR, PSKY nicht in der Ticker-Liste der SEC).
+- **Gegenprobe:** `node scripts/sic-check.mjs` → `docs/sic-check.md` (503 Aktien nach den Ticker-Listen: 63 Ausschluss, 31 manuelle Prüfung, 73 über B3, 333 erlaubt, 3 ohne SIC: AVB, EQR, PSKY nicht in der Ticker-Liste der SEC).
 
 **Neu am 08.10.2026 (Branch `sec-adapter`, am 08.10.2026 auf `main` gemergt; SEC-Adapter noch nicht aktiv, Standard bleibt `fmp`):**
 - **SEC-Adapter** für Bilanz- und Umsatzzahlen direkt von der SEC (EDGAR XBRL), ersetzt später FMP. Standard bleibt `fmp`; umschaltbar über `SCREENING_FUNDAMENTALS_PROVIDER`. Details: Abschnitt 1, „SEC-Adapter (08.10.2026)“. Offene Punkte dort.

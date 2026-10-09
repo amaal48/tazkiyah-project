@@ -93,7 +93,13 @@ export const INDUSTRY_GROUPS = [
         date: "2026-10-09",
         interpretation: true,
         text:
-          "Goldman Sachs, Morgan Stanley und Charles Schwab (Bank-Holdings mit Zinsgeschäft als Kerngeschäft) sowie Apollo (großer Versicherungsanteil über Athene) werden ausgeschlossen, obwohl sie bei der SEC als Broker oder Vermögensverwalter geführt werden.",
+          "Finanzdienstleister werden ausgeschlossen, wenn sie Bank-Holding-Gesellschaft sind, ein Versicherer einen wesentlichen Teil des Geschäfts ausmacht oder Zinserträge mehr als die Hälfte der Einnahmen ausmachen. Sonst werden verbotene Anteile über die Segmentprüfung (B3) erfasst.",
+      },
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Danach ausgeschlossen, obwohl bei der SEC als Broker oder Vermögensverwalter geführt: Goldman Sachs, Morgan Stanley, Charles Schwab, Ameriprise und Raymond James (Bank-Holdings), Apollo (Athene) und KKR (Global Atlantic) als wesentliche Versicherer, Interactive Brokers (Zinserträge über die Hälfte der Einnahmen).",
       },
       {
         date: "2026-10-09",
@@ -373,10 +379,20 @@ export const ALCOHOL_TICKERS = { STZ: "Constellation Brands", "BF-B": "Brown-For
 export const CASINO_TICKERS = { LVS: "Las Vegas Sands", WYNN: "Wynn Resorts", MGM: "MGM Resorts", CZR: "Caesars Entertainment" };
 
 /**
- * Bei der SEC unter Broker/Vermögensverwalter (6211, 6282), aber Bank-Holdings mit Zinsgeschäft als
- * Kerngeschäft (GS, MS, SCHW) bzw. großer Versicherungsanteil (APO über Athene).
+ * Bei der SEC unter Broker/Vermögensverwalter (6211, 6282). Regel (09.10.2026): Ausschluss, wenn
+ * Bank-Holding-Gesellschaft, ein Versicherer einen wesentlichen Teil des Geschäfts ausmacht oder
+ * Zinserträge mehr als die Hälfte der Einnahmen ausmachen. Sonst B3 (z. B. HOOD).
  */
-export const RIBA_TICKERS = { GS: "Goldman Sachs", MS: "Morgan Stanley", SCHW: "Charles Schwab", APO: "Apollo Global Management" };
+export const RIBA_TICKERS = {
+  GS: "Goldman Sachs", // Bank-Holding (bank/financial holding company laut 10-K)
+  MS: "Morgan Stanley", // Bank-Holding (bank/financial holding company laut 10-K)
+  SCHW: "Charles Schwab", // Bank-Holding (savings and loan holding company, Charles Schwab Bank)
+  APO: "Apollo Global Management", // wesentlicher Versicherer (Athene)
+  AMP: "Ameriprise Financial", // Bank-Holding (savings and loan holding company, Ameriprise Bank) und Versicherer (RiverSource Life)
+  RJF: "Raymond James Financial", // Bank-Holding (bank/financial holding company, Raymond James Bank)
+  KKR: "KKR & Co.", // wesentlicher Versicherer (Global Atlantic)
+  IBKR: "Interactive Brokers", // Zinserträge über 50 % der Einnahmen (Margin-Kredite, Wertpapierleihe)
+};
 
 /** Spielehersteller ohne eigenen SIC-Code (7372 Software bzw. kein Code). */
 export const GAMES_TICKERS = { EA: "Electronic Arts", TTWO: "Take-Two Interactive" };
@@ -406,7 +422,7 @@ export const MUSIC_ALSO_TICKERS = { LYV: "Live Nation Entertainment" };
 export const TICKER_LISTS = [
   { id: "ALCOHOL_TICKERS", tickers: ALCOHOL_TICKERS, group: "alcohol", handling: "exclude", reason: "Alkohol ist Kerngeschäft" },
   { id: "CASINO_TICKERS", tickers: CASINO_TICKERS, group: "gambling", handling: "exclude", reason: "Glücksspiel ist Kerngeschäft" },
-  { id: "RIBA_TICKERS", tickers: RIBA_TICKERS, group: "riba", handling: "exclude", interpretation: true, reason: "Bank-Holding mit Zinsgeschäft als Kerngeschäft bzw. großer Versicherungsanteil" },
+  { id: "RIBA_TICKERS", tickers: RIBA_TICKERS, group: "riba", handling: "exclude", interpretation: true, reason: "Bank-Holding, wesentlicher Versicherer oder Zinserträge über 50 % der Einnahmen" },
   { id: "GAMES_TICKERS", tickers: GAMES_TICKERS, group: "film_streaming_games", handling: "review", reason: "Spielehersteller" },
   { id: "DEFENSE_REVIEW_TICKERS", tickers: DEFENSE_REVIEW_TICKERS, group: "defense", handling: "review", interpretation: true, reason: "Luft- und Raumfahrt mit Rüstungsanteil" },
   { id: "PAYMENT_NETWORK_TICKERS", tickers: PAYMENT_NETWORK_TICKERS, group: "financial_other", handling: "b3_focus", interpretation: true, reason: "Zahlungsnetzwerk: kein Branchenausschluss, Zinserträge und Kreditanteile über B3 prüfen" },

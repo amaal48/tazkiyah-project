@@ -149,7 +149,9 @@ test("Ticker-Listen: Alkohol unter 2080, Casinos unter 7011, Riba unter 6211/628
   // ohne Liste bleibt es bei der SIC-Zuordnung
   assert.equal(classifySic("2080", { symbol: "KO" }).class, "b3_focus");
   assert.equal(classifySic("7011", { symbol: "MAR" }).class, "b3_focus");
-  assert.equal(classifySic("6211", { symbol: "IBKR" }).class, "b3_focus");
+  assert.equal(classifySic("6211", { symbol: "HOOD" }).class, "b3_focus");
+  for (const symbol of ["AMP", "RJF", "KKR", "IBKR"]) assert.equal(classifySic("6282", { symbol }).list, "RIBA_TICKERS", symbol);
+  assert.equal(classifySic("3944", { symbol: "HAS" }).class, "allow");
   // Ausschluss-Liste greift auch ohne SIC-Code
   assert.equal(classifySic(null, { symbol: "WYNN" }).class, "exclude");
 });
