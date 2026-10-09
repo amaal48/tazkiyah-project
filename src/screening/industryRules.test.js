@@ -11,6 +11,7 @@ import {
   needsGoldDealerReviewSic,
   INDUSTRY_GROUPS,
   PAYMENT_NETWORK_TICKERS,
+  MANUAL_OVERRIDES,
   A1_TEXT_KEYWORDS,
 } from "./industryRules.js";
 
@@ -191,4 +192,18 @@ test("Kreditauskunfteien 7320: erlaubt, aber Auslegungsfrage", () => {
 test("A1-Stichworte für das 10-K enthalten Schweinefleisch, Cannabis, Casino, Games, Musik, Waffen", () => {
   const all = A1_TEXT_KEYWORDS.flatMap((g) => g.keywords);
   for (const k of ["pork", "cannabis", "casino", "video game", "music", "cluster munition", "adult entertainment"]) assert.ok(all.includes(k), k);
+});
+
+test("MANUAL_OVERRIDES: Struktur vorhanden, Stand 09.10.2026 leer, hat Vorrang vor allen Regeln", () => {
+  assert.deepEqual(MANUAL_OVERRIDES, {});
+  MANUAL_OVERRIDES.ZZZ = { handling: "review", group: "music", date: "2026-10-10", reason: "Test" };
+  try {
+    const c = classifySic("6021", { symbol: "ZZZ" });
+    assert.equal(c.class, "review");
+    assert.equal(c.group.id, "music");
+    assert.equal(c.list, "MANUAL_OVERRIDES");
+    assert.match(c.why, /Festlegung 2026-10-10/);
+  } finally {
+    delete MANUAL_OVERRIDES.ZZZ;
+  }
 });

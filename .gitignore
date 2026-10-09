@@ -3,3 +3,6 @@ dist
 .env
 .env.local
 review-work/
+
+# Excel-Sperrdateien (Datei gerade geöffnet)
+~$*

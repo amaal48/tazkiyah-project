@@ -6,6 +6,13 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
+**Universum-Pflege per Excel (seit 09.10.2026):**
+1. Export: `node scripts/export-universum.mjs` → `docs/universum-pruefung.xlsx` (holt SIC-Codes von der SEC und Ergebnisse aus Supabase, ca. 1,5 Minuten).
+2. Bearbeiten: nur die gelben Spalten (Aktiv ja/nein; Neuer Ticker/Name/Börse; Behandlung abweichend mit Pflicht-Begründung). Legende im zweiten Blatt.
+3. Import: `node scripts/import-universum.mjs` (im Projektordner) → `supabase_universum_<Datum>.sql` und `docs/universum-overrides-vorschlag.md`. Fehler (z. B. Abweichung ohne Begründung) mit Zeilennummer, dann wird nichts geschrieben.
+4. SQL selbst im Supabase SQL Editor ausführen, Kontrollabfrage am Ende prüfen. Abweichende Behandlungen erst nach Freigabe in `MANUAL_OVERRIDES` (`industryRules.js`) übernehmen (Vorrang vor allen Regeln, nur bei SEC-Daten).
+- **Stand 09.10.2026:** EA, WBD, AVB inaktiv (delistet bzw. übernommen); PSKY → SKYD (Skydance Corp, NYSE), EQR → VMRK (Vivmark Residential, NYSE). `MANUAL_OVERRIDES` leer. SQL: `supabase_universum_2026-10-09.sql` (Ausführung durch die Projektinhaberin).
+
 **Neu am 09.10.2026 (abends, Branch `universum-und-cron-fixes`, auf `main` gemergt):**
 - **Universum per Excel:** `node scripts/export-universum.mjs` → `docs/universum-pruefung.xlsx` (504 Zeilen inkl. ISWD; graue Info-Spalten: Ticker, Name, CIK, Börse, SIC, Gruppe, Behandlung, Grund, Ergebnis, Hinweis; gelbe Spalten: Aktiv, Neuer Ticker/Name/Börse, Behandlung abweichend, Begründung; Blatt „Legende“). Vorbelegt: AVB, EA inaktiv (delistet); PSKY → SKYD / Skydance Corp / NYSE; EQR → VMRK / Vivmark Residential / NYSE. WBD: am 06.10.2026 von Skydance übernommen, Abmeldung von der Börse bei der SEC noch nicht sichtbar (Hinweis in der Datei).
 - **Zurück:** `node scripts/import-universum.mjs` → `supabase_universum_<Datum>.sql` (Spalte `securities.active`, inaktiv/aktiv, Umbenennungen inkl. `watchlist_items`) und `docs/universum-overrides-vorschlag.md` (Vorschlag `MANUAL_OVERRIDES`). Führt nichts aus; Abweichung ohne Begründung → Fehler mit Zeilennummer, dann wird nichts geschrieben. SQL selbst im Supabase SQL Editor ausführen.

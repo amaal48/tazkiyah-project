@@ -419,6 +419,15 @@ export const PAYMENT_NETWORK_TICKERS = {
 /** Zusätzlich zur Hauptgruppe der Gruppe Musik zugeordnet (B3-Schwerpunkt): Konzerte. */
 export const MUSIC_ALSO_TICKERS = { LYV: "Live Nation Entertainment" };
 
+/**
+ * Einzelne abweichende Behandlungen aus der Universums-Prüfung (docs/universum-pruefung.xlsx →
+ * scripts/import-universum.mjs → docs/universum-overrides-vorschlag.md). Nur nach Freigabe eintragen,
+ * je Titel mit Gruppe, Datum und Begründung. Gilt wie die Ticker-Listen nur bei SEC-Daten und vor allen
+ * anderen Regeln. Stand 09.10.2026: keine.
+ * Format: { TICKER: { handling: "exclude"|"review"|"b3_focus"|"allow", group: "<Gruppen-id>"|null, date: "JJJJ-MM-TT", reason: "…" } }
+ */
+export const MANUAL_OVERRIDES = {};
+
 export const TICKER_LISTS = [
   { id: "ALCOHOL_TICKERS", tickers: ALCOHOL_TICKERS, group: "alcohol", handling: "exclude", reason: "Alkohol ist Kerngeschäft" },
   { id: "CASINO_TICKERS", tickers: CASINO_TICKERS, group: "gambling", handling: "exclude", reason: "Glücksspiel ist Kerngeschäft" },
@@ -496,6 +505,12 @@ export function classifySic(sic, { symbol = null, sicDescription = null } = {}) 
     return { ...r, also: [music], why: `${r.why ?? `Branche zulässig (${label})`}; zusätzlich ${music.label}: Anteil über B3 prüfen` };
   };
 
+  const manual = MANUAL_OVERRIDES[normTicker(symbol)];
+  if (manual) {
+    const g = manual.group ? groupOf(manual.group) : null;
+    const why = `${g ? `${g.label}: ` : ""}${manual.reason} (Festlegung ${manual.date}, ${label})`;
+    return { class: manual.handling, ...(g ? { group: g } : {}), why, interpretation: Boolean(g?.interpretation), list: "MANUAL_OVERRIDES" };
+  }
   const ex = tickerListFor(symbol, "exclude");
   if (ex) return fromList(ex);
   if (n !== null) {
