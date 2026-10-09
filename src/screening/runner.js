@@ -266,20 +266,43 @@ async function runScreeningUnlocked({
     const known = new Set(candidates.map((s) => String(s.ticker).toUpperCase()));
     summary.unknownTickers = [...only].filter((t) => !known.has(t));
   }
+  const budgetLeft = Math.max(0, dailyCallBudget - state.usedToday);
+  const fxCalls = provider.getFxToEurSeries ? 1 : 0;
+  // sec_fmp: Ist das FMP-Budget aufgebraucht, weiter nur mit SEC-Daten (Kurs wird später nachgeholt)
+  const fallback = typeof provider.withoutBudget === "function" ? provider.withoutBudget() : null;
+  const budgetForTitle = budgetLeft - fxCalls >= callsPerTitle;
+  const pricesPendingOf = (s) => Boolean(state.currentRuns.get(s.id)?.inputs?.pricesPending);
+
   const fetchDue = candidates
-    .filter((s) => (only && force) || needsFreshData(s, state.currentRuns.get(s.id), nowMs))
+    .filter((s) => {
+      if (only && force) return true;
+      // Kurs fehlt noch: fällig, sobald wieder Budget da ist (ohne Budget nicht noch einmal nur SEC)
+      if (pricesPendingOf(s)) return budgetForTitle;
+      return needsFreshData(s, state.currentRuns.get(s.id), nowMs);
+    })
     .sort((a, b) => {
+      // Titel mit fehlendem Kurs zuerst, dann nie geprüfte, dann älteste Daten
+      const pa = pricesPendingOf(a);
+      const pb = pricesPendingOf(b);
+      if (pa !== pb) return pa ? -1 : 1;
       const ra = state.currentRuns.get(a.id);
       const rb = state.currentRuns.get(b.id);
       if (!ra !== !rb) return ra ? 1 : -1;
       return (Date.parse(ra?.inputs?.fetchedAt || 0) || 0) - (Date.parse(rb?.inputs?.fetchedAt || 0) || 0);
     });
 
-  const budgetLeft = Math.max(0, dailyCallBudget - state.usedToday);
-  const fxCalls = provider.getFxToEurSeries ? 1 : 0;
-  const maxTitles = Math.min(limit, Math.floor(Math.max(0, budgetLeft - fxCalls) / callsPerTitle));
+  // Mit Ersatz ohne Budget begrenzt nur die Zeit (und limit) die Zahl der Titel
+  const maxTitles = fallback ? limit : Math.min(limit, Math.floor(Math.max(0, budgetLeft - fxCalls) / callsPerTitle));
   const toFetch = fetchDue.slice(0, maxTitles);
   summary.pending.fetch = fetchDue.length - toFetch.length;
+  if (fallback) summary.pricesPending = [];
+  let budgetExhausted = false;
+  function useFallback(reason) {
+    if (!budgetExhausted) {
+      budgetExhausted = true;
+      summary.budgetExhausted = reason;
+    }
+  }
 
   /**
    * Reserviert Abrufe für einen Titel. Die Datenbank zählt atomar mit, damit
@@ -349,12 +372,16 @@ async function runScreeningUnlocked({
     let fx = null;
     if (fxCalls) {
       if (!(await reserveCalls(1))) {
-        stop("Tagesbudget für API-Abrufe erreicht");
+        if (fallback) useFallback("Tagesbudget für API-Abrufe erreicht");
+        else stop("Tagesbudget für API-Abrufe erreicht");
       } else {
         try {
           fx = await provider.getFxToEurSeries({ days: 800 });
         } catch (err) {
-          if (err?.kind === "limit") stop("Tageslimit beim Datenanbieter erreicht");
+          if (err?.kind === "limit") {
+            if (fallback) useFallback("Tageslimit beim Datenanbieter erreicht");
+            else stop("Tageslimit beim Datenanbieter erreicht");
+          }
           fx = null; // EUR-Beträge bleiben dann leer, Rest läuft weiter
         }
       }
@@ -365,16 +392,30 @@ async function runScreeningUnlocked({
         summary.stoppedEarly = true;
         return;
       }
-      if (!(await reserveCalls(callsPerTitle))) {
-        stop("Tagesbudget für API-Abrufe erreicht");
-        return;
+      let source = provider;
+      if (budgetExhausted || !(await reserveCalls(callsPerTitle))) {
+        if (!fallback) {
+          stop("Tagesbudget für API-Abrufe erreicht");
+          return;
+        }
+        useFallback("Tagesbudget für API-Abrufe erreicht");
+        if (pricesPendingOf(sec) && !(only && force)) return; // hat schon SEC-Daten, wartet nur auf den Kurs
+        source = fallback;
       }
       const symbol = sec.provider_symbol || sec.ticker;
+      const fetchFrom = (p) =>
+        withDeadline(Promise.all([p.getProfile(symbol), p.getFinancialPeriods(symbol)]), timeLeft() - 3000);
       try {
-        const [profile, periods] = await withDeadline(
-          Promise.all([provider.getProfile(symbol), provider.getFinancialPeriods(symbol)]),
-          timeLeft() - 3000
-        );
+        let profile, periods;
+        try {
+          [profile, periods] = await fetchFrom(source);
+        } catch (err) {
+          // FMP meldet „Limit erreicht“: diesen und alle weiteren Titel nur mit SEC-Daten
+          if (err?.kind !== "limit" || !fallback || source === fallback) throw err;
+          useFallback("Tageslimit beim Datenanbieter erreicht");
+          source = fallback;
+          [profile, periods] = await fetchFrom(source);
+        }
         if (!profile && !periods.annual) throw new Error("Keine Daten beim Anbieter");
         setCik(sec.id, profile?.cik);
         for (const snap of [periods.annual, ...periods.quarters].filter(Boolean)) {
@@ -391,7 +432,9 @@ async function runScreeningUnlocked({
           quarters: periods.quarters,
           notes,
           quartersAvailable: !notes.some((n) => /Quartalsdaten/.test(n)),
+          ...(source.pricesPending ? { pricesPending: true } : {}),
         };
+        if (source.pricesPending) summary.pricesPending.push(sec.ticker);
         const patch = { data_fetched_at: now.toISOString(), last_error: null };
         if (profile?.isin && !sec.isin) patch.isin = profile.isin;
         if (!dryRun) await repo.updateSecurity(sec.id, patch);
@@ -471,6 +514,9 @@ async function runScreeningUnlocked({
       }
     }
   }
+
+  // Titel, deren Kurs noch nachgeholt werden muss (sec_fmp ohne FMP-Budget)
+  if (fallback) summary.pending.prices = activeStocks.filter(pricesPendingOf).length;
 
   // Tatsächliche Abrufe beim Anbieter (z. B. SEC), nur zur Information
   if (typeof provider.getCallCount === "function") summary.providerCalls = provider.getCallCount();

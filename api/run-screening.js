@@ -14,7 +14,8 @@
 //   SCREENING_FUNDAMENTALS_PROVIDER — optional, Quelle der Finanzdaten:
 //                                 "fmp" (Standard), "sec" (nur SEC; ohne Marktkapitalisierung →
 //                                 B1/B2 „nicht geprüft“), "sec_fmp" (Zahlen von der SEC, Kurs und
-//                                 Marktkapitalisierung von FMP; nur für Entwicklung/Vergleich)
+//                                 Marktkapitalisierung von FMP; ist das FMP-Budget aufgebraucht, weiter nur
+//                                 mit SEC-Daten, Kurs wird später nachgeholt)
 //   SEC_USER_AGENT              — Pflicht bei "sec" und "sec_fmp", Format "Tazkiyah kontakt@…"
 //
 // Manuell auslösen (z. B. zum Testen), nur mit CRON_SECRET:

@@ -412,3 +412,82 @@ test("Zeitlimit des Laufs: hängender Titel wird übersprungen, nicht als Fehler
   assert.equal(s.fetchErrors.length, 0);
   assert.equal(repo.db.securities.find((x) => x.id === "AAA").last_error ?? null, null);
 });
+
+// sec_fmp: Ersatz ohne FMP-Budget
+function budgetProvider({ limitAfter = Infinity } = {}) {
+  const base = fakeProvider();
+  let fmpCalls = 0;
+  const secOnly = {
+    id: "sec_fmp",
+    callsPerTitle: 0,
+    pricesPending: true,
+    getProfile: async (symbol) => ({ symbol, sic: "7372", industry: null }),
+    async getFinancialPeriods() {
+      const p = await base.getFinancialPeriods();
+      for (const s of [p.annual, ...p.quarters]) {
+        s.priceStatus = "pending";
+        s.marketCapAtPeriodEnd = null;
+        s.priceAtPeriodEnd = null;
+      }
+      return { ...p, notes: ["Kurs noch nicht abgerufen"] };
+    },
+  };
+  return {
+    ...base,
+    id: "sec_fmp",
+    usageKey: "fmp",
+    callsPerTitle: 2,
+    withoutBudget: () => secOnly,
+    async getProfile(symbol) {
+      if (++fmpCalls > limitAfter) throw Object.assign(new Error("FMP limit"), { kind: "limit" });
+      return { ...(await base.getProfile(symbol)), sic: "7372" };
+    },
+  };
+}
+
+test("sec_fmp ohne FMP-Budget: Lauf stoppt nicht, Titel nur mit SEC-Daten, B1/B2 nicht geprüft mit Vermerk", async () => {
+  const repo = memoryRepo(stocks);
+  const s = await runScreening({ repo, provider: budgetProvider(), now: NOW, dailyCallBudget: 5 }); // FX 1 + 2 Titel à 2
+  assert.equal(s.fetched.length, 6);
+  assert.equal(s.stoppedReason, null);
+  assert.equal(s.budgetExhausted, "Tagesbudget für API-Abrufe erreicht");
+  assert.deepEqual(s.pricesPending.sort(), ["CCC", "DDD", "EEE", "FFF"]);
+  assert.equal(s.pending.prices, 4);
+  const run = repo.db.runs.find((r) => r.security_id === "CCC");
+  assert.equal(run.inputs.pricesPending, true);
+  const b1 = run.result.criteria.find((c) => c.id === "B1");
+  assert.equal(b1.result, "not_checked");
+  assert.ok(b1.flags.includes("kurs_noch_nicht_abgerufen"));
+  assert.match(b1.checks[0].reason, /Kurs noch nicht abgerufen/);
+  assert.equal(repo.db.runs.find((r) => r.security_id === "AAA").inputs.pricesPending, undefined);
+});
+
+test("sec_fmp: Kurs wird nachgeholt, sobald Budget da ist (fehlender Kurs zuerst); ohne Budget kein erneuter SEC-Abruf", async () => {
+  const repo = memoryRepo(stocks);
+  await runScreening({ repo, provider: budgetProvider(), now: NOW, dailyCallBudget: 5 });
+  // Gleicher Tag, Budget leer: vorgemerkte Titel nicht noch einmal abrufen
+  const again = await runScreening({ repo, provider: budgetProvider(), now: NOW, dailyCallBudget: 5 });
+  assert.equal(again.fetched.length, 0);
+  // Nächster Tag, Budget für 2 Titel: zuerst die mit fehlendem Kurs
+  repo.db.usage = 0;
+  const next = await runScreening({ repo, provider: budgetProvider(), now: new Date(NOW.getTime() + DAY_MS), dailyCallBudget: 5 });
+  const withPrice = next.fetched.map((f) => f.ticker).filter((t) => !next.pricesPending.includes(t));
+  assert.equal(withPrice.length, 2);
+  assert.ok(withPrice.every((t) => ["CCC", "DDD", "EEE", "FFF"].includes(t)));
+  assert.equal(next.pending.prices, 2);
+});
+
+test("sec_fmp: FMP meldet „Limit erreicht“ → dieser und weitere Titel nur mit SEC-Daten", async () => {
+  const repo = memoryRepo(stocks);
+  const s = await runScreening({ repo, provider: budgetProvider({ limitAfter: 2 }), now: NOW, dailyCallBudget: 1000 });
+  assert.equal(s.fetched.length, 6);
+  assert.equal(s.fetchErrors.length, 0);
+  assert.equal(s.budgetExhausted, "Tageslimit beim Datenanbieter erreicht");
+  assert.equal(s.pricesPending.length, 4);
+});
+
+test("Ohne Ersatz (fmp) stoppt ein leeres Budget den Abruf wie bisher", async () => {
+  const s = await runScreening({ repo: memoryRepo(stocks), provider: fakeProvider(), now: NOW, dailyCallBudget: 17 });
+  assert.equal(s.fetched.length, 2);
+  assert.equal(s.pricesPending, undefined);
+});

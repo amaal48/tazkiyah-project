@@ -39,6 +39,10 @@ export const RESULT_LABELS = {
  * erscheint die Kennzeichnung unter einer Prüfung, verlinkt die Oberfläche bevorzugt auf diese.
  */
 export const FLAG_TEXTS = {
+  kurs_noch_nicht_abgerufen: {
+    text: "Kurs noch nicht abgerufen, wird nachgeholt. Bis dahin ist die Quote nicht geprüft",
+    criterion: "B1",
+  },
   marktkapitalisierung_aus_kurs: {
     text: "Marktkapitalisierung aus Schlusskurs und Aktienzahl gebildet",
     criterion: "B1",

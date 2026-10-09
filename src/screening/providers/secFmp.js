@@ -30,9 +30,36 @@ export function applyFmpPrices(snapshots, priceHistory) {
   }
 }
 
+export const PRICE_PENDING_NOTE = "Kurs noch nicht abgerufen (FMP-Tagesbudget aufgebraucht), wird nachgeholt";
+
+/**
+ * Variante ohne FMP-Abrufe für den Fall, dass das FMP-Tagesbudget aufgebraucht ist: Zahlen und Profil
+ * nur von der SEC, kein Kurs → B1/B2 „nicht geprüft“ mit Vermerk. Jede Periode trägt priceStatus "pending";
+ * der Runner merkt den Titel für den Kursabruf vor (inputs.pricesPending).
+ */
+export function createSecOnlyFallback(sec) {
+  return {
+    id: "sec_fmp", // gleiche Prüfung wie sec_fmp (A1 über SIC); der Kurs fehlt nur vorübergehend
+    usageKey: "fmp",
+    callsPerTitle: 0,
+    pricesPending: true,
+    async getProfile(symbol) {
+      const s = await sec.getProfile(symbol);
+      return s ? { ...s, profileSource: "sec" } : null;
+    },
+    async getFinancialPeriods(symbol) {
+      const periods = await sec.getFinancialPeriods(symbol);
+      for (const s of [periods.annual, ...periods.quarters].filter(Boolean)) s.priceStatus = "pending";
+      return { ...periods, notes: [...(periods.notes || []), PRICE_PENDING_NOTE] };
+    },
+  };
+}
+
 export function createSecFmpProvider({ sec, fmp }) {
   return {
     id: "sec_fmp",
+    /** Ohne FMP-Budget weiter mit SEC-Daten (Kurs wird später nachgeholt). */
+    withoutBudget: () => createSecOnlyFallback(sec),
     usageKey: "fmp",
     callsPerTitle: 2,
     getCallCount: () => sec.getCallCount?.() ?? null,

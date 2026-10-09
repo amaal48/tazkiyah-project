@@ -33,7 +33,8 @@ import {
   usesSic,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.6.0"; // 1.6.0 (09.10.2026): A1/A3/C2 über SIC-Codes bei SEC-Daten (sec, sec_fmp), FMP unverändert
+export const ENGINE_VERSION = "1.6.1"; // 1.6.1 (09.10.2026): B1/B2 Vermerk „Kurs noch nicht abgerufen“ (sec_fmp ohne FMP-Budget)
+// vorher 1.6.0 (09.10.2026): A1/A3/C2 über SIC-Codes bei SEC-Daten (sec, sec_fmp), FMP unverändert
 // vorher 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich,
 // B3-Nenner ohne fehlende sonstige Erträge, C1 nur mit eindeutig belegten realen Werten (beide nur „bestanden“ oder „nicht geprüft“)
 // vorher 1.4.0 (06.10.2026): review ohne reviewer, mit verification
@@ -284,7 +285,9 @@ function stageA({ profile, reviews, annualBasis, p, dataProvider, symbol }) {
  * die Stückzahl je Gattung liegt aber nicht vor.
  */
 function marketCapIssue(s, security) {
-  if (!isNum(s?.marketCapAtPeriodEnd)) return "marketCapAtPeriodEnd";
+  if (!isNum(s?.marketCapAtPeriodEnd)) {
+    return s?.priceStatus === "pending" ? "marketCapAtPeriodEnd (Kurs noch nicht abgerufen)" : "marketCapAtPeriodEnd";
+  }
   if (security?.multiClassIssuer && s.marketCapSource) {
     return "marketCapAtPeriodEnd (mehrere Aktiengattungen: Wert aller Gattungen nicht ermittelbar)";
   }
@@ -507,6 +510,11 @@ function stageB({ annual, quarters, reviews, annualBasis, security, p }) {
   b2.checks = [depositsCheck(annual, "annual", p, security), depositsCheck(latestQ, "quarter", p, security)];
   b2.result = combine(b2.checks);
   if (usesReconciledZero([annual, latestQ], ["cash", "shortTermInvestments", "longTermInvestments"])) b2.flags.push("posten_null_bilanzabgleich");
+
+  // Kurs noch nicht abgerufen (sec_fmp ohne FMP-Budget) → kennzeichnen, wird nachgeholt
+  if ([annual, latestQ].some((x) => x?.priceStatus === "pending" && !isNum(x.marketCapAtPeriodEnd))) {
+    for (const c of [b1, b2]) c.flags.push("kurs_noch_nicht_abgerufen");
+  }
 
   // Marktkapitalisierung selbst gebildet? → kennzeichnen (Datenabweichung, wenn Durchschnitts-Aktienzahl)
   const derivedCaps = [annual, latestQ].filter((x) => x?.marketCapSource);

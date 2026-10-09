@@ -6,6 +6,11 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 
 ## 0. Aktueller Stand und nächster Schritt (06.10.2026)
 
+**Neu am 09.10.2026 (spät, Branch `kurs-nachholen`, auf `main` gemergt), nur Modus `sec_fmp`:**
+- **FMP-Budget aufgebraucht stoppt den Lauf nicht mehr.** Ist das Tagesbudget (oder das FMP-Limit) erreicht, rechnet der Cron weitere Titel nur mit SEC-Daten (`createSecOnlyFallback` in `providers/secFmp.js`, 0 FMP-Abrufe): B1/B2 „nicht geprüft“, Kennzeichnung `kurs_noch_nicht_abgerufen` („Kurs noch nicht abgerufen, wird nachgeholt“), Vermerk in den Eingangsdaten, `inputs.pricesPending = true`.
+- **Nachholen:** Sobald wieder Budget da ist, ruft der Cron Titel mit `pricesPending` zuerst ab (vor nie geprüften und älteren). Ohne Budget werden vorgemerkte Titel nicht erneut nur mit SEC abgerufen.
+- Lauf-Zusammenfassung: `budgetExhausted` (Grund), `pricesPending` (Ticker dieses Laufs), `pending.prices` (wie viele Titel noch auf den Kurs warten). Engine 1.6.1. Im Modus `fmp` unverändert (leeres Budget stoppt wie bisher).
+
 **Universum-Pflege per Excel (seit 09.10.2026):**
 1. Export: `node scripts/export-universum.mjs` → `docs/universum-pruefung.xlsx` (holt SIC-Codes von der SEC und Ergebnisse aus Supabase, ca. 1,5 Minuten).
 2. Bearbeiten: nur die gelben Spalten (Aktiv ja/nein; Neuer Ticker/Name/Börse; Behandlung abweichend mit Pflicht-Begründung). Legende im zweiten Blatt.
