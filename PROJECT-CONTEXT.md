@@ -12,7 +12,14 @@ Stand: 06.10.2026 (abends). Dieses Dokument dient als vollständiger Kontext fü
 - Lauf-Zusammenfassung: `budgetExhausted` (Grund), `pricesPending` (Ticker dieses Laufs), `pending.prices` (wie viele Titel noch auf den Kurs warten). Engine 1.6.1. Im Modus `fmp` unverändert (leeres Budget stoppt wie bisher).
 - **Erster Lauf mit `sec_fmp` (09.10.2026, 12:41–13:04, 15 Läufe):** 372 Titel mit SEC-Daten, 0 Fehler, 3 mit Kurs, 369 warten auf den Kurs (Nachholen ca. 99/Tag, fertig ca. 13.10.). Danach 390 Ergebnisse: konform 2 (JNJ, NVDA), nicht konform 47, nicht geprüft 341. 17 Titel noch mit FMP-Daten (erst nach dem Nachholen der Kurse neu abrufen, sonst fallen JNJ/NVDA vorübergehend auf „nicht geprüft“). 112 Aktien ohne Ergebnis: frühere FMP-402-Fehler mit 7 Tagen Wartezeit.
 - **Fix danach (Branch `fehler-anbieterwechsel`):** Titel ohne Ergebnis, deren letzter Fehler vom früheren Anbieter stammt (z. B. „FMP income-statement 402“ unter `sec_fmp`), werden sofort neu versucht (`errorFromOtherSource`). `pending.fetch` zählt jetzt alle fälligen, nicht abgerufenen Titel (vorher 0, wenn die Zeit statt des Budgets begrenzte).
-- WBD war nach der Universum-SQL noch aktiv (EA, AVB inaktiv; SKYD, VMRK umbenannt): `update public.securities set active = false where ticker = 'WBD';` nachholen.
+- WBD war nach der Universum-SQL noch aktiv; am 09.10.2026 per `update public.securities set active = false where ticker = 'WBD';` nachgeholt (erledigt). Inaktiv: EA, AVB, WBD.
+- **Zweiter Durchgang (09.10.2026, 13:09–13:14, 3 Läufe, nach Deployment `ecf188e`):** Die 112 Titel mit früheren FMP-402-Fehlern wurden sofort abgerufen (56 + 56 + 0), 0 Fehler, „wartend“ zeigte korrekt 56 → 0.
+- **Stand 09.10.2026, 13:15:** Alle 501 aktiven Titel haben ein Ergebnis (483 `sec_fmp`, 17 noch `fmp`, 1 ETF ISWD). Konform 2 (JNJ, NVDA), nicht konform 69, nicht geprüft 430. 480 Titel warten auf den Kurs (B1/B2 „nicht geprüft“).
+- **Nächste Schritte:**
+  1. Kurse holt der tägliche Cron (3:00 UTC) nach, ca. 99 Titel pro Tag, wartende zuerst → fertig ca. 14.10.2026. Nichts zu tun.
+  2. Danach (ca. 14.10.) die 17 alten FMP-Titel einmal mit `sec_fmp` neu abrufen: `/api/run-screening?tickers=AAPL,ABBV,ADBE,AMD,AMZN,BA,BAC,C,CARR,CCL,COIN,COST,CSCO,JNJ,KO,MSFT,NVDA&force=1` (35 FMP-Abrufe; vorher nicht, sonst fallen JNJ/NVDA mangels Kurs vorübergehend auf „nicht geprüft“).
+  3. „Nicht geprüft“ bleibt auch danach hoch, weil A2 und B3 (manuelle Prüfungen) bei fast allen Titeln fehlen.
+- `SCREENING_FUNDAMENTALS_PROVIDER=sec_fmp` und `SEC_USER_AGENT` sind in Vercel (Production) gesetzt (seit 09.10.2026).
 
 **Universum-Pflege per Excel (seit 09.10.2026):**
 1. Export: `node scripts/export-universum.mjs` → `docs/universum-pruefung.xlsx` (holt SIC-Codes von der SEC und Ergebnisse aus Supabase, ca. 1,5 Minuten).
