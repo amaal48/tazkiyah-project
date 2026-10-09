@@ -405,6 +405,24 @@ test("A1 über SIC: fehlender Code → nicht geprüft; Pharma erlaubt; Zahlungsn
   assert.equal(aero.result, RESULT.NOT_CHECKED);
 });
 
+test("A1 über SIC: Ticker-Listen (STZ Ausschluss, LYV Prüfung + Musik), FMP-Modus ignoriert Listen", () => {
+  const sec = (ticker, sic) => base({ security: { ...base().security, ticker }, profile: { sic }, dataProvider: "sec" });
+  const stz = crit(screenSecurity(sec("STZ", "2080")), "A1");
+  assert.equal(stz.result, RESULT.FAIL);
+  assert.equal(stz.checks[0].tickerList, "ALCOHOL_TICKERS");
+  const lyv = crit(screenSecurity(sec("LYV", "7900")), "A1");
+  assert.equal(lyv.result, RESULT.NOT_CHECKED);
+  assert.deepEqual(lyv.checks[0].alsoGroups, ["music"]);
+  assert.ok(lyv.flags.includes("b3_schwerpunkt"));
+  const efx = crit(screenSecurity(sec("EFX", "7320")), "A1");
+  assert.equal(efx.result, RESULT.PASS);
+  assert.ok(efx.flags.includes("auslegungsfrage"));
+  // FMP-Modus: gleiche Ticker, Branche zählt
+  const fmp = screenSecurity(base({ security: { ...base().security, ticker: "STZ" }, profile: { industry: "Beverages - Non-Alcoholic", sic: "2080" }, dataProvider: "fmp" }));
+  assert.equal(crit(fmp, "A1").result, RESULT.PASS);
+  assert.equal(crit(fmp, "A1").checks[0].tickerList, undefined);
+});
+
 test("C2 und A3 über SIC: 6770 Blank Check → C2 nicht bestanden; 5094 → A3 manuell", () => {
   assert.equal(crit(screenSecurity(base({ profile: { sic: "6770" }, dataProvider: "sec" })), "C2").result, RESULT.FAIL);
   assert.equal(crit(screenSecurity(base({ profile: { sic: "7372" }, dataProvider: "sec" })), "C2").result, RESULT.PASS);

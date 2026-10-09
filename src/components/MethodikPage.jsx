@@ -238,15 +238,15 @@ export function IndustryGroups() {
             </div>
             <div className="text-sm leading-relaxed text-[var(--text-soft)]">
               <p>{nb(g.rationale)}</p>
-              {g.decision && (
-                <div className="mt-3 rounded-[10px] border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
+              {(g.decisions || []).map((d) => (
+                <div key={d.text} className="mt-3 rounded-[10px] border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
                   <p className="flex flex-wrap items-center gap-2 font-semibold text-[var(--text)]">
-                    <span>Unsere Festlegung ({formatDate(g.decision.date)})</span>
-                    {g.decision.interpretation && !g.interpretation && <Tag tone="amber">Auslegungsfrage</Tag>}
+                    <span>Unsere Festlegung ({formatDate(d.date)})</span>
+                    {d.interpretation && !g.interpretation && <Tag tone="amber">Auslegungsfrage</Tag>}
                   </p>
-                  <p className="pt-1">{nb(g.decision.text)}</p>
+                  <p className="pt-1">{nb(d.text)}</p>
                 </div>
-              )}
+              ))}
               <p className="pt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
                 <span>{g.basis}</span>
                 <span aria-hidden="true">/</span>

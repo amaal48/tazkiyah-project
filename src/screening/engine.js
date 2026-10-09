@@ -208,7 +208,14 @@ function stageA({ profile, reviews, annualBasis, p, dataProvider, symbol }) {
   const a1 = makeCriterion("A1", "Kerngeschäft erlaubt", "SS 21, 2/1; SS 21, 3/2", {
     parameterRefs: ["industryGroups"],
   });
-  a1.checks.push({ label: bySic ? "SIC-Code" : "Branche", value: industry, classification: cls.class, group: cls.group?.id ?? null });
+  a1.checks.push({
+    label: bySic ? "SIC-Code" : "Branche",
+    value: industry,
+    classification: cls.class,
+    group: cls.group?.id ?? null,
+    ...(cls.list ? { tickerList: cls.list } : {}),
+    ...(cls.also?.length ? { alsoGroups: cls.also.map((g) => g.id) } : {}),
+  });
   if (bySic ? cls.interpretation : cls.group?.interpretation) a1.flags.push("auslegungsfrage");
   if (cls.class === "exclude") {
     a1.result = RESULT.FAIL;
@@ -219,14 +226,15 @@ function stageA({ profile, reviews, annualBasis, p, dataProvider, symbol }) {
       missingText: cls.why,
       failText: `Manuelle Prüfung: verbotene Haupttätigkeit (${cls.group?.label ?? "siehe Quelle"})`,
     });
+    if (cls.also?.length) a1.flags.push("b3_schwerpunkt");
   } else if (cls.class === "unknown") {
     a1.result = RESULT.NOT_CHECKED;
     a1.reason = bySic ? "SIC-Code fehlt" : "Branche unbekannt";
   } else {
     // allow und b3_focus: kein Branchenausschluss
     a1.result = RESULT.PASS;
-    a1.reason = cls.class === "b3_focus" ? cls.why : `Branche zulässig: ${industry}`;
-    if (cls.class === "b3_focus") a1.flags.push("b3_schwerpunkt");
+    a1.reason = cls.why ?? `Branche zulässig: ${industry}`;
+    if (cls.class === "b3_focus" || cls.also?.length) a1.flags.push("b3_schwerpunkt");
   }
 
   // A2 Unternehmenszweck laut Satzung (manuell)

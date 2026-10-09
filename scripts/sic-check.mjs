@@ -15,7 +15,7 @@
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { createSecProvider } from "../src/screening/providers/sec.js";
-import { classifySic, isShellSic, needsGoldDealerReviewSic, PAYMENT_NETWORK_TICKERS } from "../src/screening/industryRules.js";
+import { classifySic, isShellSic, needsGoldDealerReviewSic, TICKER_LISTS, MUSIC_ALSO_TICKERS } from "../src/screening/industryRules.js";
 
 for (const f of [".env.local", ".env"]) if (existsSync(f)) process.loadEnvFile(f);
 
@@ -92,7 +92,8 @@ for (const s of securities) {
     handling: cls.class,
     group: cls.group?.id ?? null,
     interpretation: Boolean(cls.interpretation),
-    payment: Object.hasOwn(PAYMENT_NETWORK_TICKERS, String(symbol).toUpperCase()),
+    list: cls.list ?? null,
+    also: (cls.also || []).map((g) => g.id),
     shell: isShellSic(profile?.sic),
     a3Review: needsGoldDealerReviewSic(profile?.sic),
     error,
@@ -104,7 +105,7 @@ for (const s of securities) {
 // ------------------------------------------------------------------ Bericht
 
 const esc = (t) => String(t ?? "—").replace(/\|/g, "\\|");
-const label = (r) => `${HANDLING_DE[r.handling]}${r.group ? ` (${r.group})` : ""}`;
+const label = (r) => `${HANDLING_DE[r.handling]}${r.group ? ` (${r.group}${r.also.length ? ` + ${r.also.join(", ")}` : ""})` : ""}${r.list ? ` [${r.list}]` : ""}`;
 const fmpLabel = (f) => `${HANDLING_DE[f.handling] ?? f.handling ?? "—"}${f.group ? ` (${f.group})` : ""}`;
 const sicCell = (r) => (r.sic ? `${r.sic} ${esc(r.sicDescription)}` : r.error ? `— (${esc(r.error)})` : "—");
 
@@ -112,7 +113,7 @@ const counts = Object.fromEntries(HANDLINGS.map((h) => [h, rows.filter((r) => r.
 const withFmp = rows.filter((r) => r.fmp);
 const changed = withFmp.filter((r) => r.fmp.handling !== r.handling || (r.fmp.group ?? null) !== (r.group ?? null));
 const flagged = rows
-  .filter((r) => r.handling === "allow")
+  .filter((r) => r.handling === "allow" && !r.interpretation)
   .map((r) => ({ r, why: SUSPICIOUS.filter(([, re]) => re.test(`${r.name} ${r.sicDescription ?? ""}`)).map(([k]) => k) }))
   .filter((x) => x.why.length);
 
@@ -130,7 +131,14 @@ const lines = [
   "| --- | --- |",
   ...HANDLINGS.map((h) => `| ${HANDLING_DE[h]} (${h}) | ${counts[h]} |`),
   "",
-  `Zusätzlich: C2 Blank Check (SIC 6770): ${rows.filter((r) => r.shell).length}; A3 manuell (SIC 5094): ${rows.filter((r) => r.a3Review).length}; Zahlungsnetzwerke laut Liste: ${rows.filter((r) => r.payment).map((r) => r.ticker).join(", ") || "keine"}.`,
+  `Zusätzlich: C2 Blank Check (SIC 6770): ${rows.filter((r) => r.shell).length}; A3 manuell (SIC 5094): ${rows.filter((r) => r.a3Review).length}.`,
+  "",
+  "Ticker-Listen (Festlegungen 09.10.2026, nur bei SEC-Daten):",
+  "",
+  "| Liste | Behandlung | Gruppe | Ticker (nicht im Universum: kursiv) |",
+  "| --- | --- | --- | --- |",
+  ...TICKER_LISTS.map((l) => `| ${l.id} | ${HANDLING_DE[l.handling]} | ${l.group} | ${Object.keys(l.tickers).map((t) => (rows.some((r) => r.ticker === t) ? t : `*${t}*`)).join(", ")} |`),
+  `| MUSIC_ALSO_TICKERS | zusätzlich über B3 | music | ${Object.keys(MUSIC_ALSO_TICKERS).join(", ")} |`,
   "",
   `## b) Änderungen gegenüber FMP (${changed.length} von ${withFmp.length} Titeln mit FMP-Ergebnis)`,
   "",
@@ -143,8 +151,8 @@ const lines = [
 ];
 for (const h of ["exclude", "review"]) {
   const list = rows.filter((r) => r.handling === h).sort((a, b) => (a.group + a.ticker).localeCompare(b.group + b.ticker));
-  lines.push(`### ${HANDLING_DE[h]} (${list.length})`, "", "| Gruppe | Ticker | Name | SIC |", "| --- | --- | --- | --- |");
-  lines.push(...list.map((r) => `| ${r.group}${r.interpretation ? " (Auslegung)" : ""} | ${r.ticker} | ${esc(r.name)} | ${sicCell(r)} |`), "");
+  lines.push(`### ${HANDLING_DE[h]} (${list.length})`, "", "| Gruppe | Ticker | Name | SIC | Ticker-Liste |", "| --- | --- | --- | --- | --- |");
+  lines.push(...list.map((r) => `| ${r.group}${r.also.length ? ` + ${r.also.join(", ")}` : ""}${r.interpretation ? " (Auslegung)" : ""} | ${r.ticker} | ${esc(r.name)} | ${sicCell(r)} | ${r.list ?? ""} |`), "");
 }
 lines.push(
   `## d) Auffällige „erlaubt“-Fälle (${flagged.length})`,
@@ -156,6 +164,11 @@ lines.push(
   ...flagged.map(({ r, why }) => `| ${r.ticker} | ${esc(r.name)} | ${sicCell(r)} | ${why.join(", ")} |`),
   ""
 );
+const allowInterp = rows.filter((r) => r.handling === "allow" && r.interpretation);
+if (allowInterp.length) {
+  lines.push(`### Erlaubt, als Auslegungsfrage gekennzeichnet (${allowInterp.length})`, "", "| Ticker | Name | SIC |", "| --- | --- | --- |");
+  lines.push(...allowInterp.map((r) => `| ${r.ticker} | ${esc(r.name)} | ${sicCell(r)} |`), "");
+}
 const noSic = rows.filter((r) => r.handling === "unknown");
 if (noSic.length) {
   lines.push(`## Ohne SIC-Code (${noSic.length})`, "", "| Ticker | Name | Grund |", "| --- | --- | --- |");

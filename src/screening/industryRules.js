@@ -22,13 +22,17 @@
 // SIC-Codes (für SEC-Daten, siehe classifySic unten): sicCodes gelten mit der Behandlung der Gruppe,
 // reviewSicCodes immer als manuelle Prüfung, interpretationSicCodes setzen zusätzlich „Auslegungsfrage“.
 //
+// Grundsatz (09.10.2026): Ticker-Listen sind manuelle Festlegungen mit Datum und Begründung, keine
+// Stichwort-Automatik. Ist das Kerngeschäft eindeutig verboten, wird in A1 ausgeschlossen, auch wenn B3
+// den Titel ebenfalls erfassen würde. Die Listen (TICKER_LISTS unten) gelten nur bei SEC-Daten.
+//
 // Matching per Stichwort auf den kleingeschriebenen Branchennamen, damit
 // yfinance-Namen („Credit Services“) und FMP-Namen („Financial - Credit
 // Services“) gleichermaßen greifen.
 
 // Gruppen für die Methodik-Seite. Reihenfolge = Prüfreihenfolge.
-// Optionales Feld `decision` { date, text }: eigene Festlegung der Projektinhaberin zur
-// Abgrenzung der Gruppe. Die Methodik-Seite zeigt sie als „Unsere Festlegung“ mit Datum.
+// Optionales Feld `decisions` [{ date, text, interpretation? }]: eigene Festlegungen der Projektinhaberin
+// zur Abgrenzung der Gruppe. Die Methodik-Seite zeigt sie als „Unsere Festlegung“ mit Datum.
 // Nur Text für die Anzeige, ändert die Prüflogik nicht.
 export const INDUSTRY_GROUPS = [
   {
@@ -41,6 +45,13 @@ export const INDUSTRY_GROUPS = [
     industryKeywords: ["brewer", "wineries", "distiller"],
     // 2084, 2085, 5813, 5921 stehen nicht in der aktuellen SEC-Liste, können aber bei älteren Einträgen vorkommen
     sicCodes: [2082, 2084, 2085, 5180, 5813, 5921],
+    decisions: [
+      {
+        date: "2026-10-09",
+        text:
+          "Getränkehersteller, deren Kerngeschäft Alkohol ist, werden ausgeschlossen, auch wenn sie bei der SEC unter dem allgemeinen Getränke-Code stehen (z. B. Constellation Brands, Brown-Forman).",
+      },
+    ],
   },
   {
     id: "pork",
@@ -71,12 +82,26 @@ export const INDUSTRY_GROUPS = [
     // Finanzdienstleistungen allgemein, Holdings, Investoren: je Firma prüfen
     // (Kreditgeber/Kartenaussteller → Ausschluss, sonst B3). 6719 steht nicht in der aktuellen SEC-Liste.
     reviewSicCodes: [6199, 6719, 6799],
-    decision: {
-      date: "2026-10-09",
-      interpretation: true,
-      text:
-        "Krankenversicherer und Versicherungsmakler werden wie Versicherer behandelt und ausgeschlossen. Makler versichern nicht selbst, ihr Geschäft ist aber die Vermittlung konventioneller Versicherungen.",
-    },
+    decisions: [
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Krankenversicherer und Versicherungsmakler werden wie Versicherer behandelt und ausgeschlossen. Makler versichern nicht selbst, ihr Geschäft ist aber die Vermittlung konventioneller Versicherungen.",
+      },
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Goldman Sachs, Morgan Stanley und Charles Schwab (Bank-Holdings mit Zinsgeschäft als Kerngeschäft) sowie Apollo (großer Versicherungsanteil über Athene) werden ausgeschlossen, obwohl sie bei der SEC als Broker oder Vermögensverwalter geführt werden.",
+      },
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Kreditauskunfteien und Ratingagenturen (z. B. Equifax, Moody's, S&P Global) vergeben selbst keine Kredite und werden nicht ausgeschlossen. Als Auslegungsfrage für die Gegenlesung durch eine gelehrte Person vorgesehen.",
+      },
+    ],
   },
   {
     id: "gambling",
@@ -88,6 +113,13 @@ export const INDUSTRY_GROUPS = [
     industryKeywords: ["gambling", "casino"],
     // Nur für die 10-K-Stichwortsuche (A1-Hinweise), nicht für die Profilprüfung
     textKeywords: ["casino", "gambling", "sports betting", "sportsbook"],
+    decisions: [
+      {
+        date: "2026-10-09",
+        text:
+          "Casino-Betreiber (z. B. Las Vegas Sands, Wynn, MGM, Caesars) werden ausgeschlossen, auch wenn sie bei der SEC als Hotels geführt werden. Glücksspiel ist ihr Kerngeschäft.",
+      },
+    ],
   },
   {
     id: "adult",
@@ -108,11 +140,13 @@ export const INDUSTRY_GROUPS = [
     source: "SS 21, 2/1; SS 21, 3/2",
     rationale:
       "Fällt unter „und Ähnliches“. Cannabisunternehmen werden in den Finanzdaten oft als Pharmahersteller geführt; Stichworttreffer führen deshalb zur manuellen Prüfung, bestätigte Fälle werden ausgeschlossen. Medizinische Pharmazie ist nicht betroffen.",
-    decision: {
-      date: "2026-10-06",
-      text:
-        "Verschreibungspflichtige Arzneimittel, auch Betäubungsmittel für den medizinischen Einsatz, gelten als Arzneimittel und fallen nicht unter „Drogen“. Die Gruppe „Drogen“ meint Rauschmittel für den Freizeitgebrauch, einschließlich Freizeit-Cannabis. Gilt für alle Pharmaunternehmen.",
-    },
+    decisions: [
+      {
+        date: "2026-10-06",
+        text:
+          "Verschreibungspflichtige Arzneimittel, auch Betäubungsmittel für den medizinischen Einsatz, gelten als Arzneimittel und fallen nicht unter „Drogen“. Die Gruppe „Drogen“ meint Rauschmittel für den Freizeitgebrauch, einschließlich Freizeit-Cannabis. Gilt für alle Pharmaunternehmen.",
+      },
+    ],
     industryKeywords: [],
     descriptionKeywords: ["cannabis", "marijuana", "recreational drug"],
   },
@@ -145,16 +179,23 @@ export const INDUSTRY_GROUPS = [
     sicCodes: [[3480, 3489], 3795],
     // Luft- und Raumfahrt, Schiffbau, Lenkflugkörper, Militärelektronik: prüfen, ob Rüstung überwiegt
     reviewSicCodes: [[3720, 3728], [3730, 3732], [3760, 3769], 3812],
-    decision: {
-      date: "2026-10-09",
-      interpretation: true,
-      text:
-        "Luft- und Raumfahrt, Schiffbau und Militärelektronik werden manuell geprüft, weil zivile und militärische Tätigkeit gemischt sind. Ausgeschlossen wird, wenn Rüstung das Kerngeschäft ist.",
-    },
+    decisions: [
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Luft- und Raumfahrt, Schiffbau und Militärelektronik werden manuell geprüft, weil zivile und militärische Tätigkeit gemischt sind. Ausgeschlossen wird, wenn Rüstung das Kerngeschäft ist.",
+      },
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text: "GE Aerospace und Howmet Aerospace werden ebenfalls manuell geprüft, obwohl ihr SEC-Branchencode nicht zur Luftfahrt gehört.",
+      },
+    ],
   },
   {
     id: "film_streaming_games",
-    label: "Film, Serien, Streaming und Games",
+    label: "Film, Serien, Streaming, Games, Freizeit und Unterhaltung",
     handling: "review",
     basis: "Manuelle Prüfung des Kerngeschäfts",
     source: "SS 21, 2/1; SS 21, 3/2",
@@ -162,8 +203,15 @@ export const INDUSTRY_GROUPS = [
       "Kein pauschaler Ausschluss, aber die Inhalte können verbotene Tätigkeiten als Kerngeschäft betreffen. Deshalb manuelle Prüfung des Kerngeschäfts; ohne Prüfung „nicht geprüft“.",
     industryKeywords: [],
     reviewIndustryKeywords: ["entertainment", "broadcasting", "electronic gaming", "multimedia"],
-    sicCodes: [4833, 4841, [7812, 7841]],
+    sicCodes: [4833, 4841, [7812, 7841], [7900, 7999]],
     textKeywords: ["video game", "motion picture", "film production"],
+    decisions: [
+      {
+        date: "2026-10-09",
+        text:
+          "Freizeit- und Unterhaltungsunternehmen (z. B. Freizeitparks, Konzerte, Sportveranstaltungen) und Spielehersteller (z. B. Electronic Arts, Take-Two) werden manuell geprüft. Live Nation wird zusätzlich der Gruppe Musik zugeordnet.",
+      },
+    ],
   },
   {
     id: "music",
@@ -192,12 +240,20 @@ export const INDUSTRY_GROUPS = [
     b3IndustryKeywords: ["asset management", "capital markets", "stock exchanges", "financial conglomerates", "specialty finance"],
     // Broker, Börsen, Vermögensverwalter; Zahlungsnetzwerke über PAYMENT_NETWORK_TICKERS
     sicCodes: [[6200, 6289]],
-    decision: {
-      date: "2026-10-09",
-      interpretation: true,
-      text:
-        "Zahlungsnetzwerke (z. B. Visa, Mastercard, PayPal) werden nicht pauschal ausgeschlossen. Ihr Kerngeschäft sind Transaktionsgebühren. Zinserträge und Kreditanteile werden über die Segmentprüfung (B3) erfasst.",
-    },
+    decisions: [
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Zahlungsnetzwerke (z. B. Visa, Mastercard, PayPal) werden nicht pauschal ausgeschlossen. Ihr Kerngeschäft sind Transaktionsgebühren. Zinserträge und Kreditanteile werden über die Segmentprüfung (B3) erfasst.",
+      },
+      {
+        date: "2026-10-09",
+        interpretation: true,
+        text:
+          "Block (Cash App) gehört ebenfalls dazu. Eigene Kreditprodukte dieser Unternehmen (z. B. Cash App Borrow, Afterpay, PayPal Credit, Tankkarten-Kredite) werden in B3 ausdrücklich geprüft. Zinsen, Kreditgebühren und Verzugsgebühren zählen als verbotene Einnahmen.",
+      },
+    ],
   },
   {
     id: "consumer_realestate",
@@ -307,10 +363,32 @@ export const A1_TEXT_KEYWORDS = INDUSTRY_GROUPS.map((g) => ({
 /** Anbieter, bei denen A1 über den SIC-Code geprüft wird. */
 export const SIC_PROVIDERS = ["sec", "sec_fmp"];
 
-// Zahlungsnetzwerke und Zahlungsdienstleister. Sie stehen bei der SEC unter 7389 (allgemeine
-// Dienstleistungen) oder 7374 (Datenverarbeitung). Nicht den ganzen Code umstufen, sondern nur diese Titel:
-// Kerngeschäft sind Transaktionsgebühren, kein eigenes Kreditgeschäft; Zinserträge und Kreditanteile
-// erfasst die B3-Segmentprüfung (Festlegung 09.10.2026, Gruppe financial_other).
+// Ticker-Listen (Festlegungen 09.10.2026). Manuelle Festlegungen mit Datum und Begründung, keine
+// Stichwort-Automatik; gelten nur bei SEC-Daten (sec, sec_fmp). Schlüssel = Ticker wie in securities.
+
+/** Alkohol als Kerngeschäft, bei der SEC unter 2080 Getränke (wie Coca-Cola). SS 21, 2/1. */
+export const ALCOHOL_TICKERS = { STZ: "Constellation Brands", "BF-B": "Brown-Forman" };
+
+/** Casino-Betreiber, bei der SEC unter 7011 Hotels. Glücksspiel ist Kerngeschäft. */
+export const CASINO_TICKERS = { LVS: "Las Vegas Sands", WYNN: "Wynn Resorts", MGM: "MGM Resorts", CZR: "Caesars Entertainment" };
+
+/**
+ * Bei der SEC unter Broker/Vermögensverwalter (6211, 6282), aber Bank-Holdings mit Zinsgeschäft als
+ * Kerngeschäft (GS, MS, SCHW) bzw. großer Versicherungsanteil (APO über Athene).
+ */
+export const RIBA_TICKERS = { GS: "Goldman Sachs", MS: "Morgan Stanley", SCHW: "Charles Schwab", APO: "Apollo Global Management" };
+
+/** Spielehersteller ohne eigenen SIC-Code (7372 Software bzw. kein Code). */
+export const GAMES_TICKERS = { EA: "Electronic Arts", TTWO: "Take-Two Interactive" };
+
+/** Luft- und Raumfahrt mit Rüstungsanteil, bei der SEC unter 3600 bzw. 3350. */
+export const DEFENSE_REVIEW_TICKERS = { GE: "GE Aerospace", HWM: "Howmet Aerospace" };
+
+/**
+ * Zahlungsnetzwerke und Zahlungsdienstleister (SIC 7389 bzw. 7372). Nicht den ganzen Code umstufen, sondern
+ * nur diese Titel: Kerngeschäft sind Transaktionsgebühren, kein eigenes Kreditgeschäft als Kern; Zinserträge
+ * und Kreditanteile (Cash App Borrow, Afterpay, PayPal Credit, Tankkarten-Kredite) erfasst die B3-Prüfung.
+ */
 export const PAYMENT_NETWORK_TICKERS = {
   V: "Visa",
   MA: "Mastercard",
@@ -319,6 +397,24 @@ export const PAYMENT_NETWORK_TICKERS = {
   FIS: "Fidelity National Information Services",
   GPN: "Global Payments",
   CPAY: "Corpay",
+  XYZ: "Block",
+};
+
+/** Zusätzlich zur Hauptgruppe der Gruppe Musik zugeordnet (B3-Schwerpunkt): Konzerte. */
+export const MUSIC_ALSO_TICKERS = { LYV: "Live Nation Entertainment" };
+
+export const TICKER_LISTS = [
+  { id: "ALCOHOL_TICKERS", tickers: ALCOHOL_TICKERS, group: "alcohol", handling: "exclude", reason: "Alkohol ist Kerngeschäft" },
+  { id: "CASINO_TICKERS", tickers: CASINO_TICKERS, group: "gambling", handling: "exclude", reason: "Glücksspiel ist Kerngeschäft" },
+  { id: "RIBA_TICKERS", tickers: RIBA_TICKERS, group: "riba", handling: "exclude", interpretation: true, reason: "Bank-Holding mit Zinsgeschäft als Kerngeschäft bzw. großer Versicherungsanteil" },
+  { id: "GAMES_TICKERS", tickers: GAMES_TICKERS, group: "film_streaming_games", handling: "review", reason: "Spielehersteller" },
+  { id: "DEFENSE_REVIEW_TICKERS", tickers: DEFENSE_REVIEW_TICKERS, group: "defense", handling: "review", interpretation: true, reason: "Luft- und Raumfahrt mit Rüstungsanteil" },
+  { id: "PAYMENT_NETWORK_TICKERS", tickers: PAYMENT_NETWORK_TICKERS, group: "financial_other", handling: "b3_focus", interpretation: true, reason: "Zahlungsnetzwerk: kein Branchenausschluss, Zinserträge und Kreditanteile über B3 prüfen" },
+];
+
+// Erlaubt, aber als Auslegungsfrage gekennzeichnet
+const ALLOW_INTERPRETATION_SIC = {
+  7320: "Kreditauskunftei oder Ratingagentur: erlaubt, Auslegungsfrage für die Gegenlesung durch eine gelehrte Person",
 };
 
 // C2: Blank Checks (SPACs vor Übernahme)
@@ -343,44 +439,70 @@ export function usesSic(dataProvider) {
   return SIC_PROVIDERS.includes(dataProvider);
 }
 
+const normTicker = (t) => String(t || "").trim().toUpperCase().replace(/\./g, "-");
+
+/** Ticker-Liste mit dieser Behandlung, in der der Titel steht (oder undefined). */
+export function tickerListFor(symbol, handling) {
+  const sym = normTicker(symbol);
+  return TICKER_LISTS.find((l) => l.handling === handling && Object.hasOwn(l.tickers, sym));
+}
+
 /**
- * A1-Zuordnung über den SIC-Code der SEC.
- * @returns {{ class: "exclude"|"review"|"b3_focus"|"allow"|"unknown", group?: object, why?: string, interpretation?: boolean }}
+ * A1-Zuordnung über den SIC-Code der SEC und die Ticker-Listen.
+ * Reihenfolge: Ausschluss-Liste → Ausschluss über SIC → Prüf-Liste → B3-Liste (Zahlungsnetzwerke) →
+ * manuelle Prüfung über SIC → B3 über SIC → erlaubt. Eine Liste hebt nie einen SIC-Ausschluss auf.
+ * @returns {{ class: "exclude"|"review"|"b3_focus"|"allow"|"unknown", group?: object, why?: string,
+ *   interpretation?: boolean, list?: string, also?: object[] }}
  */
 export function classifySic(sic, { symbol = null, sicDescription = null } = {}) {
   const n = sicNumber(sic);
-  if (n === null) return { class: "unknown" };
-  const label = `SIC ${n}${sicDescription ? ` ${sicDescription}` : ""}`;
-  const result = (cls, g, why) => ({
+  const label = n === null ? "ohne SIC-Code" : `SIC ${n}${sicDescription ? ` ${sicDescription}` : ""}`;
+  const groupOf = (id) => INDUSTRY_GROUPS.find((x) => x.id === id);
+  const fromSic = (cls, g, why) => ({
     class: cls,
     group: g,
     why,
     interpretation: Boolean(g.interpretation || sicMatches(n, g.interpretationSicCodes)),
   });
+  const fromList = (l) => {
+    const g = groupOf(l.group);
+    const why =
+      l.handling === "exclude"
+        ? `${g.label}: ${l.reason} (Festlegung 09.10.2026, ${label})`
+        : l.handling === "review"
+          ? `${g.label}: ${l.reason}, Kerngeschäft manuell prüfen (Festlegung 09.10.2026, ${label})`
+          : `${l.reason} (Festlegung 09.10.2026, ${label})`;
+    return { class: l.handling, group: g, why, interpretation: Boolean(l.interpretation || g.interpretation), list: l.id };
+  };
+  const withAlso = (r) => {
+    if (r.class === "exclude" || !Object.hasOwn(MUSIC_ALSO_TICKERS, normTicker(symbol))) return r;
+    const music = groupOf("music");
+    return { ...r, also: [music], why: `${r.why ?? `Branche zulässig (${label})`}; zusätzlich ${music.label}: Anteil über B3 prüfen` };
+  };
 
-  for (const g of INDUSTRY_GROUPS) {
-    if (g.handling === "exclude" && sicMatches(n, g.sicCodes)) return result("exclude", g, `${g.label} (${label})`);
+  const ex = tickerListFor(symbol, "exclude");
+  if (ex) return fromList(ex);
+  if (n !== null) {
+    for (const g of INDUSTRY_GROUPS) {
+      if (g.handling === "exclude" && sicMatches(n, g.sicCodes)) return fromSic("exclude", g, `${g.label} (${label})`);
+    }
   }
-  const sym = String(symbol || "").toUpperCase();
-  if (Object.hasOwn(PAYMENT_NETWORK_TICKERS, sym)) {
-    const g = INDUSTRY_GROUPS.find((x) => x.id === "financial_other");
-    return {
-      class: "b3_focus",
-      group: g,
-      why: `Zahlungsnetzwerk: kein Branchenausschluss, Zinserträge und Kreditanteile über B3 prüfen (${label})`,
-      interpretation: true,
-    };
-  }
+  const listed = tickerListFor(symbol, "review") || tickerListFor(symbol, "b3_focus");
+  if (listed) return withAlso(fromList(listed));
+  if (n === null) return { class: "unknown" };
   for (const g of INDUSTRY_GROUPS) {
     const review = (g.handling === "review" && sicMatches(n, g.sicCodes)) || sicMatches(n, g.reviewSicCodes);
-    if (review) return result("review", g, `${g.label}: Kerngeschäft manuell prüfen (${label})`);
+    if (review) return withAlso(fromSic("review", g, `${g.label}: Kerngeschäft manuell prüfen (${label})`));
   }
   for (const g of INDUSTRY_GROUPS.filter((x) => x.handling === "b3_focus")) {
     if (sicMatches(n, g.sicCodes)) {
-      return result("b3_focus", g, `${g.label}: kein Branchenausschluss, verbotene Anteile über B3 prüfen (${label})`);
+      return withAlso(fromSic("b3_focus", g, `${g.label}: kein Branchenausschluss, verbotene Anteile über B3 prüfen (${label})`));
     }
   }
-  return { class: "allow" };
+  if (Object.hasOwn(ALLOW_INTERPRETATION_SIC, n)) {
+    return { class: "allow", interpretation: true, why: `${ALLOW_INTERPRETATION_SIC[n]} (${label})` };
+  }
+  return withAlso({ class: "allow" });
 }
 
 /** A1-Zuordnung je nach Datenquelle: SEC-Modi über SIC, sonst über Branche und Beschreibung (FMP). */

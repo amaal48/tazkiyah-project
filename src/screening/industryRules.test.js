@@ -81,12 +81,14 @@ test("Erlaubt: Pharma 2834/2836, Software 7372, allgemeine Dienste 7389", () => 
 });
 
 test("PAYMENT_NETWORK_TICKERS: Visa unter 7389 → financial_other (B3), Code 7389 sonst erlaubt", () => {
-  assert.ok(PAYMENT_NETWORK_TICKERS.V && PAYMENT_NETWORK_TICKERS.MA && PAYMENT_NETWORK_TICKERS.PYPL);
+  assert.deepEqual(Object.keys(PAYMENT_NETWORK_TICKERS), ["V", "MA", "PYPL", "FISV", "FIS", "GPN", "CPAY", "XYZ"]);
+  assert.equal(classifySic("7372", { symbol: "XYZ" }).group.id, "financial_other");
   const v = classifySic("7389", { symbol: "v" });
   assert.equal(v.class, "b3_focus");
   assert.equal(v.group.id, "financial_other");
   assert.equal(v.interpretation, true);
   assert.equal(classifySic("7389", { symbol: "ACN" }).class, "allow");
+  assert.equal(classifySic("7389", { symbol: "ACN" }).interpretation, undefined);
   // Liste hebt keinen Ausschluss auf
   assert.equal(classifySic("6021", { symbol: "V" }).class, "exclude");
 });
@@ -115,12 +117,73 @@ test("FMP-Modus unverändert: classifyProfile nutzt Branche und Beschreibung, ni
   assert.equal(classifyProfile(profile, "sec_fmp").class, "exclude"); // sec_fmp prüft wie sec
 });
 
-test("Festlegungen 09.10.2026 an riba, financial_other, defense", () => {
+test("Festlegungen 09.10.2026 an den Gruppen (decisions, Auslegungsfrage bei riba, financial_other, defense)", () => {
+  for (const id of ["alcohol", "gambling", "riba", "film_streaming_games", "financial_other", "defense"]) {
+    const g = INDUSTRY_GROUPS.find((x) => x.id === id);
+    assert.ok(g.decisions.some((d) => d.date === "2026-10-09"), id);
+  }
   for (const id of ["riba", "financial_other", "defense"]) {
     const g = INDUSTRY_GROUPS.find((x) => x.id === id);
-    assert.equal(g.decision.date, "2026-10-09", id);
-    assert.equal(g.decision.interpretation, true, id);
+    assert.ok(g.decisions.filter((d) => d.date === "2026-10-09").every((d) => d.interpretation), id);
   }
+  const riba = INDUSTRY_GROUPS.find((x) => x.id === "riba");
+  assert.ok(riba.decisions.some((d) => /gelehrte Person/.test(d.text)));
+  assert.match(INDUSTRY_GROUPS.find((x) => x.id === "film_streaming_games").label, /Freizeit und Unterhaltung/);
+});
+
+test("Ticker-Listen: Alkohol unter 2080, Casinos unter 7011, Riba unter 6211/6282 → Ausschluss", () => {
+  const cases = [
+    ["STZ", "2080", "alcohol", "ALCOHOL_TICKERS"],
+    ["BF.B", "2080", "alcohol", "ALCOHOL_TICKERS"],
+    ["LVS", "7011", "gambling", "CASINO_TICKERS"],
+    ["CZR", "7011", "gambling", "CASINO_TICKERS"],
+    ["GS", "6211", "riba", "RIBA_TICKERS"],
+    ["APO", "6282", "riba", "RIBA_TICKERS"],
+  ];
+  for (const [symbol, sic, group, list] of cases) {
+    const c = classifySic(sic, { symbol });
+    assert.equal(c.class, "exclude", symbol);
+    assert.equal(c.group.id, group, symbol);
+    assert.equal(c.list, list, symbol);
+  }
+  // ohne Liste bleibt es bei der SIC-Zuordnung
+  assert.equal(classifySic("2080", { symbol: "KO" }).class, "b3_focus");
+  assert.equal(classifySic("7011", { symbol: "MAR" }).class, "b3_focus");
+  assert.equal(classifySic("6211", { symbol: "IBKR" }).class, "b3_focus");
+  // Ausschluss-Liste greift auch ohne SIC-Code
+  assert.equal(classifySic(null, { symbol: "WYNN" }).class, "exclude");
+});
+
+test("Ticker-Listen: Games und GE/HWM → manuelle Prüfung, auch ohne SIC-Code (EA)", () => {
+  assert.equal(classifySic("7372", { symbol: "TTWO" }).group.id, "film_streaming_games");
+  assert.equal(classifySic("7372", { symbol: "TTWO" }).class, "review");
+  assert.equal(classifySic(null, { symbol: "EA" }).class, "review");
+  const ge = classifySic("3600", { symbol: "GE" });
+  assert.equal(ge.class, "review");
+  assert.equal(ge.group.id, "defense");
+  assert.equal(classifySic("3350", { symbol: "HWM" }).class, "review");
+  // Prüf-Liste hebt keinen SIC-Ausschluss auf
+  assert.equal(classifySic("6021", { symbol: "GE" }).class, "exclude");
+});
+
+test("Freizeit 7900–7999 → manuelle Prüfung; Live Nation zusätzlich Musik", () => {
+  for (const sic of ["7900", "7948", "7990", "7999"]) {
+    const c = classifySic(sic);
+    assert.equal(c.class, "review", sic);
+    assert.equal(c.group.id, "film_streaming_games", sic);
+  }
+  const lyv = classifySic("7900", { symbol: "LYV" });
+  assert.equal(lyv.class, "review");
+  assert.deepEqual(lyv.also.map((g) => g.id), ["music"]);
+  assert.match(lyv.why, /zusätzlich Musik/);
+  assert.equal(classifySic("7900", { symbol: "TKO" }).also, undefined);
+});
+
+test("Kreditauskunfteien 7320: erlaubt, aber Auslegungsfrage", () => {
+  const c = classifySic("7320", { symbol: "EFX" });
+  assert.equal(c.class, "allow");
+  assert.equal(c.interpretation, true);
+  assert.match(c.why, /gelehrte Person/);
 });
 
 test("A1-Stichworte für das 10-K enthalten Schweinefleisch, Cannabis, Casino, Games, Musik, Waffen", () => {
