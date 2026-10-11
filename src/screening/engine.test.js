@@ -650,3 +650,10 @@ test("Kennzeichnungen: jede Kennzeichnung der Engine hat einen Klartext", () => 
     assert.ok(EXPLANATIONS[FLAG_TEXTS[f].criterion], `Zielseite für ${f}`);
   }
 });
+
+test("dataBasis nennt die Einreichung bei der SEC (Formular, Datum, Link), ohne Link null", () => {
+  const filing = { accessionNumber: "0000000000-26-000001", form: "10-K", filingDate: "2026-02-01", reportDate: ANNUAL_END, url: "https://www.sec.gov/Archives/edgar/data/1/000000000026000001/" };
+  const r = screenSecurity(base({ annual: snap("annual", ANNUAL_END, { sourceFiling: filing }) }));
+  assert.deepEqual(r.dataBasis.annualFiling, { form: "10-K", filingDate: "2026-02-01", url: filing.url });
+  assert.equal(r.dataBasis.quarterFiling, null);
+});

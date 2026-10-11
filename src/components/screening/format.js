@@ -85,6 +85,22 @@ export function joinDe(items) {
   return `${items.slice(0, -1).join(", ")} und ${items[items.length - 1]}`;
 }
 
+/**
+ * B1 und B2 erscheinen öffentlich nur binär (Lizenz der Kursdaten, 11.10.2026): Die Quoten haben die
+ * Marktkapitalisierung im Nenner, aus einem genauen Wert ließe sie sich zurückrechnen. Angezeigt wird
+ * nur, ob die Grenze eingehalten ist, auch wenn ein älteres Ergebnis noch einen Wert enthält.
+ */
+export const BINARY_CRITERIA = new Set(["B1", "B2"]);
+
+/** „höchstens 30 %“ / „über 30 %“ (bei Mindestwerten „mindestens“ / „unter“); null ohne Ergebnis. */
+export function binaryOutcome(check) {
+  if (!check || typeof check.limit !== "number") return null;
+  const min = check.comparator === ">=";
+  if (check.result === "pass") return `${min ? "mindestens" : "höchstens"} ${fmtLimit(check.limit)}`;
+  if (check.result === "fail") return `${min ? "unter" : "über"} ${fmtLimit(check.limit)}`;
+  return null;
+}
+
 /** Wert gegen Grenze in der Liste: eine Nachkommastelle, außer die Rundung verwischt die Grenze. */
 function listPct(value, limit) {
   const one = Math.round(value * 10) / 10;
@@ -93,6 +109,11 @@ function listPct(value, limit) {
 
 function failedText(f) {
   const c = f.check;
+  if (c && BINARY_CRITERIA.has(f.criterion)) {
+    const outcome = binaryOutcome({ ...c, result: "fail" });
+    if (outcome) return `${f.name} ${outcome}, ${BASIS_TEXT[c.basis] || "Abschluss"} ${fmtDate(c.periodEnd)}`;
+    return f.reason || f.name;
+  }
   if (c && typeof c.value === "number" && typeof c.limit === "number") {
     const bound = c.comparator === ">=" ? "mindestens" : "höchstens";
     const basis = BASIS_TEXT[c.basis] || "Abschluss";

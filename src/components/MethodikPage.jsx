@@ -511,6 +511,15 @@ export default function MethodikPage({ onBack, anchor }) {
                   </li>
                 </ul>
                 <p>
+                  Bei den zinstragenden Schulden (B1) und Einlagen (B2) zeigen wir keinen genauen Prozentwert, sondern
+                  nur, ob die Grenze von 30 % eingehalten ist. Beide Quoten werden mit der Marktkapitalisierung
+                  gerechnet, also mit Aktienkursen. Die Lizenz unserer Kursdaten erlaubt nicht, Werte zu
+                  veröffentlichen, aus denen sich Kurs oder Marktkapitalisierung zurückrechnen lassen. Gerechnet wird
+                  mit dem genauen Wert. Die Schulden sowie Geld und Geldanlagen selbst stehen im Jahresabschluss (10-K)
+                  und im Quartalsbericht (10-Q) des Unternehmens; auf der Seite jeder Aktie verlinken wir den Bericht,
+                  sobald er von der US-Börsenaufsicht SEC vorliegt.
+                </p>
+                <p>
                   Die verwendeten Fassungen der Standards stammen von 2004 (Nr. 21), 2006 (Nr. 27) und 2008 (Nr. 35), wie sie
                   in der Gesamtausgabe der AAOIFI-Sharia-Standards von 2017 enthalten sind.
                 </p>

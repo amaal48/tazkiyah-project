@@ -9,8 +9,7 @@ import { EXPLANATIONS, defaultParameterValues } from "../screening/explanations.
 import StatusLegend from "./screening/StatusLegend.jsx";
 import StatusBadge from "./screening/StatusBadge.jsx";
 import SourceLink from "./screening/SourceLink.jsx";
-import LimitBar from "./screening/LimitBar.jsx";
-import { H1_STYLE, H2_STYLE, fmtLimit, fmtPct } from "./screening/format.js";
+import { H1_STYLE, H2_STYLE, binaryOutcome } from "./screening/format.js";
 
 // Einheitliche Linien-Icons (24 × 24, Strich in currentColor)
 const ICONS = {
@@ -85,20 +84,19 @@ function AreaCard({ area, onGo }) {
   );
 }
 
-/** Kennzahl der Beispielkarte: Wert gegen Grenzwert mit Balken und Grenzmarke. */
-function ExampleRatio({ id, value, limit }) {
-  const pass = value <= limit;
+/**
+ * Kennzahl der Beispielkarte, nur binär (B1/B2 ohne Wert, Lizenz der Kursdaten). Ein konformer Titel
+ * hat B1 und B2 in Jahresabschluss und Quartal bestanden, dafür ist kein Wert nötig.
+ */
+function ExampleRatio({ id, limit }) {
   return (
     <div className="border-t border-[var(--line)] pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
         <span className="font-semibold text-[var(--text)]">
           {EXPLANATIONS[id].name} <span className="font-[IBM_Plex_Mono] text-sm font-normal text-[var(--faint)]">{id}</span>
         </span>
-        <span className="font-[IBM_Plex_Mono] text-[15px] text-[var(--text)]">
-          {fmtPct(value)} von höchstens {fmtLimit(limit)}
-        </span>
+        <span className="font-[IBM_Plex_Mono] text-[15px] text-[var(--ok-text)]">{binaryOutcome({ result: "pass", limit, comparator: "<=" })}</span>
       </div>
-      <LimitBar value={value} limit={limit} result={pass ? "pass" : "fail"} className="mt-2" />
       {/* relative z-10: Quellenlink liegt über dem Karten-Link (keine verschachtelten Links) */}
       <p className="relative z-10 mt-2 text-sm">
         <SourceLink source={EXPLANATIONS[id].source} criterion={id} />
@@ -107,10 +105,10 @@ function ExampleRatio({ id, value, limit }) {
   );
 }
 
-/** Echter konformer Titel mit vollständigen B1- und B2-Werten; ohne solchen Titel keine Karte. */
+/** Echte konforme Aktie; ohne solchen Titel keine Karte. */
 function ExampleCard() {
   const { rows } = useScreeningList();
-  const ex = rows.find((r) => r.status === "konform" && typeof r.debtPct === "number" && typeof r.depositsPct === "number");
+  const ex = rows.find((r) => r.status === "konform" && r.assetType === "stock");
   if (!ex) return null;
   const p = defaultParameterValues();
   return (
@@ -131,9 +129,9 @@ function ExampleCard() {
         </div>
         <StatusBadge status={ex.status} />
       </div>
-      <ExampleRatio id="B1" value={ex.debtPct} limit={p.debtMaxPct} />
-      <ExampleRatio id="B2" value={ex.depositsPct} limit={p.depositsMaxPct} />
-      <p className="text-sm text-[var(--faint)]">Maßgeblich ist der höhere Wert aus Jahresabschluss und Quartal.</p>
+      <ExampleRatio id="B1" limit={p.debtMaxPct} />
+      <ExampleRatio id="B2" limit={p.depositsMaxPct} />
+      <p className="text-sm text-[var(--faint)]">Im Jahresabschluss und im letzten Quartal.</p>
     </div>
   );
 }

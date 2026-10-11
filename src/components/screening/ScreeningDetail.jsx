@@ -3,7 +3,8 @@
 // Detailseite eines Titels (#/aktie/AAPL), Design B: Ergebnisfeld, je Stufe eine Karte mit
 // einer Zeile pro Prüfung (Werte gegen Grenzwert, Balken mit Grenzmarke, Quelle, manuelle
 // Prüfung), Kurs und Marktdaten von TradingView (nach Zustimmung), Verlauf der Statuswechsel,
-// Hinweis zu Reinigung und Zakat.
+// Hinweis zu Reinigung und Zakat. B1 und B2 nur binär („höchstens/über 30 %“), ohne Wert,
+// Abstand und Balken (Lizenz der Kursdaten, siehe BINARY_CRITERIA in format.js).
 
 import { useEffect, useState } from "react";
 import { ETF_STAGE, EXPLANATIONS, FLAG_TEXTS, RESULT_LABELS, STAGES } from "../../screening/explanations.js";
@@ -15,10 +16,12 @@ import LimitBar from "./LimitBar.jsx";
 import MarketData from "./MarketData.jsx";
 import {
   BASIS_TEXT,
+  BINARY_CRITERIA,
   H1_STYLE,
   H2_STYLE,
   NOTICE_NO_ADVICE,
   STATUS_TEXT,
+  binaryOutcome,
   fmtAmount,
   fmtDate,
   fmtMonthYear,
@@ -59,6 +62,57 @@ const RESULT_PANEL = {
   nicht_konform: { box: "bg-[var(--bad-bg)] border border-[var(--bad-border)] text-[var(--bad-strong)]", sub: "text-[var(--bad-strong)]", link: "text-[var(--bad-strong)]" },
   nicht_geprueft: { box: "bg-[var(--none-bg)] text-[var(--none-strong)]", sub: "text-[var(--none-strong)]", link: "text-[var(--none-strong)]" },
 };
+
+/** Zahlen des Abschlusses nachlesen: Link auf die Einreichung bei der SEC (nur mit SEC-Daten). */
+const NUMERATOR_TEXT = { B1: "Schulden", B2: "Geld und Geldanlagen" };
+
+function FilingLink({ criterion, filing }) {
+  const url = safeUrl(filing?.url);
+  if (!url) return null;
+  const what = NUMERATOR_TEXT[criterion] || "Zahlen";
+  const form = filing.form || "Abschluss";
+  return (
+    <span className="block">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+        {what} im {form}
+        {filing.filingDate ? ` vom ${fmtDate(filing.filingDate)}` : ""} nachlesen
+      </a>
+    </span>
+  );
+}
+
+/** B1/B2: je Periode nur „höchstens 30 %“ bzw. „über 30 %“, bei „nicht geprüft“ der Grund. */
+function BinaryCheck({ check, criterion, filing }) {
+  const basis = BASIS_TEXT[check.basis] || "Abschluss";
+  const outcome = binaryOutcome(check);
+  return (
+    <li className="mt-4 first:mt-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="text-[15px] text-[var(--muted)]">
+          {basis} {fmtDate(check.periodEnd)}
+          {check.label && <span className="block text-sm text-[var(--faint)]">{check.label}</span>}
+        </span>
+        {outcome ? (
+          <span className={"font-[IBM_Plex_Mono] text-[15px] " + RESULT_TEXT_COLOR[check.result]}>{outcome}</span>
+        ) : (
+          <span className="text-[15px] text-[var(--text-soft)]">{check.reason || RESULT_LABELS[check.result]}</span>
+        )}
+      </div>
+      {((outcome && check.reason) || check.leaseSource || filing) && (
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+          {outcome && check.reason && <span className="block text-[var(--text-soft)]">{check.reason}</span>}
+          {check.leaseSource && (
+            <span className="block">
+              {LEASE_SOURCE[check.leaseSource] || "Leasing"}
+              {typeof check.leaseAmount === "number" && `: ${fmtAmount(check.leaseAmount)}`}
+            </span>
+          )}
+          <FilingLink criterion={criterion} filing={filing} />
+        </p>
+      )}
+    </li>
+  );
+}
 
 function RatioCheck({ check }) {
   const basis = BASIS_TEXT[check.basis] || "Abschluss";
@@ -176,7 +230,9 @@ function Flags({ flags, criterionId }) {
   );
 }
 
-function CriterionRow({ c, parameters }) {
+function CriterionRow({ c, parameters, dataBasis }) {
+  const binary = BINARY_CRITERIA.has(c.id);
+  const filingFor = (x) => (x.basis === "annual" ? dataBasis?.annualFiling : x.basis === "quarter" ? dataBasis?.quarterFiling : null);
   const ratioChecks = (c.checks || []).filter((x) => typeof x.limit === "number");
   const otherChecks = (c.checks || []).filter((x) => typeof x.limit !== "number");
   const explanation = shortExplanation(c.id, parameters);
@@ -199,9 +255,9 @@ function CriterionRow({ c, parameters }) {
 
           {(ratioChecks.length > 0 || otherChecks.length > 0) && (
             <ul>
-              {ratioChecks.map((x, i) => (
-                <RatioCheck key={`r${i}`} check={x} />
-              ))}
+              {ratioChecks.map((x, i) =>
+                binary ? <BinaryCheck key={`r${i}`} check={x} criterion={c.id} filing={filingFor(x)} /> : <RatioCheck key={`r${i}`} check={x} />
+              )}
               {otherChecks.map((x, i) => (
                 <InfoCheck key={`o${i}`} check={x} />
               ))}
@@ -211,6 +267,15 @@ function CriterionRow({ c, parameters }) {
           {/* Grund in Worten, wenn er nicht schon an einer Kennzahl steht */}
           {c.reason && c.result !== "pass" && !ratioChecks.some((x) => x.reason === c.reason) && (
             <p className="mt-2 text-[15px] text-[var(--text-soft)]">{c.reason}</p>
+          )}
+
+          {binary && ratioChecks.length > 0 && (
+            <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+              Wir zeigen nur, ob die Grenze eingehalten ist, ohne genauen Prozentwert.{" "}
+              <a href={routes.criterion(c.id)} className="whitespace-nowrap text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+                Warum?
+              </a>
+            </p>
           )}
 
           <p className="mt-2 text-sm">
@@ -381,7 +446,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
                   {g.question && <p className="mt-1 text-[15px] text-[var(--muted)]">{g.question}</p>}
                   <ul className="card mt-4">
                     {g.items.map((c) => (
-                      <CriterionRow key={c.id} c={c} parameters={result.parameters || undefined} />
+                      <CriterionRow key={c.id} c={c} parameters={result.parameters || undefined} dataBasis={result.dataBasis} />
                     ))}
                   </ul>
                 </section>

@@ -28,7 +28,6 @@ export default function ScreenerPage({ sectors, preset, watchlist, onToggleWatch
           rows={list.rows}
           loading={list.loading}
           error={list.error}
-          sortable={list.sortable}
           sectors={sectors}
           preset={preset}
           watchlist={watchlist}

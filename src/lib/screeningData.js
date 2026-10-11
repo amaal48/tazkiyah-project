@@ -20,12 +20,8 @@ const LIST_COLUMNS =
   "security_id,ticker,name,asset_type,status,run_at,annual_period_end,quarter_period_end," +
   "headline:result->headline,summary:result->summary";
 
-// Für die Sortierung nach B1/B2 nur die beiden Werte je Prüfung (Jahr, Quartal), nicht das
-// ganze result. Bei Aktien stehen B1 und B2 an Position 3 und 4 der Prüfungen; die ID wird
-// mitgeladen und geprüft, damit eine andere Reihenfolge nie zu falschen Werten führt.
-const SORT_COLUMNS =
-  ",k3:result->criteria->3->>id,b1a:result->criteria->3->checks->0->>value,b1q:result->criteria->3->checks->1->>value" +
-  ",k4:result->criteria->4->>id,b2a:result->criteria->4->checks->0->>value,b2q:result->criteria->4->checks->1->>value";
+// B1/B2-Werte werden nicht geladen und nicht angezeigt (Lizenz der Kursdaten, 11.10.2026);
+// seit supabase_b1_b2_binaer.sql stehen sie auch nicht mehr im öffentlichen Ergebnis.
 
 const SECTOR_BY_TICKER = new Map(ALL_STOCKS.map((s) => [s.ticker, s.sector]));
 
@@ -37,18 +33,6 @@ async function fetchAll(buildQuery) {
     rows.push(...(data || []));
     if (!data || data.length < PAGE_SIZE) return rows;
   }
-}
-
-const num = (x) => {
-  const n = typeof x === "number" ? x : parseFloat(x);
-  return Number.isFinite(n) ? n : null;
-};
-
-/** Höherer (maßgeblicher) der beiden Werte aus Jahr und Quartal, sonst null. */
-function governing(id, expectedId, a, q) {
-  if (id !== expectedId) return null;
-  const vals = [num(a), num(q)].filter((v) => v !== null);
-  return vals.length ? Math.max(...vals) : null;
 }
 
 async function fetchList() {
@@ -67,15 +51,7 @@ async function fetchList() {
   // Inaktive Titel (delistet o. Ä.) nicht anzeigen
   securities = securities.filter((s) => s.active !== false);
 
-  let current;
-  let sortable = true;
-  try {
-    current = await fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS + SORT_COLUMNS).order("ticker"));
-  } catch {
-    // Falls die Pfadabfrage nicht unterstützt wird: ohne Sortierwerte weiter
-    sortable = false;
-    current = await fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker"));
-  }
+  const current = await fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker"));
 
   const byId = new Map(current.map((r) => [r.security_id, r]));
   const rows = securities.map((s) => {
@@ -95,11 +71,9 @@ async function fetchList() {
       quarterPeriodEnd: r?.quarter_period_end ?? null,
       headline: r?.headline ?? null,
       summary: r?.summary ?? null,
-      debtPct: r ? governing(r.k3, "B1", r.b1a, r.b1q) : null,
-      depositsPct: r ? governing(r.k4, "B2", r.b2a, r.b2q) : null,
     };
   });
-  return { rows, sortable };
+  return { rows };
 }
 
 let listPromise = null;
@@ -115,14 +89,14 @@ export function loadScreeningList() {
   return listPromise;
 }
 
-/** { loading, error, rows, sortable, byTicker } */
+/** { loading, error, rows, byTicker } */
 export function useScreeningList() {
-  const [state, setState] = useState({ loading: true, error: null, rows: [], sortable: false });
+  const [state, setState] = useState({ loading: true, error: null, rows: [] });
   useEffect(() => {
     let cancelled = false;
     loadScreeningList().then(
-      ({ rows, sortable }) => !cancelled && setState({ loading: false, error: null, rows, sortable }),
-      (error) => !cancelled && setState({ loading: false, error, rows: [], sortable: false })
+      ({ rows }) => !cancelled && setState({ loading: false, error: null, rows }),
+      (error) => !cancelled && setState({ loading: false, error, rows: [] })
     );
     return () => {
       cancelled = true;

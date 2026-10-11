@@ -137,6 +137,7 @@ export const EXPLANATIONS = {
       "Die zinstragenden Schulden dürfen höchstens {debtMaxPct} % der Marktkapitalisierung betragen.",
       "Leasingverbindlichkeiten zählen mit, soweit sie als Schuld ausgewiesen sind. Weist ein Quartal sie nicht gesondert aus, übernehmen wir den Wert des letzten Jahresabschlusses und kennzeichnen das als Schätzung.",
       "Der letzte Jahresabschluss und das letzte Quartal müssen die Grenze beide einhalten.",
+      "Wir zeigen nur, ob die Grenze eingehalten ist, ohne genauen Prozentwert. Die Marktkapitalisierung beruht auf Aktienkursen, und die Lizenz unserer Kursdaten erlaubt nicht, Werte zu veröffentlichen, aus denen sich Kurs oder Marktkapitalisierung zurückrechnen lassen. Gerechnet wird mit dem genauen Wert. Die Schulden selbst stehen im Jahresabschluss (10-K) und im Quartalsbericht (10-Q) des Unternehmens.",
     ],
   },
   B2: {
@@ -147,6 +148,7 @@ export const EXPLANATIONS = {
       "Geld auf Konten sowie kurz- und langfristige Geldanlagen dürfen zusammen höchstens {depositsMaxPct} % der Marktkapitalisierung betragen.",
       "Wir behandeln dieses Geld grundsätzlich als zinstragend, es sei denn, die Daten belegen das Gegenteil.",
       "Der letzte Jahresabschluss und das letzte Quartal müssen die Grenze beide einhalten.",
+      "Wir zeigen nur, ob die Grenze eingehalten ist, ohne genauen Prozentwert. Die Marktkapitalisierung beruht auf Aktienkursen, und die Lizenz unserer Kursdaten erlaubt nicht, Werte zu veröffentlichen, aus denen sich Kurs oder Marktkapitalisierung zurückrechnen lassen. Gerechnet wird mit dem genauen Wert. Geld und Geldanlagen selbst stehen im Jahresabschluss (10-K) und im Quartalsbericht (10-Q) des Unternehmens.",
     ],
   },
   B3: {

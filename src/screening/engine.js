@@ -33,7 +33,7 @@ import {
   usesSic,
 } from "./industryRules.js";
 
-export const ENGINE_VERSION = "1.6.1"; // 1.6.1 (09.10.2026): B1/B2 Vermerk „Kurs noch nicht abgerufen“ (sec_fmp ohne FMP-Budget)
+export const ENGINE_VERSION = "1.7.0"; // 1.7.0 (11.10.2026): Fundstellen der Abschlüsse (10-K/10-Q) in dataBasis, für B1/B2 ohne Wert
 // vorher 1.6.0 (09.10.2026): A1/A3/C2 über SIC-Codes bei SEC-Daten (sec, sec_fmp), FMP unverändert
 // vorher 1.5.0 (08.10.2026): Zinserträge laut Anhang aus B3_SEGMENTS, Kennzeichnungen Zinserträge/Bilanz-Abgleich,
 // B3-Nenner ohne fehlende sonstige Erträge, C1 nur mit eindeutig belegten realen Werten (beide nur „bestanden“ oder „nicht geprüft“)
@@ -1049,6 +1049,13 @@ function buildHeadline(criteria) {
   return { failed, notChecked };
 }
 
+/** Fundstelle eines Abschlusses: Formular, Einreichungsdatum, Link ins EDGAR-Archiv; ohne Link null. */
+function filingRef(s) {
+  const f = s?.sourceFiling;
+  if (!f?.url) return null;
+  return { form: f.form ?? null, filingDate: f.filingDate ?? null, url: f.url };
+}
+
 export function screenSecurity(input) {
   const {
     security = {},
@@ -1105,6 +1112,9 @@ export function screenSecurity(input) {
       quarterPeriodEnd: qs[0]?.periodEnd ?? null,
       quarterFilingDate: qs[0]?.filingDate ?? null,
       quartersUsed: qs.slice(0, 4).map((q) => q.periodEnd),
+      // Einreichung bei der SEC (nur mit SEC-Daten), damit B1/B2 ohne Wert auf den Abschluss verweisen können
+      annualFiling: filingRef(annual),
+      quarterFiling: filingRef(qs[0]),
       fundAnnualReportDate: isEtf ? security.fundAnnualReportDate ?? null : undefined,
     },
     criteria,

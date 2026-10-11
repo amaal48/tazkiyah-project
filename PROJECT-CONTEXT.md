@@ -1,10 +1,17 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 09.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 11.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (09.10.2026)
+
+**Neu am 11.10.2026 (Branch `b1-b2-binaer`, noch nicht auf `main`): B1/B2 öffentlich nur binär** (Lizenz FMP Free jetzt, Tiingo Commercial später; siehe „Neu am 08.10.2026“):
+- **Oberfläche:** Detailseite zeigt bei B1/B2 je Periode nur „höchstens 30 %“ bzw. „über 30 %“ (bei „nicht geprüft“ den Grund), ohne Wert, Abstand und Balken, dazu „Wir zeigen nur, ob die Grenze eingehalten ist … Warum?“ und, wenn SEC-Daten vorliegen, „Schulden im 10-K vom … nachlesen“ (Link ins EDGAR-Archiv). Begründungszeile ohne B1/B2-Wert („Zinstragende Schulden über 30 %, Quartal 30.06.2026“). Sortierungen nach B1/B2 im Screener entfernt. Beispielkarte der Startseite binär. Erklärseiten B1/B2 und Methodik („Daten und ihre Grenzen“) mit kurzem Absatz zur Lizenz. Texte zentral in `format.js` (`BINARY_CRITERIA`, `binaryOutcome`). Vergleich, Watchlist, Portfolio und Berichte zeigten keine B1/B2-Werte.
+- **Engine 1.7.0:** `dataBasis.annualFiling`/`quarterFiling` (Formular, Einreichungsdatum, Link), nur mit SEC-Daten. Der Cron rechnet nach dem Merge alle Titel aus gespeicherten Daten neu (0 Abrufe, nach dem Abrufen im selben Lauf, Rest am Folgetag).
+- **Daten:** `supabase_b1_b2_binaer.sql`: Funktion `screening_public_result(result)` entfernt bei B1/B2 alles außer basis, periodEnd, label, limit, comparator, result, reason und Leasing-Angaben, in `headline.failed` den Wert, dazu `zakat.trading.priceAtPeriodEnd` und in `purification.periods` `prohibitedIncome`, `sharesOutstanding` und neu `ratePctOfPrice` (mit dem Betrag je Aktie ergäbe sich der Kurs). Ergebnis als berechnete Spalte `screening_runs.public_result` (generated … stored); `screening_current.result` = `public_result`; öffentlich auf `screening_runs` nur noch `public_result` statt `result` (auch der Verlauf bereinigt). Der Cron liest und schreibt unverändert (volle Werte in `result` und `screening_current_internal`). Schema-Datei angeglichen. Getestet mit PGlite (`src/screening/publicResult.test.js`: SQL-Datei, Schema zweimal, Rechte als Rolle `anon`).
+- **Reihenfolge:** 1. Vorschau prüfen, 2. `b1-b2-binaer` auf `main` mergen, 3. danach bald `supabase_b1_b2_binaer.sql` im SQL Editor ausführen und die Kontrollzeile am Ende prüfen (`b1_b2_mit_wert` 0, `marktkap_oder_kurs` 0, `reinigung_in_prozent_vom_kurs` 0, `anon_liest_result` false, `anon_liest_public_result` true). Bis dahin sind die Werte über die Datenbank-Schnittstelle noch lesbar.
+- **Gefunden, nicht geändert:** Die Vergleichsseite zeigt „Kurs (Beispielwert)“ aus `src/data/stocks.js` (alter FMP-Lauf); `stocks.js` enthält außerdem `eckdaten.marketCap` (wird nirgends angezeigt, liegt aber im ausgelieferten JavaScript). Vor dem Launch entfernen.
 
 **Neu am 09.10.2026 (spät, Branch `kurs-nachholen`, auf `main` gemergt), nur Modus `sec_fmp`:**
 - **FMP-Budget aufgebraucht stoppt den Lauf nicht mehr.** Ist das Tagesbudget (oder das FMP-Limit) erreicht, rechnet der Cron weitere Titel nur mit SEC-Daten (`createSecOnlyFallback` in `providers/secFmp.js`, 0 FMP-Abrufe): B1/B2 „nicht geprüft“, Kennzeichnung `kurs_noch_nicht_abgerufen` („Kurs noch nicht abgerufen, wird nachgeholt“), Vermerk in den Eingangsdaten, `inputs.pricesPending = true`.

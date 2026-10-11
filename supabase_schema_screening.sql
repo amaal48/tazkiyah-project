@@ -14,11 +14,13 @@
 --   purification_amounts      — Reinigungsbetrag pro Aktie und Quartal (F)
 --   screening_api_usage       — API-Abrufe pro Tag (Tageslimit des Datenanbieters)
 -- Views:
---   screening_current         — jeweils letztes Ergebnis pro Titel
+--   screening_current         — jeweils letztes Ergebnis pro Titel (öffentlich, B1/B2 ohne Werte)
+--   screening_current_internal — dasselbe mit vollen Werten und Rohdaten, nur Service-Role (Cron)
 --   manual_reviews_due        — Arbeitsliste: fehlende oder abgelaufene manuelle Prüfungen
 --
 -- Schreiben dürfen nur der Service-Role-Key (Cron) und du im Dashboard.
--- Lesen ist öffentlich — Transparenz ist Teil des Produkts.
+-- Lesen ist öffentlich — Transparenz ist Teil des Produkts. Ausnahmen: Anbieter-Rohzahlen (inputs),
+-- manuelle Prüfungen und seit 11.10.2026 die B1/B2-Werte (Lizenz der Kursdaten, siehe unten).
 
 -- ------------------------------------------------------------------ securities
 
@@ -70,7 +72,7 @@ create table if not exists public.screening_runs (
   in_universe        boolean not null,
   annual_period_end  date,
   quarter_period_end date,
-  result             jsonb not null,          -- vollständige Engine-Ausgabe (Kriterien, Quellen, Werte)
+  result             jsonb not null,          -- vollständige Engine-Ausgabe (Kriterien, Quellen, Werte), nur intern
   parameters         jsonb not null,          -- Parameter-Schnappschuss dieser Runde
   engine_version     text not null,
   parameters_version text not null,
@@ -90,12 +92,96 @@ alter table public.screening_runs add column if not exists fingerprint text;
 create index if not exists screening_runs_security_run_idx
   on public.screening_runs (security_id, run_at desc, id desc);
 
+-- Seit 11.10.2026 (supabase_b1_b2_binaer.sql): öffentliches Ergebnis ohne Werte, aus denen sich Kurs
+-- oder Marktkapitalisierung zurückrechnen lassen (B1/B2 nur bestanden/nicht bestanden, kein Kurs zum
+-- Stichtag, keine Reinigung in % des Kurses, keine Rohwerte der Reinigung). Die Funktion muss mit
+-- supabase_b1_b2_binaer.sql übereinstimmen (Test: src/screening/publicResult.test.js).
+-- Hinweis: Eine geänderte Funktion wirkt erst nach dem Neuanlegen der Spalte auf alte Zeilen
+-- (supabase_b1_b2_binaer.sql erneut ausführen).
+-- >>> screening_public_result
+create or replace function public.screening_public_result(r jsonb)
+returns jsonb
+language plpgsql
+immutable
+parallel safe
+set search_path = ''
+as $$
+declare
+  out jsonb := r;
+  -- B1/B2: erlaubte Felder je Einzelprüfung (alles andere fällt weg)
+  ratio_keys constant text[] := array['basis', 'periodEnd', 'label', 'limit', 'comparator', 'result', 'reason',
+                                      'leaseSource', 'leaseAmount', 'leaseEstimate', 'leaseEstimateDecisive'];
+  headline_keys constant text[] := array['basis', 'periodEnd', 'limit', 'comparator'];
+  binary_criteria constant text[] := array['B1', 'B2'];
+begin
+  if r is null or jsonb_typeof(r) <> 'object' then
+    return r;
+  end if;
+
+  -- 1. B1/B2-Prüfungen ohne Wert
+  if jsonb_typeof(out -> 'criteria') = 'array' then
+    out := jsonb_set(out, '{criteria}', (
+      select coalesce(jsonb_agg(
+        case
+          when c ->> 'id' = any (binary_criteria) and jsonb_typeof(c -> 'checks') = 'array' then
+            jsonb_set(c, '{checks}', (
+              select coalesce(jsonb_agg(
+                case
+                  when jsonb_typeof(x) = 'object' then
+                    (select coalesce(jsonb_object_agg(e.k, e.v), '{}'::jsonb)
+                       from jsonb_each(x) as e(k, v)
+                      where e.k = any (ratio_keys))
+                  else x
+                end order by t.i), '[]'::jsonb)
+              from jsonb_array_elements(c -> 'checks') with ordinality as t(x, i)))
+          else c
+        end order by s.n), '[]'::jsonb)
+      from jsonb_array_elements(out -> 'criteria') with ordinality as s(c, n)));
+  end if;
+
+  -- 2. Kurzfassung für die Liste: bei B1/B2 kein Wert
+  if jsonb_typeof(out #> '{headline,failed}') = 'array' then
+    out := jsonb_set(out, '{headline,failed}', (
+      select coalesce(jsonb_agg(
+        case
+          when f ->> 'criterion' = any (binary_criteria) and jsonb_typeof(f -> 'check') = 'object' then
+            jsonb_set(f, '{check}', (
+              select coalesce(jsonb_object_agg(e.k, e.v), '{}'::jsonb)
+                from jsonb_each(f -> 'check') as e(k, v)
+               where e.k = any (headline_keys)))
+          else f
+        end order by s.n), '[]'::jsonb)
+      from jsonb_array_elements(out #> '{headline,failed}') with ordinality as s(f, n)));
+  end if;
+
+  -- 3. Reinigung: Rohwerte und Quote in % des Kurses entfernen
+  if jsonb_typeof(out #> '{purification,periods}') = 'array' then
+    out := jsonb_set(out, '{purification,periods}', (
+      select coalesce(jsonb_agg(
+        case
+          when jsonb_typeof(p) = 'object' then p - 'prohibitedIncome' - 'sharesOutstanding' - 'ratePctOfPrice'
+          else p
+        end order by s.n), '[]'::jsonb)
+      from jsonb_array_elements(out #> '{purification,periods}') with ordinality as s(p, n)));
+  end if;
+
+  -- 4. Zakat: Kurs zum Stichtag entfernen
+  out := out #- '{zakat,trading,priceAtPeriodEnd}';
+
+  return out;
+end
+$$;
+-- <<< screening_public_result
+
+-- Berechnete Spalte, entsteht bei jedem Speichern in der Datenbank (der Cron schreibt sie nicht)
+alter table public.screening_runs
+  add column if not exists public_result jsonb generated always as (public.screening_public_result(result)) stored;
+
 -- Views werden neu angelegt, damit neue Spalten enthalten sind.
 -- Seit 08.10.2026 (supabase_protect_raw_inputs.sql): Anbieter-Rohzahlen (inputs) nur für den Server.
---   screening_current_internal — letztes Ergebnis mit inputs/fingerprint, nur Service-Role (Cron)
---   screening_current          — öffentlich, ohne inputs/fingerprint und ohne drei Rohwerte im result
---                                (zakat.trading.priceAtPeriodEnd, purification.periods[].prohibitedIncome
---                                und .sharesOutstanding), die die Website nicht anzeigt
+--   screening_current_internal — letztes Ergebnis mit result, inputs, fingerprint, nur Service-Role (Cron)
+--   screening_current          — öffentlich, ohne inputs/fingerprint; result ist seit 11.10.2026 das
+--                                bereinigte public_result (supabase_b1_b2_binaer.sql)
 drop view if exists public.manual_reviews_due;
 drop view if exists public.screening_current;
 drop view if exists public.screening_current_internal;
@@ -117,16 +203,7 @@ select distinct on (r.security_id)
   r.in_universe,
   r.annual_period_end,
   r.quarter_period_end,
-  case
-    when jsonb_typeof(r.result -> 'purification' -> 'periods') = 'array' then
-      jsonb_set(
-        r.result #- '{zakat,trading,priceAtPeriodEnd}',
-        '{purification,periods}',
-        (select coalesce(jsonb_agg(p - 'prohibitedIncome' - 'sharesOutstanding'), '[]'::jsonb)
-           from jsonb_array_elements(r.result -> 'purification' -> 'periods') p)
-      )
-    else r.result #- '{zakat,trading,priceAtPeriodEnd}'
-  end as result,
+  r.public_result as result,
   r.parameters,
   r.engine_version,
   r.parameters_version,
@@ -465,13 +542,15 @@ end $$;
 -- Anbieter-Rohzahlen nur für den Server (seit 08.10.2026, supabase_protect_raw_inputs.sql):
 -- screening_runs nur ohne inputs/fingerprint lesbar, interne View nur Service-Role,
 -- purification_amounts nicht öffentlich (die Website liest die Tabelle nicht, nur der Cron).
+-- Seit 11.10.2026 (supabase_b1_b2_binaer.sql): statt result nur public_result lesbar.
 drop policy if exists "purification_amounts_public_read" on public.purification_amounts;
 do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'anon') then
     execute 'revoke select on public.screening_runs from anon, authenticated';
-    execute 'grant select (id, security_id, status, in_universe, annual_period_end, quarter_period_end, result, '
+    execute 'grant select (id, security_id, status, in_universe, annual_period_end, quarter_period_end, public_result, '
             'parameters, engine_version, parameters_version, data_provider, run_at) on public.screening_runs to anon, authenticated';
+    execute 'revoke all on function public.screening_public_result(jsonb) from public, anon, authenticated';
     execute 'revoke all on public.screening_current_internal from anon, authenticated';
     execute 'grant select on public.screening_current to anon, authenticated';
     execute 'revoke select on public.purification_amounts from anon, authenticated';

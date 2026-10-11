@@ -11,11 +11,10 @@ import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./format.js";
 
 const PAGE = 30;
 
+// Keine Sortierung nach B1/B2: Die Werte sind öffentlich nicht verfügbar (Lizenz der Kursdaten)
 const SORTS = [
-  { key: "name", label: "Nach Name", needsValues: false },
-  { key: "ticker", label: "Nach Ticker", needsValues: false },
-  { key: "debt", label: "Nach Verschuldung (B1)", needsValues: true },
-  { key: "deposits", label: "Nach Cash-Anteil (B2)", needsValues: true },
+  { key: "name", label: "Nach Name" },
+  { key: "ticker", label: "Nach Ticker" },
 ];
 
 const EMPTY = { query: "", statuses: [], sector: "", assetType: "", sort: "name" };
@@ -25,15 +24,6 @@ const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 // Sitzungsweiter Zustand der Filter (Modul-Variable, kein Speicher im Browser nötig)
 let saved = { ...EMPTY };
 let appliedPresetTs = null;
-
-const byNumberAsc = (key) => (a, b) => {
-  const x = a[key];
-  const y = b[key];
-  if (x === null && y === null) return a.name.localeCompare(b.name);
-  if (x === null) return 1; // ohne Wert ans Ende
-  if (y === null) return -1;
-  return x - y;
-};
 
 const ICON_BTN =
   "inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] border border-[var(--control-border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] aria-pressed:border-[var(--primary)] aria-pressed:bg-[var(--primary)] aria-pressed:text-[var(--on-primary)]";
@@ -59,7 +49,7 @@ export function ScreeningRow({ row, actions }) {
   );
 }
 
-export default function ScreeningList({ rows, loading, error, sortable, sectors, preset, watchlist, onToggleWatchlist, compareTickers, onToggleCompare }) {
+export default function ScreeningList({ rows, loading, error, sectors, preset, watchlist, onToggleWatchlist, compareTickers, onToggleCompare }) {
   const [f, setF] = useState(saved);
   const [visible, setVisible] = useState(PAGE);
 
@@ -81,8 +71,8 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
     setVisible(PAGE);
   }, [f]);
 
-  // Ohne geladene B1/B2-Werte gibt es diese Sortierungen nicht
-  const sortBy = sortable || !SORTS.find((s) => s.key === f.sort)?.needsValues ? f.sort : "name";
+  // Eine früher gewählte, inzwischen entfernte Sortierung fällt auf „Nach Name“ zurück
+  const sortBy = SORTS.some((s) => s.key === f.sort) ? f.sort : "name";
   const toggleStatus = (s) => update({ statuses: f.statuses.includes(s) ? f.statuses.filter((x) => x !== s) : [...f.statuses, s] });
   const toggleAsset = (t) => update({ assetType: f.assetType === t ? "" : t });
   const active = f.query || f.statuses.length || f.sector || f.assetType;
@@ -96,14 +86,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
         (!f.sector || r.sector === f.sector) &&
         (!f.assetType || r.assetType === f.assetType)
     );
-    const cmp =
-      sortBy === "ticker"
-        ? (a, b) => a.ticker.localeCompare(b.ticker)
-        : sortBy === "debt"
-          ? byNumberAsc("debtPct")
-          : sortBy === "deposits"
-            ? byNumberAsc("depositsPct")
-            : (a, b) => a.name.localeCompare(b.name, "de");
+    const cmp = sortBy === "ticker" ? (a, b) => a.ticker.localeCompare(b.ticker) : (a, b) => a.name.localeCompare(b.name, "de");
     return [...list].sort(cmp);
   }, [rows, f, sortBy]);
 
@@ -154,7 +137,7 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
           <label>
             <span className="sr-only-label">Sortierung</span>
             <select value={sortBy} onChange={(e) => update({ sort: e.target.value })} className="field">
-              {SORTS.filter((s) => sortable || !s.needsValues).map((s) => (
+              {SORTS.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
@@ -204,9 +187,6 @@ export default function ScreeningList({ rows, loading, error, sortable, sectors,
             Filter zurücksetzen
           </button>
         ) : null}
-        {(sortBy === "debt" || sortBy === "deposits") && (
-          <span>Niedrigster Wert zuerst. Maßgeblich ist der höhere Wert aus Jahresabschluss und Quartal; Titel ohne Wert stehen am Ende.</span>
-        )}
       </p>
 
       {error && (
