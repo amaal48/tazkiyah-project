@@ -557,6 +557,8 @@ begin
   end if;
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant select on public.screening_current_internal to service_role';
+    -- Die berechnete Spalte public_result ruft die Funktion beim Insert des Crons auf
+    execute 'grant execute on function public.screening_public_result(jsonb) to service_role';
   end if;
 end $$;
 

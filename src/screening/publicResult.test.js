@@ -116,6 +116,7 @@ before(async () => {
     create view public.screening_current as select * from public.screening_runs;
     grant usage on schema public to anon, authenticated, service_role;
     grant select on all tables in schema public to anon, authenticated, service_role;
+    grant insert on public.screening_runs to service_role;
   `);
   await migrate();
   for (const [ticker, r] of Object.entries(RESULTS)) {
@@ -230,6 +231,25 @@ test("Neue Läufe werden beim Speichern bereinigt (berechnete Spalte)", async ()
   assert.equal(crit(pub, "B1").checks[1].result, RESULT.FAIL);
 });
 
+test("Rolle service_role (Cron): Insert berechnet public_result, also darf sie die Funktion ausführen", async () => {
+  const r = asJson(screen("FAIL", { interestBearingDebtExLeases: 400 }));
+  await db.exec("set role service_role");
+  try {
+    await db.query(
+      `insert into public.screening_runs (security_id, status, in_universe, result, parameters, engine_version, parameters_version, run_at)
+       select id, $1, true, $2, '{}', 'x', 'x', now() + interval '2 days' from public.securities where ticker = 'FAIL'`,
+      [r.status, JSON.stringify(r)]
+    );
+    const { rows } = await db.query("select result from public.screening_current_internal where ticker = 'FAIL'");
+    assert.equal(crit(rows[0].result, "B1").checks[1].result, RESULT.FAIL);
+  } finally {
+    await db.exec("reset role");
+  }
+  const pub = await publicResult("FAIL");
+  assert.equal(crit(pub, "B1").checks[1].value, undefined);
+  assert.equal(crit(pub, "B1").checks[1].result, RESULT.FAIL);
+});
+
 test("Kontrollabfrage am Ende der SQL-Datei, Datei erneut ausführbar", async () => {
   const k = await migrate();
   assert.equal(Number(k.titel_mit_ergebnis), 2);
@@ -241,6 +261,7 @@ test("Kontrollabfrage am Ende der SQL-Datei, Datei erneut ausführbar", async ()
   assert.equal(k.anon_liest_inputs, false);
   assert.equal(k.anon_liest_public_result, true);
   assert.equal(k.anon_liest_interne_view, false);
+  assert.equal(k.cron_darf_funktion, true);
   // Nach erneutem Ausführen weiter bereinigt
   assert.equal(crit(await publicResult("PASS"), "B2").checks[0].value, undefined);
 });
@@ -276,9 +297,11 @@ test("supabase_schema_screening.sql: gleiche Funktion, wiederholbar, danach supa
     await fresh.exec(SCHEMA);
     const { rows } = await fresh.query(
       `select has_column_privilege('anon', 'public.screening_runs', 'result', 'select') as result,
-              has_column_privilege('anon', 'public.screening_runs', 'public_result', 'select') as public_result`
+              has_column_privilege('anon', 'public.screening_runs', 'public_result', 'select') as public_result,
+              has_function_privilege('service_role', 'public.screening_public_result(jsonb)', 'execute') as cron_funktion,
+              has_function_privilege('anon', 'public.screening_public_result(jsonb)', 'execute') as anon_funktion`
     );
-    assert.deepEqual(rows[0], { result: false, public_result: true });
+    assert.deepEqual(rows[0], { result: false, public_result: true, cron_funktion: true, anon_funktion: false });
     await fresh.exec(SQL);
   } finally {
     await fresh.close();

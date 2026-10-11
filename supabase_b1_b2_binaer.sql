@@ -203,8 +203,10 @@ grant select on public.screening_current_internal to service_role;
 grant select on public.screening_current to anon, authenticated;
 revoke all on public.manual_reviews_due from anon, authenticated;
 
--- Die Funktion braucht niemand außer der Datenbank selbst
+-- Die Funktion ist nicht öffentlich aufrufbar. Die berechnete Spalte ruft sie aber bei jedem Insert mit
+-- den Rechten der schreibenden Rolle auf, also service_role (Cron): ausdrücklich freigeben.
 revoke all on function public.screening_public_result(jsonb) from public, anon, authenticated;
+grant execute on function public.screening_public_result(jsonb) to service_role;
 
 commit;
 
@@ -219,6 +221,7 @@ commit;
 --   anon_liest_inputs              = false
 --   anon_liest_public_result       = true
 --   anon_liest_interne_view        = false
+--   cron_darf_funktion             = true   (sonst scheitert das Speichern im Cron)
 -- Die View screening_current liefert für alle Rollen dasselbe (public_result), deshalb gilt die
 -- Zählung auch für die Website mit dem öffentlichen Schlüssel.
 select
@@ -245,4 +248,5 @@ select
   has_column_privilege('anon', 'public.screening_runs', 'result', 'select') as anon_liest_result,
   has_column_privilege('anon', 'public.screening_runs', 'inputs', 'select') as anon_liest_inputs,
   has_column_privilege('anon', 'public.screening_runs', 'public_result', 'select') as anon_liest_public_result,
-  has_table_privilege('anon', 'public.screening_current_internal', 'select') as anon_liest_interne_view;
+  has_table_privilege('anon', 'public.screening_current_internal', 'select') as anon_liest_interne_view,
+  has_function_privilege('service_role', 'public.screening_public_result(jsonb)', 'execute') as cron_darf_funktion;
