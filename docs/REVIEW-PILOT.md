@@ -73,7 +73,16 @@ Lies docs/REVIEW-PILOT.md (Abschnitt 3 und 4) und schreibe für die Aktien NVDA,
 ### B3-Linie: strenge Auslegung (Stand 04.10.2026)
 - Entscheidung von Amaal Ibrahim. Auslegung, keine Fatwa.
 - Regel: Betreibt ein Unternehmen laut 10-K ein eigenes Geschäft, das verbotene Erträge enthalten kann (Kundenkredit, Finanzierungs- oder Kartenprogramme, Alkohol, Musik usw.), und werden diese Erträge nicht ausgewiesen, ist B3 unclear. Eigene Zinserträge aus Geldanlagen zählt die Engine selbst, sie führen nicht zu unclear.
-- Nicht eingeführt: eine Obergrenzen-Regel (Abschätzung aus ausgewiesenem Bestand mal Zinssatz). Sie bleibt als Option für die Gegenlesung durch eine fachkundige Person.
+- ~~Nicht eingeführt: eine Obergrenzen-Regel~~ Ersetzt am 12.10.2026 durch die Obergrenzen-Regel unten.
+
+### Festlegungen vom 12.10.2026 (Amaal Ibrahim; Auslegung, keine Fatwa; jeweils für die Gegenlesung durch eine gelehrte Person):
+
+1. **A2, allgemeine Befugnisse:** Allgemeine Befugnisse in der Satzung (z. B. Geld verleihen, auch mit „financial services“ als Beispiel) sind kein Ziel (objective) im Sinne von SS 21, 3/4/1 → `pass`. Nennt die Satzung das Verleihen gegen Zinsen ausdrücklich als Geschäftszweck → `fail`. (MRK, ABT, KLAC: pass.)
+2. **Zweckbindung (Grundregel):** Umsatz mit Produkten speziell für einen verbotenen Zweck (z. B. Arzneimittel speziell für Schweine, Waffensteuerungen) zählt in B3 als verboten. Allgemein nutzbare Produkte (Halbleiter, Stahl, Software) zählen nicht, auch wenn Kunden sie teils für Verbotenes nutzen. Umstrittene Waffen (Streumunition, ABC-Waffen) → nicht konform.
+3. **Obergrenzen-Regel (ersetzt den Hinweis „nicht eingeführt“ vom 04.10.2026):** Ist der genaue verbotene Betrag nicht ausgewiesen, zählt die kleinste veröffentlichte Position, in der er enthalten sein kann, vollständig als verboten. Liegen alle verbotenen Einnahmen damit unter 5 %, ist B3 bestanden, sonst `unclear`. Umsetzung erst, wenn `sec-fetch.mjs` die 10-Q holt (Beträge für das Jahr und vier Quartale nötig); bis dahin bleiben solche Fälle `unclear`.
+4. **Leasing:** Mietleasing (Operating Lease) als Leasinggeber ist erlaubt (Ijarah). Beim Finanzierungsleasing (sales-type, direct financing) zählt der Zinsanteil als verboten; ohne ausgewiesenen Betrag `unclear` bzw. später Obergrenzen-Regel. (ABT, TMO, CDNS: unclear.)
+5. **Tierarzneimittel für Schweine:** kein A1-Ausschluss; Umsätze mit Produkten speziell für Schweine zählen in B3 als verboten (Zweckbindung, Kategorie `pork`). MRK: B3 unclear (nur der Nutztier-Gesamtumsatz ist veröffentlicht). Gilt auch für ZTS.
+6. **Bauteile für Luft- und Raumfahrt/Verteidigung** als einer von mehreren Endmärkten: kein Rüstungsgeschäft (Zweckbindung). ADI: B3 pass.
 - Folge im Pilot: HD, MSFT, KO, AAPL, AMZN, GOOGL und DIS stehen bei B3 auf unclear.
 
 ## 4. Format von `draft.json`
