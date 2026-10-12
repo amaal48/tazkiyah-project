@@ -4,7 +4,14 @@ Stand: 11.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ---
 
-## 0. Aktueller Stand und nächster Schritt (09.10.2026)
+## 0. Aktueller Stand und nächster Schritt (12.10.2026)
+
+**Stand 12.10.2026 (abends): erstes A2/B3-Paket abgeschlossen**
+- **Paket:** LLY, MRK, PFE, BMY, AMGN, GILD, REGN, VRTX, ABT, TMO, ISRG, SYK, AVGO, TXN, ADI, AMAT, NOW, CDNS, KLAC, LRCX (CRM wegen C1 = fail durch LRCX ersetzt). A2: 20 × pass. B3: 14 × pass, 6 × unclear (MRK Schweine-Tiermedizin; ABT, TMO, CDNS Finanzierungsleasing; ISRG, AVGO eigene Kundenfinanzierung).
+- **Ablauf (für weitere Pakete beibehalten):** Entwürfe (Claude Code) → unabhängige Zweitprüfung durch Claude (Satzungen auf verbotene Zwecke, 10-K auf Kundenfinanzierung/Leasing/Rüstung, Segmentsummen gegen Gesamtumsatz) mit Prüfzettel (`review-work/pruefzettel-2026-10-12.md` und `review-work/Pruefzettel-A2-B3-2026-10-12.pdf`) → vollständige Gegenprüfung durch AMI (ca. 1–2 Min. je Aktie) → `confirmed: true`, `verification: "full"` → `review-to-sql.mjs --reviewer AMI` → `insert-reviews.sql` im SQL Editor ausgeführt (34 neue Zeilen, die 7 Pilot-Einträge nicht doppelt) → Neuberechnung `?limit=0`.
+- **Ergebnis nach Neuberechnung:** konform weiterhin JNJ, NVDA. Die 20 Aktien bleiben „nicht geprüft“, bis B1/B2 Kurse haben (`pending.prices` = 328 am 12.10., ca. 99 je Tag → fertig ca. 15./16.10.); der Cron rechnet danach selbst neu. Den Neuabruf der 17 alten FMP-Titel erst starten, wenn `pending.prices` = 0.
+- **Auffällig 1, Neuberechnung:** `?limit=0` brauchte zwei Aufrufe (der erste endete bei NDAQ wegen des Zeitlimits), meldete aber `stoppedEarly: false`. → offener Punkt (Rückmeldung korrigieren).
+- **Auffällig 2, ETF ISWD:** steht seit dem 12.10. auf „nicht konform“ (vorher „nicht geprüft“), vermutlich G1 Look-through mit nun nicht konformen enthaltenen Titeln. → offener Punkt vor dem Launch.
 
 **Festlegungen vom 12.10.2026 (Amaal Ibrahim; Auslegung, keine Fatwa; jeweils für die Gegenlesung durch eine gelehrte Person)**
 1. **A2, allgemeine Befugnisse:** Allgemeine Befugnisse in der Satzung (z. B. Geld verleihen, auch mit „financial services“ als Beispiel) sind kein Ziel (objective) im Sinne von SS 21, 3/4/1 → `pass`. Nennt die Satzung das Verleihen gegen Zinsen ausdrücklich als Geschäftszweck → `fail`. (MRK, ABT, KLAC: pass.)
@@ -13,7 +20,7 @@ Stand: 11.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 4. **Leasing:** Mietleasing (Operating Lease) als Leasinggeber ist erlaubt (Ijarah). Beim Finanzierungsleasing (sales-type, direct financing) zählt der Zinsanteil als verboten; ohne ausgewiesenen Betrag `unclear` bzw. später Obergrenzen-Regel. (ABT, TMO, CDNS: unclear.)
 5. **Tierarzneimittel für Schweine:** kein A1-Ausschluss; Umsätze mit Produkten speziell für Schweine zählen in B3 als verboten (Zweckbindung, Kategorie `pork`). MRK: B3 unclear (nur der Nutztier-Gesamtumsatz ist veröffentlicht). Gilt auch für ZTS.
 6. **Bauteile für Luft- und Raumfahrt/Verteidigung** als einer von mehreren Endmärkten: kein Rüstungsgeschäft (Zweckbindung). ADI: B3 pass.
-- **Erstes A2/B3-Paket (11.10.2026, 20 Aktien, Entwürfe in `review-work/`, noch nicht bestätigt):** LLY MRK PFE BMY AMGN GILD REGN VRTX ABT TMO ISRG SYK AVGO TXN ADI AMAT NOW CDNS KLAC LRCX (CRM wegen C1 fail durch LRCX ersetzt). A2 20 × pass. B3 14 × pass, 6 × unclear (MRK Schweine-Produkte; ABT, TMO, CDNS Finanzierungsleasing; ISRG Kundenfinanzierung über Leasing; AVGO Finanzierungsmodelle für KI-Systeme). check-quotes alles OK, Kontrollbogen `review-work/kontrollbogen.md`.
+- **Erstes A2/B3-Paket (11.10.2026, 20 Aktien; am 12.10.2026 bestätigt und eingetragen, siehe „Stand 12.10.2026 (abends)“):** LLY MRK PFE BMY AMGN GILD REGN VRTX ABT TMO ISRG SYK AVGO TXN ADI AMAT NOW CDNS KLAC LRCX (CRM wegen C1 fail durch LRCX ersetzt). A2 20 × pass. B3 14 × pass, 6 × unclear (MRK Schweine-Produkte; ABT, TMO, CDNS Finanzierungsleasing; ISRG Kundenfinanzierung über Leasing; AVGO Finanzierungsmodelle für KI-Systeme). check-quotes alles OK, Kontrollbogen `review-work/kontrollbogen.md`.
 
 **Neu am 11.10.2026 (Branch `b1-b2-binaer`, am 11.10.2026 auf `main` gemergt): B1/B2 öffentlich nur binär** (Lizenz FMP Free jetzt, Tiingo Commercial später; siehe „Neu am 08.10.2026“):
 - **Oberfläche:** Detailseite zeigt bei B1/B2 je Periode nur „höchstens 30 %“ bzw. „über 30 %“ (bei „nicht geprüft“ den Grund), ohne Wert, Abstand und Balken, dazu „Wir zeigen nur, ob die Grenze eingehalten ist … Warum?“ und, wenn SEC-Daten vorliegen, „Schulden im 10-K vom … nachlesen“ (Link ins EDGAR-Archiv). Begründungszeile ohne B1/B2-Wert („Zinstragende Schulden über 30 %, Quartal 30.06.2026“). Sortierungen nach B1/B2 im Screener entfernt. Beispielkarte der Startseite binär. Erklärseiten B1/B2 und Methodik („Daten und ihre Grenzen“) mit kurzem Absatz zur Lizenz. Texte zentral in `format.js` (`BINARY_CRITERIA`, `binaryOutcome`). Vergleich, Watchlist, Portfolio und Berichte zeigten keine B1/B2-Werte.
@@ -229,8 +236,11 @@ Stand: 11.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - Kursquelle für B1/B2 offen (Tiingo-Rückfrage vom 08.10.2026).
 
 **Offene Punkte (Stand 05.10.2026):**
-- (12.10.2026) Obergrenzen-Regel umsetzen: `scripts/sec-fetch.mjs` um die 10-Q erweitern (Beträge für das Jahr und vier Quartale), B3 `fail` mit Beträgen je Periode (`prohibitedRevenueByPeriod`) ermöglichen.
-- (12.10.2026) Methodik-Seite um Zweckbindung, Obergrenzen-Regel und Leasing (Mietleasing erlaubt, Zinsanteil beim Finanzierungsleasing verboten) ergänzen, jeweils als „Unsere Festlegung (12.10.2026)“.
+- (12.10.2026) Obergrenzen-Regel umsetzen: `scripts/sec-fetch.mjs` um die 10-Q erweitern (Beträge für das Jahr und vier Quartale), B3 `fail` mit Beträgen je Periode (`prohibitedRevenueByPeriod`) ermöglichen. Danach MRK, ABT, TMO und CDNS (B3 unclear) neu bewerten.
+- (12.10.2026) Methodik-Seite um die Festlegungen vom 12.10.2026 ergänzen (Zweckbindung, Obergrenzen-Regel, Leasing: Mietleasing erlaubt, Zinsanteil beim Finanzierungsleasing verboten; allgemeine Befugnisse bei A2), jeweils als „Unsere Festlegung (12.10.2026)“.
+- (12.10.2026) Cron-Rückmeldung korrigieren: Die Neuberechnung `?limit=0` endete im ersten Aufruf wegen des Zeitlimits (bei NDAQ), meldete aber `stoppedEarly: false`. Auch die Neuberechnung aus gespeicherten Daten soll ein vorzeitiges Ende melden.
+- (12.10.2026, vor dem Launch) ETF ISWD seit 12.10. „nicht konform“ (vorher „nicht geprüft“), vermutlich G1 Look-through: auslösende Titel ermitteln, klären, ob Auslegung oder Datenproblem; die ETF-Detailseite soll die auslösenden Titel nennen.
+- (12.10.2026) Für die gelehrte Person: ADI, Luft- und Raumfahrt/Verteidigung als Teilmarkt des Endmarkts Industrial, Rüstungsanteil nicht getrennt ausgewiesen (nach Festlegung 12.10.2026, Zweckbindung, als pass gewertet).
 - Cron: Ursache für die 9 Titel ist gefunden (Abschnitt 4, „Cron-Befund“). Lösung ist der Anbieterwechsel oben; im Code wurde nichts geändert.
 - Das Repository auf GitHub ist **öffentlich** (am 05.10. geprüft). `docs/UEBERGABE-2026-10-04.md` enthält eine E-Mail-Adresse und die Vercel-Adresse (die Vercel-Adresse steht auch hier in Abschnitt 2). Entscheidung offen: privat stellen oder öffentlich lassen.
 - Vor dem Launch: TradingView, die Akademie-Fragen (`academy_questions`), das Kontaktformular (`contact_messages`, Löschung nach 6 Monaten) und Resend (E-Mail-Versand) in die Datenschutzerklärung aufnehmen, schriftliche Bestätigung von Tiingo ablegen.
