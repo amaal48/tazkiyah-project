@@ -169,6 +169,8 @@ test("Reihenfolge: Tazkiyah 30 zuerst, dann die am längsten nicht abgerufenen, 
   ]);
   assert.deepEqual(dueSecurities(sec, cal, ["NVDA"], now).map((s) => s.ticker), ["NVDA", "AAA"]);
   assert.deepEqual(dueSecurities(sec, cal, ["NVDA"], now, { tickers: ["BBB"] }).map((s) => s.ticker), ["BBB"]);
+  // force (--all): auch kürzlich abgerufene
+  assert.deepEqual(dueSecurities(sec, cal, ["NVDA"], now, { force: true }).map((s) => s.ticker), ["NVDA", "AAA", "BBB"]);
 });
 
 test("Kalender: Termine im Zeitraum, nach Datum sortiert, Zahlen und HV getrennt", () => {

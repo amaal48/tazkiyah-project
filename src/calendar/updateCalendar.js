@@ -51,15 +51,17 @@ export function createSecFetcher({ userAgent, fetchImpl = fetch, sleepImpl = (ms
 }
 
 /** Welche Titel sind dran? Tazkiyah 30 zuerst (älter als 20 h), dann die am längsten nicht abgerufenen. */
-export function dueSecurities(securities, calendarById, tazkiyah30, now, { tickers = null, limit = 60 } = {}) {
+export function dueSecurities(securities, calendarById, tazkiyah30, now, { tickers = null, limit = 60, force = false } = {}) {
   const t30 = new Set(tazkiyah30);
   const stocks = securities.filter((s) => s.asset_type === "stock" && s.active !== false && (!tickers || tickers.includes(s.ticker)));
   const age = (s) => {
     const f = calendarById.get(s.id)?.fetched_at;
     return f ? now.getTime() - Date.parse(f) : Infinity;
   };
-  const first = stocks.filter((s) => t30.has(s.ticker) && (tickers || age(s) > 20 * HOUR));
-  const rest = stocks.filter((s) => !first.includes(s)).filter((s) => tickers || age(s) > 20 * HOUR).sort((a, b) => age(b) - age(a));
+  // tickers oder force: unabhängig vom letzten Abruf
+  const due = (s) => tickers || force || age(s) > 20 * HOUR;
+  const first = stocks.filter((s) => t30.has(s.ticker) && due(s));
+  const rest = stocks.filter((s) => !first.includes(s)).filter(due).sort((a, b) => age(b) - age(a));
   return [...first, ...rest].slice(0, limit);
 }
 
@@ -133,12 +135,12 @@ export async function calendarEntryFor({ security, cik, sec, prev = null, today 
  * Ein Lauf. repo: { loadSecurities, loadTazkiyah30, loadCalendar, saveCalendar(row) }.
  * Gibt eine Zusammenfassung zurück (keine Schlüssel, keine Rohdaten).
  */
-export async function runCalendarUpdate({ repo, sec, now = new Date(), tickers = null, limit = 60, deadlineMs = Infinity, dryRun = false }) {
+export async function runCalendarUpdate({ repo, sec, now = new Date(), tickers = null, limit = 60, deadlineMs = Infinity, dryRun = false, force = false }) {
   const startedAt = Date.now();
   const today = now.toISOString().slice(0, 10);
   const [securities, tazkiyah30, calendar] = await Promise.all([repo.loadSecurities(), repo.loadTazkiyah30(), repo.loadCalendar()]);
   const calendarById = new Map(calendar.map((r) => [r.security_id, r]));
-  const due = dueSecurities(securities, calendarById, tazkiyah30, now, { tickers, limit });
+  const due = dueSecurities(securities, calendarById, tazkiyah30, now, { tickers, limit, force });
   const index = buildTickerIndex(await sec.getJson(TICKERS_URL));
 
   const summary = { due: due.length, updated: [], errors: [], noCik: [], stoppedEarly: false };

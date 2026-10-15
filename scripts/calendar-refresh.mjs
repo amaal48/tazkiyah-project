@@ -3,7 +3,7 @@
 //
 // Aufruf (im Projektordner):
 //   node scripts/calendar-refresh.mjs              → wie ein Cron-Lauf (Tazkiyah 30 + 80 weitere), speichert
-//   node scripts/calendar-refresh.mjs --all        → alle Aktien (ca. 1–2 Minuten), speichert
+//   node scripts/calendar-refresh.mjs --all        → alle Aktien, auch kürzlich abgerufene (ca. 2 Minuten), speichert
 //   node scripts/calendar-refresh.mjs NVDA JNJ     → nur diese Ticker
 //   --dry                                          → nur anzeigen, nichts speichern
 //
@@ -46,6 +46,7 @@ const summary = await runCalendarUpdate({
   sec: createSecFetcher({ userAgent: ua }),
   tickers: tickers.length ? tickers : null,
   limit: all || tickers.length ? 10000 : 110,
+  force: all,
   dryRun,
 });
 console.log(`${dryRun ? "Nur angezeigt" : "Gespeichert"}: ${summary.updated.length} von ${summary.due} Titeln, ${summary.secCalls} Abrufe bei der SEC.`);
