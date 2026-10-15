@@ -30,15 +30,20 @@ if (write && !SERVICE) {
   console.error("--write braucht SUPABASE_SERVICE_ROLE_KEY in .env.local. Ohne --write wird nur abgefragt.");
   process.exit(1);
 }
+// Der öffentliche Schlüssel darf nicht schreiben; Supabase meldet dann keinen Fehler, ändert aber 0 Zeilen
+if (write && (SERVICE === ANON || SERVICE.startsWith("sb_publishable_"))) {
+  console.error("SUPABASE_SERVICE_ROLE_KEY ist der öffentliche Schlüssel (sb_publishable_…). Nötig ist der geheime Schlüssel (sb_secret_… bzw. service_role).");
+  process.exit(1);
+}
 
 async function rest(path, { method = "GET", key = ANON, body } = {}) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     method,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=representation" },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`Supabase ${method} ${path.split("?")[0]}: ${res.status} ${(await res.text()).slice(0, 200)}`);
-  return method === "GET" ? res.json() : null;
+  return res.json();
 }
 
 // Ticker: Argumente, sonst Tabelle tazkiyah30 (Rückfall: feste Liste)
@@ -77,7 +82,11 @@ for (const t of tickers) {
     report.push({ t, name: r.name, isin: r.isin, before, after: null, note: "OpenFIGI-Fehler, nicht gespeichert" });
     continue;
   }
-  if (write) await rest(`securities?id=eq.${r.id}`, { method: "PATCH", key: SERVICE, body: { german_venues: v, universe_checked_at: now } });
+  if (write) {
+    // Prüfen, dass die Zeile wirklich geändert wurde (ohne Schreibrecht liefert Supabase eine leere Liste statt eines Fehlers)
+    const changed = await rest(`securities?id=eq.${r.id}&select=id`, { method: "PATCH", key: SERVICE, body: { german_venues: v, universe_checked_at: now } });
+    if (!changed?.length) throw new Error(`${t}: nicht gespeichert (0 Zeilen geändert, Schlüssel ohne Schreibrecht?)`);
+  }
   report.push({ t, name: r.name, isin: r.isin, before, after: v, note: v.length ? "" : "OpenFIGI kennt kein deutsches Listing" });
 }
 
