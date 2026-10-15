@@ -7,10 +7,17 @@
     {
       "path": "/api/notify-questions",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/update-calendar",
+      "schedule": "0 4 * * *"
     }
   ],
   "functions": {
     "api/run-screening.js": {
+      "maxDuration": 60
+    },
+    "api/update-calendar.js": {
       "maxDuration": 60
     }
   }

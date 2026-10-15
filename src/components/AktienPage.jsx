@@ -2,12 +2,13 @@
 //
 // Aktiensuche (#/aktien, Navigation „Aktien“; Neue Ausrichtung 15.10.2026): alle aktiven Titel aus dem
 // Universum, nur Stammdaten, KEIN Halal-Status. Suche nach Name oder Ticker, Filter nach Branche.
-// Titel der Tazkiyah 30 tragen nur den Link „in den Tazkiyah 30“.
+// Titel der Tazkiyah 30 tragen nur den Link „in den Tazkiyah 30“. Nächste Zahlen aus SEC EDGAR (company_calendar).
 
 import { useEffect, useMemo, useState } from "react";
 import { useScreeningList } from "../lib/screeningData.js";
+import { EARNINGS_STATUS_TEXT, useCalendarList } from "../lib/calendarData.js";
 import { routes } from "../lib/hashRoute.js";
-import { H1_STYLE } from "./screening/format.js";
+import { H1_STYLE, fmtDate } from "./screening/format.js";
 
 const PAGE = 50;
 const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]";
@@ -17,6 +18,7 @@ let saved = { query: "", sector: "" };
 
 export default function AktienPage() {
   const list = useScreeningList();
+  const cal = useCalendarList();
   const [f, setF] = useState(saved);
   const [visible, setVisible] = useState(PAGE);
   const update = (patch) =>
@@ -117,8 +119,21 @@ export default function AktienPage() {
                       Kurs &amp; Chart
                     </a>
                   </td>
-                  <td className="px-5 py-3 text-[var(--muted)]">folgt später</td>
-                  <td className="px-5 py-3 text-[var(--muted)]">folgt später</td>
+                  <td className="px-5 py-3">
+                    {cal.byTicker.get(r.ticker)?.next_earnings_date ? (
+                      <>
+                        <span className="font-[IBM_Plex_Mono] text-[14px] text-[var(--text)]">{fmtDate(cal.byTicker.get(r.ticker).next_earnings_date)}</span>
+                        <span className="block text-[13px] text-[var(--muted)]">{EARNINGS_STATUS_TEXT[cal.byTicker.get(r.ticker).next_earnings_status]}</span>
+                      </>
+                    ) : (
+                      <span className="text-[var(--muted)]">{cal.loading ? "…" : "–"}</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <a href={routes.stock(r.ticker)} className={linkClass} aria-label={`Berichte von ${r.name}`}>
+                      Berichte
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>

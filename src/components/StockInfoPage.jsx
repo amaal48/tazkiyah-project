@@ -2,7 +2,7 @@
 //
 // Aktienseite OHNE Halal-Status (#/aktie/XYZ für alle Titel außerhalb der Tazkiyah 30, Neue Ausrichtung
 // 15.10.2026): Name, Ticker, Branche, Kurs und Chart sowie Unternehmensprofil von TradingView (erst nach
-// Zustimmung), Platzhalter für Termine und Berichte. Keine Kriterien, keine Ampel, kein Status.
+// Zustimmung), Termine und Berichte von SEC EDGAR (CompanyCalendar). Keine Kriterien, keine Ampel, kein Status.
 //
 // Auch Titel der Tazkiyah 30, deren Prüfung noch nicht abgeschlossen ist, erscheinen hier
 // (pending: true), damit öffentlich kein Zwischenstand zu sehen ist.
@@ -10,21 +10,11 @@
 import { useEffect } from "react";
 import { routes } from "../lib/hashRoute.js";
 import MarketData from "./screening/MarketData.jsx";
-import { H1_STYLE, H2_STYLE } from "./screening/format.js";
+import CompanyCalendar from "./CompanyCalendar.jsx";
+import { H1_STYLE } from "./screening/format.js";
 
 const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]";
-
-function Placeholder({ title, children }) {
-  return (
-    <section className="card h-full">
-      <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "22px" }}>
-        {title}
-      </h2>
-      <p className="mt-2 text-[16px] leading-relaxed text-[var(--muted)]">{children}</p>
-    </section>
-  );
-}
 
 export default function StockInfoPage({ ticker, row, pending = false, onBack, backLabel = "← Zur Aktiensuche", watchlist = [], onToggleWatchlist }) {
   useEffect(() => {
@@ -83,10 +73,7 @@ export default function StockInfoPage({ ticker, row, pending = false, onBack, ba
 
       <MarketData ticker={ticker} exchange={row?.exchange} name={name} variant="info" className="mt-12" />
 
-      <div className="mt-12 grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))" }}>
-        <Placeholder title="Nächste Zahlen im Kalender">Folgt später. Hier erscheint der nächste Termin für Quartalszahlen.</Placeholder>
-        <Placeholder title="Berichte">Folgt später. Hier erscheinen die Berichte des Unternehmens.</Placeholder>
-      </div>
+      <CompanyCalendar ticker={ticker} />
 
       <p className="mt-10 max-w-[62ch] text-sm leading-relaxed text-[var(--muted)]">
         Kurse über TradingView. Die Inhalte dienen der Information und sind keine Anlageberatung.

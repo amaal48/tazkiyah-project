@@ -15,6 +15,7 @@ import { ETF_STAGE, EXPLANATIONS, FLAG_TEXTS, RESULT_LABELS, STAGES } from "../.
 import { loadScreeningDetail, loadStatusHistory, useScreeningList } from "../../lib/screeningData.js";
 import { navigate, routes } from "../../lib/hashRoute.js";
 import StockInfoPage from "../StockInfoPage.jsx";
+import CompanyCalendar from "../CompanyCalendar.jsx";
 import { LegalNoticeFull, LegalNoticeShort } from "./LegalNotice.jsx";
 import StatusBadge, { StatusIcon } from "./StatusBadge.jsx";
 import SourceLink from "./SourceLink.jsx";
@@ -479,6 +480,9 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
 
           {/* Kurs und Marktdaten (TradingView, erst nach Zustimmung) */}
           <MarketData ticker={ticker} exchange={row?.exchange} name={name} />
+
+          {/* Termine und Berichte (SEC EDGAR) */}
+          <CompanyCalendar ticker={ticker} className="mt-[72px]" />
 
           {/* Verlauf */}
           <section className="mt-[72px]">
