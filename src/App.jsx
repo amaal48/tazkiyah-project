@@ -13,7 +13,6 @@ import { Toast } from "./components/Toast";
 import MethodikPage from "./components/MethodikPage.jsx";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
-import StatusBadge from "./components/screening/StatusBadge.jsx";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
 import Tazkiyah30Page from "./components/screening/Tazkiyah30Page.jsx";
 import AktienPage from "./components/AktienPage.jsx";
@@ -24,7 +23,6 @@ import SiteHeader from "./components/SiteHeader.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
-import { cardReason } from "./components/screening/format.js";
 
 /* ============================================================
    TAZKIYAH — Basis-Prototyp
@@ -1163,59 +1161,6 @@ function SectorsPage({ onBack }) {
   );
 }
 
-/* ---------- Vergleichsseite ---------- */
-
-function ComparePage({ tickers, onBack }) {
-  const list = useScreeningList();
-  const items = sampleStocks.filter((s) => tickers.includes(s.ticker));
-  // Status nur für die Tazkiyah 30 mit Endergebnis, sonst kein Status
-  const final = (s) => (list.byTicker.get(s.ticker)?.hasFinalResult ? list.byTicker.get(s.ticker) : null);
-  const noStatus = (s) => (list.byTicker.get(s.ticker)?.inTazkiyah30 ? "Prüfung noch nicht abgeschlossen." : "Keine Sharia-Prüfung (nicht in den Tazkiyah 30).");
-  const rows = [
-    { label: "Status", get: (s) => (final(s) ? <StatusBadge status={final(s).status} /> : "–") },
-    { label: "Begründung", get: (s) => (final(s) ? cardReason(final(s)) : noStatus(s)) },
-    { label: "Sektor", get: (s) => s.sector },
-  ];
-  return (
-    <div className="font-body">
-      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
-        <span>/</span>
-        <span className="text-[var(--text)]">Vergleichen</span>
-      </header>
-      <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Aktien vergleichen</h1>
-        {items.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--muted)]">Noch keine Aktien zum Vergleichen ausgewählt.</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)]">
-                  <th className="px-5 py-3 text-left text-sm text-[var(--muted)] font-medium"> </th>
-                  {items.map((s) => (
-                    <th key={s.ticker} className="px-5 py-3 text-left font-[IBM_Plex_Mono] text-[var(--text)]">{s.ticker}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.label} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-5 py-3 text-sm text-[var(--muted)]">{r.label}</td>
-                    {items.map((s) => (
-                      <td key={s.ticker} className="px-5 py-3 text-[var(--text-soft)]">{r.get(s)}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
 /* ---------- Navigation (Kopfleiste, siehe components/SiteHeader.jsx) ---------- */
 
 const NAV_GROUPS = [
@@ -1238,7 +1183,7 @@ const FOOTER_LINK =
 const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "kontakt"];
 
 export default function TazkiyahPrototype() {
-  const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | compare | …
+  const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [criterionId, setCriterionId] = useState(null);
   const [contactPrefill, setContactPrefill] = useState({ topic: null, ticker: null });
@@ -1261,8 +1206,6 @@ export default function TazkiyahPrototype() {
 
   const userId = session?.user?.id ?? null;
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
-  // Vergleich: derzeit ohne Auswahl-Knöpfe (früher im Screener); Seite zeigt Status nur für die Tazkiyah 30
-  const [compareTickers] = useState([]);
   const [activeAnchor, setActiveAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
 
@@ -1414,7 +1357,6 @@ export default function TazkiyahPrototype() {
         navGroups={NAV_GROUPS}
         activeFilter={activeFilter}
         onGo={goTo}
-        compareCount={compareTickers.length}
         session={session}
         onOpenAuth={() => setShowAuth(true)}
         onSignOut={() => supabase.auth.signOut()}
@@ -1451,7 +1393,6 @@ export default function TazkiyahPrototype() {
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
         {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "sectors" && <SectorsPage onBack={() => goTo("home")} />}
-        {page === "compare" && <ComparePage tickers={compareTickers} onBack={() => goTo("home")} />}
         {page === "profile" && <ProfilePage session={session} onGo={goTo} />}
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
@@ -1485,19 +1426,6 @@ export default function TazkiyahPrototype() {
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />
-
-      {/* Floating Vergleichs-Leiste */}
-      {compareTickers.length > 0 && page !== "compare" && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-3">
-          <span className="text-sm text-[var(--muted)]">{compareTickers.length} zum Vergleich ausgewählt</span>
-          <button
-            onClick={() => goTo("compare")}
-            className="rounded-full bg-[var(--primary)] px-4 py-1.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)]"
-          >
-            Vergleichen ansehen
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -72,7 +72,7 @@ function SubItems({ group, onPick, activeFilter }) {
   );
 }
 
-export default function SiteHeader({ page, navGroups, activeFilter, onGo, compareCount, session, onOpenAuth, onSignOut }) {
+export default function SiteHeader({ page, navGroups, activeFilter, onGo, session, onOpenAuth, onSignOut }) {
   const [openGroup, setOpenGroup] = useState(null); // Aufklappmenü am Hauptpunkt (Desktop)
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -108,7 +108,7 @@ export default function SiteHeader({ page, navGroups, activeFilter, onGo, compar
   const groupByKey = Object.fromEntries(navGroups.map((g) => [g.key, g]));
   const ACTIVE_PAGES = {
     aktien: ["aktien"],
-    tazkiyah30: ["tazkiyah30", "detail", "sectors", "compare"],
+    tazkiyah30: ["tazkiyah30", "detail", "sectors"],
     berichte: ["reports"],
     kalender: ["calendar"],
     akademie: ["faq"],
@@ -166,12 +166,6 @@ export default function SiteHeader({ page, navGroups, activeFilter, onGo, compar
               )}
             </div>
           ))}
-          {compareCount > 0 && (
-            <button type="button" onClick={() => go("compare")} className={navLink({ key: "compare" }) + (page === "compare" ? " border-[var(--primary)] text-[var(--primary)]" : "")}>
-              Vergleich
-              <Count n={compareCount} />
-            </button>
-          )}
         </nav>
 
         {/* Anmelden bzw. Konto ab 900 px */}
@@ -265,14 +259,6 @@ export default function SiteHeader({ page, navGroups, activeFilter, onGo, compar
                 )}
               </li>
             ))}
-            {compareCount > 0 && (
-              <li className="border-t border-[var(--line)]">
-                <button type="button" onClick={() => go("compare")} className="flex min-h-[48px] w-full items-center text-left text-[17px] font-medium text-[var(--text)]">
-                  Vergleich
-                  <Count n={compareCount} />
-                </button>
-              </li>
-            )}
             <li className="mt-2 border-t border-[var(--line)] pt-3">
               {session ? (
                 <div>

@@ -9,8 +9,10 @@
 // auf 8 Abrufe je Sekunde), ermittelt die Gruppe nach SIC (industryRules.js, classifySic) und vergleicht mit
 // der Gruppe nach dem heutigen FMP-Stand (A1 im letzten gespeicherten Ergebnis), soweit vorhanden.
 //
-// Braucht SEC_USER_AGENT sowie VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY (öffentlicher Schlüssel),
-// gelesen aus .env.local bzw. .env. Schlüsselwerte werden nie ausgegeben.
+// Braucht SEC_USER_AGENT sowie VITE_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY, gelesen aus .env.local bzw.
+// .env (nur lokal, nie im Browser). Seit 15.10.2026 (supabase_tazkiyah30.sql) liefert die öffentliche View
+// screening_current nur die Tazkiyah 30; das Skript liest deshalb screening_current_internal mit der
+// Service-Role. Schlüsselwerte werden nie ausgegeben.
 
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -21,8 +23,8 @@ for (const f of [".env.local", ".env"]) if (existsSync(f)) process.loadEnvFile(f
 
 const UA = (process.env.SEC_USER_AGENT || "").trim();
 const SB_URL = process.env.VITE_SUPABASE_URL;
-const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-const missing = [!UA.includes("@") && "SEC_USER_AGENT", !SB_URL && "VITE_SUPABASE_URL", !SB_KEY && "VITE_SUPABASE_ANON_KEY"].filter(Boolean);
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const missing = [!UA.includes("@") && "SEC_USER_AGENT", !SB_URL && "VITE_SUPABASE_URL", !SB_KEY && "SUPABASE_SERVICE_ROLE_KEY"].filter(Boolean);
 if (missing.length) {
   console.error(`Es fehlt: ${missing.join(", ")}. Bitte selbst in .env.local eintragen.`);
   process.exit(1);
@@ -60,7 +62,7 @@ async function supabase(query) {
 }
 
 const securities = await supabase("securities?select=id,ticker,name,provider_symbol&asset_type=eq.stock&order=ticker");
-const current = await supabase("screening_current?select=security_id,result");
+const current = await supabase("screening_current_internal?select=security_id,result");
 const fmpBySecurity = new Map();
 for (const r of current) {
   const a1 = r.result?.criteria?.find((c) => c.id === "A1");

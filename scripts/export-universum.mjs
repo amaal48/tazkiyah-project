@@ -8,7 +8,9 @@
 // sind Information (SIC-Code von der SEC, Zuordnung nach industryRules.js, aktuelles Ergebnis), gelbe Spalten
 // bearbeitest du. Zurück mit: node scripts/import-universum.mjs (erzeugt SQL und einen Vorschlag, führt nichts aus).
 //
-// Braucht SEC_USER_AGENT, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY aus .env.local (Werte werden nie ausgegeben).
+// Braucht SEC_USER_AGENT, VITE_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY aus .env.local (nur lokal, Werte werden
+// nie ausgegeben). Seit 15.10.2026 (supabase_tazkiyah30.sql) liefert die öffentliche View screening_current nur
+// die Tazkiyah 30; das Skript liest deshalb screening_current_internal mit der Service-Role.
 
 import { existsSync } from "node:fs";
 import ExcelJS from "exceljs";
@@ -19,9 +21,9 @@ import { COLUMNS, EXCHANGES, HANDLINGS, STATUS_DE, sortRows } from "./lib/univer
 for (const f of [".env.local", ".env"]) if (existsSync(f)) process.loadEnvFile(f);
 const UA = (process.env.SEC_USER_AGENT || "").trim();
 const SB_URL = process.env.VITE_SUPABASE_URL;
-const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!UA.includes("@") || !SB_URL || !SB_KEY) {
-  console.error("Es fehlt SEC_USER_AGENT, VITE_SUPABASE_URL oder VITE_SUPABASE_ANON_KEY in .env.local.");
+  console.error("Es fehlt SEC_USER_AGENT, VITE_SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY in .env.local.");
   process.exit(1);
 }
 
@@ -61,7 +63,7 @@ async function supabase(query) {
 }
 
 const securities = await supabase("securities?select=*&order=ticker");
-const current = await supabase("screening_current?select=security_id,status");
+const current = await supabase("screening_current_internal?select=security_id,status");
 const statusOf = new Map(current.map((r) => [r.security_id, STATUS_DE[r.status] ?? r.status]));
 
 const sec = createSecProvider({ userAgent: UA });

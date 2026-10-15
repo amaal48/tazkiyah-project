@@ -1,0 +1,31 @@
+Ticker;Name;ISIN;Herkunft ISIN;Handelsplätze in securities (bisher)
+ADBE;Adobe Inc.;US00724F1012;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+ADI;Analog Devices, Inc.;US0326541051;neu aus CUSIP (SEC 13F-Liste);–
+AMAT;Applied Materials, Inc.;US0382221051;neu aus CUSIP (SEC 13F-Liste);–
+AMD;Advanced Micro Devices, Inc.;US0079031078;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+AMGN;Amgen Inc.;US0311621009;neu aus CUSIP (SEC 13F-Liste);–
+ANET;Arista Networks, Inc.;US0404132054;neu aus CUSIP (SEC 13F-Liste);–
+BMY;Bristol-Myers Squibb Company;US1101221083;neu aus CUSIP (SEC 13F-Liste);–
+BSX;Boston Scientific Corporation;US1011371077;neu aus CUSIP (SEC 13F-Liste);–
+CRM;Salesforce, Inc.;US79466L3024;neu aus CUSIP (SEC 13F-Liste);–
+EW;Edwards Lifesciences Corporatio;US28176E1082;vorhanden;Düsseldorf, Frankfurt, Hamburg, München, Deutschland (alle Plätze), Stuttgart, Xetra
+FTNT;Fortinet, Inc.;US34959E1091;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+GILD;Gilead Sciences, Inc.;US3755581036;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+ITW;Illinois Tool Works Inc.;US4523081093;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+JNJ;Johnson & Johnson;US4781601046;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+KLAC;KLA Corporation;US4824801009;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+LLY;Eli Lilly and Company;US5324571083;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+LRCX;Lam Research Corporation;US5128073062;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+META;Meta Platforms, Inc.;US30303M1027;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+MU;Micron Technology, Inc.;US5951121038;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+NVDA;NVIDIA Corporation;US67066G1040;vorhanden;Düsseldorf, Frankfurt, Hamburg, Hannover, München, Deutschland (alle Plätze), Stuttgart, Xetra
+PFE;Pfizer, Inc.;US7170811035;vorhanden;–
+PLTR;Palantir Technologies Inc.;US69608A1088;vorhanden;–
+QCOM;QUALCOMM Incorporated;US7475251036;vorhanden;–
+REGN;Regeneron Pharmaceuticals, Inc.;US75886F1075;vorhanden;–
+SHW;Sherwin-Williams Company (The);US8243481061;vorhanden;–
+SNPS;Synopsys, Inc.;US8716071076;vorhanden;–
+SYK;Stryker Corporation;US8636671013;vorhanden;–
+TXN;Texas Instruments Incorporated;US8825081040;vorhanden;–
+VRTX;Vertex Pharmaceuticals Incorpor;US92532F1003;neu aus CUSIP (SEC 13F-Liste);–
+WDAY;Workday, Inc.;US98138H1014;neu aus CUSIP (SEC 13F-Liste);–
