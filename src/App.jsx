@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { ALL_STOCKS } from "./data/stocks";
-import { generateICS, downloadICS } from "./utils/icsExport";
 import { supabase } from "./lib/supabaseClient";
 import { AuthPanel } from "./components/AuthPanel";
 import { ResetPasswordPanel } from "./components/ResetPasswordPanel";
@@ -16,6 +15,7 @@ import { useScreeningList } from "./lib/screeningData";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
 import Tazkiyah30Page from "./components/screening/Tazkiyah30Page.jsx";
 import AktienPage from "./components/AktienPage.jsx";
+import CalendarPage from "./components/CalendarPage.jsx";
 import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
 import ContactPage from "./components/ContactPage.jsx";
@@ -33,41 +33,13 @@ import CriterionPage from "./components/screening/CriterionPage.jsx";
 
 /* ---------- Daten ---------- */
 
-// Stammdaten (Sektor, Platzhalter-Kurse, Demo-Termine) aus src/data/stocks.js.
+// Stammdaten (Sektor) aus src/data/stocks.js. Termine kommen aus SEC EDGAR (company_calendar).
 // Der Screening-Status kommt ausschließlich aus Supabase (useScreeningList).
 const sampleStocks = ALL_STOCKS;
-
-// Portfolio-Beispiel: 4 real vorhandene Titel mit angenommenen Gewichtungen
-// (die Gewichtung selbst ist weiterhin frei erfunden — echte Portfolios kommen
-// erst mit Nutzerkonten/Depot-Anbindung).
-const holdings = [
-  { ticker: "MSFT", weight: 38 },
-  { ticker: "NVDA", weight: 27 },
-  { ticker: "GOOGL", weight: 20 },
-  { ticker: "JPM", weight: 15 },
-];
 
 const SECTORS = [...new Set(sampleStocks.map((s) => s.sector))].sort();
 
 /* ---------- Aktien-Detailseite ---------- */
-
-const EVENT_TYPE_STYLE = {
-  Earnings: { dot: "bg-[var(--primary)]", text: "text-[var(--primary)]", bg: "bg-[var(--tile)]", border: "border-[var(--primary)]/40" },
-  Dividende: { dot: "bg-[var(--emerald-soft)]", text: "text-[var(--emerald-soft)]", bg: "bg-[var(--emerald)]/15", border: "border-[var(--emerald)]/40" },
-  HV: { dot: "bg-[var(--amber-soft)]", text: "text-[var(--amber-soft)]", bg: "bg-[var(--amber)]/15", border: "border-[var(--amber)]/40" },
-};
-
-function formatEventDate(iso) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function daysUntil(iso) {
-  const d = new Date(iso + "T00:00:00");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((d - today) / 86400000);
-}
 
 function StockDetailPage({ onBack, ticker, watchlist, onToggleWatchlist }) {
   return <ScreeningDetail ticker={ticker} onBack={onBack} watchlist={watchlist} onToggleWatchlist={onToggleWatchlist} />;
@@ -124,332 +96,6 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
             />
           ))}
         </div>
-      </main>
-    </div>
-  );
-}
-
-/* ---------- Kalenderübersicht ---------- */
-
-function addDaysISO(base, n) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-function todayISO() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-// Bestimmt das Datums-Fenster für den Strip je nach Schnellumschalter
-function computeDayStripRange(timeframe) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = [];
-  if (timeframe === "week") {
-    for (let i = 0; i < 7; i++) days.push(addDaysISO(today, i));
-  } else if (timeframe === "nextweek") {
-    for (let i = 7; i < 14; i++) days.push(addDaysISO(today, i));
-  } else {
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    const diff = Math.max(0, Math.round((endOfMonth - today) / 86400000));
-    for (let i = 0; i <= diff; i++) days.push(addDaysISO(today, i));
-  }
-  return days;
-}
-
-// "Heute" / "Morgen" / "Donnerstag, 17. Sep" — je nach Abstand zu heute
-function dateGroupLabel(iso, isPast) {
-  const days = daysUntil(iso);
-  if (days === 0) return "Heute";
-  if (!isPast && days === 1) return "Morgen";
-  if (isPast && days === -1) return "Gestern";
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "short" });
-}
-
-// Deterministisches Demo-Timing für Earnings (BMO/AMC — Branchenkonvention).
-// Bei HV/Dividende gibt es keine sinnvolle Uhrzeit, daher nur für Earnings.
-function demoEventTiming(ticker, date) {
-  const h = ticker.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + date.length;
-  return h % 2 === 0 ? "Vor Börsenöffnung" : "Nach Handelsschluss";
-}
-
-function DayTile({ dateISO, count, isToday, isSelected, onClick }) {
-  const d = new Date(dateISO + "T00:00:00");
-  const weekday = d.toLocaleDateString("de-DE", { weekday: "short" });
-  return (
-    <button
-      onClick={onClick}
-      className={
-        "flex min-w-[48px] flex-shrink-0 flex-col items-center gap-1 rounded-xl border px-3.5 py-2.5 transition-colors " +
-        (isSelected
-          ? "border-[var(--gold)] bg-[var(--gold)]/15"
-          : isToday
-          ? "border-[var(--gold)]/50 bg-[var(--surface)]"
-          : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--muted)]")
-      }
-    >
-      <span className={"text-sm font-medium " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--faint)]")}>
-        {weekday}
-      </span>
-      <span className={"font-[IBM_Plex_Mono] text-sm " + (isSelected ? "text-[var(--gold-soft)]" : "text-[var(--text)]")}>
-        {d.getDate()}
-      </span>
-      <span className="flex h-4 items-center">
-        {count > 0 && (
-          <span className={"rounded-full px-1.5 text-[13px] leading-none " + (isSelected ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "bg-[var(--border)] text-[var(--faint)]")}>
-            {count}
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
-
-function EventCard({ e, showRelevance, onOpenStock }) {
-  const style = EVENT_TYPE_STYLE[e.type] || EVENT_TYPE_STYLE.Dividende;
-
-  function handleExportSingle(ev) {
-    ev.stopPropagation();
-    const ics = generateICS([e], `${e.ticker} · ${e.label}`);
-    downloadICS(`tazkiyah-${e.ticker}-${e.date}`, ics);
-  }
-
-  return (
-    <div
-      onClick={() => onOpenStock(e.ticker)}
-      className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="flex-shrink-0 rounded-lg bg-[var(--bg-deep)] px-2 py-1 font-[IBM_Plex_Mono] text-sm text-[var(--text)]">
-          {e.ticker}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm text-[var(--text)]">{e.name}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className={"rounded-full border px-2 py-0.5 text-sm " + style.bg + " " + style.border + " " + style.text}>
-              {e.type === "HV" ? "Hauptversammlung" : e.type}
-            </span>
-            {e.type === "Earnings" && (
-              <span className="text-sm text-[var(--faint)]">{demoEventTiming(e.ticker, e.date)}</span>
-            )}
-            {showRelevance && e.inWatchlist && (
-              <span className="rounded-full border border-[var(--gold)]/40 px-2 py-0.5 text-sm text-[var(--gold-soft)]">★ Watchlist</span>
-            )}
-            {showRelevance && e.inPortfolio && (
-              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sm text-[var(--muted)]">Portfolio</span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-shrink-0 items-center gap-3">
-        <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{formatEventDate(e.date)}</span>
-        <button
-          onClick={handleExportSingle}
-          title="Als .ics herunterladen (Apple/Google Kalender)"
-          className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-[var(--faint)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          aria-label="Termin exportieren"
-        >
-          ⤓
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CalendarPage({ watchlist, onBack, onOpenStock }) {
-  const [scope, setScope] = useState(watchlist.length > 0 ? "watchlist" : "alle");
-  const [timeframe, setTimeframe] = useState("week"); // week | nextweek | month
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [showPast, setShowPast] = useState(false);
-
-  const portfolioTickers = holdings.map((h) => h.ticker);
-
-  let tickers;
-  if (scope === "watchlist") tickers = watchlist;
-  else if (scope === "portfolio") tickers = portfolioTickers;
-  else tickers = sampleStocks.map((s) => s.ticker);
-
-  const stocksInScope = sampleStocks.filter((s) => tickers.includes(s.ticker));
-
-  const allEvents = stocksInScope.flatMap((s) =>
-    (s.events?.timeline || []).map((e) => ({
-      ...e,
-      ticker: s.ticker,
-      name: s.name,
-      inWatchlist: watchlist.includes(s.ticker),
-      inPortfolio: portfolioTickers.includes(s.ticker),
-    }))
-  );
-
-  const today = todayISO();
-  const upcoming = allEvents.filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
-  const past = allEvents.filter((e) => e.date < today).sort((a, b) => b.date.localeCompare(a.date));
-
-  const dayStripDates = computeDayStripRange(timeframe);
-  const rangeSet = new Set(dayStripDates);
-  const countsByDay = dayStripDates.reduce((acc, d) => {
-    acc[d] = upcoming.filter((e) => e.date === d).length;
-    return acc;
-  }, {});
-
-  const eventsToShow = showPast
-    ? past
-    : selectedDay
-    ? upcoming.filter((e) => e.date === selectedDay)
-    : upcoming.filter((e) => rangeSet.has(e.date));
-
-  const grouped = eventsToShow.reduce((groups, e) => {
-    (groups[e.date] = groups[e.date] || []).push(e);
-    return groups;
-  }, {});
-
-  const SCOPE_OPTIONS = [
-    { key: "watchlist", label: `Watchlist (${watchlist.length})` },
-    { key: "portfolio", label: `Portfolio (${portfolioTickers.length})` },
-    { key: "alle", label: `Alle Titel (${sampleStocks.length})` },
-  ];
-  const TIMEFRAME_OPTIONS = [
-    { key: "week", label: "Diese Woche" },
-    { key: "nextweek", label: "Nächste Woche" },
-    { key: "month", label: "Monat" },
-  ];
-
-  return (
-    <div className="font-body">
-      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
-        <span>/</span>
-        <span className="text-[var(--text)]">Kalender</span>
-      </header>
-      <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Termin-Kalender</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Hauptversammlungen, Earnings-Calls und Dividendenstichtage — alle Termine sind Demo-Daten.
-        </p>
-        <p className="mt-2 text-sm text-[var(--faint)]">
-          Für den Kalender-Export empfehlen wir, ausschließlich Titel aus der Watchlist oder dem
-          Portfolio auszuwählen — bei „Alle Titel" ist die Anzahl der Einträge für einen
-          persönlichen Kalender nicht praktikabel.
-        </p>
-
-        {/* Filterleiste (Watchlist/Portfolio/Alle) */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {SCOPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => { setScope(opt.key); setSelectedDay(null); }}
-              className={
-                "inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm " +
-                (scope === opt.key
-                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                  : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]")
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Segmented Control: Anstehend / Vergangen + Export */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex rounded-full border border-[var(--border)] p-1">
-            <button
-              onClick={() => setShowPast(false)}
-              className={"min-h-[44px] rounded-full px-4 text-sm " + (!showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
-            >
-              Anstehend ({upcoming.length})
-            </button>
-            <button
-              onClick={() => setShowPast(true)}
-              className={"min-h-[44px] rounded-full px-4 text-sm " + (showPast ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]" : "text-[var(--muted)] hover:text-[var(--text)]")}
-            >
-              Vergangen ({past.length})
-            </button>
-          </div>
-
-          {scope === "alle" ? (
-            <p className="max-w-xs text-right text-sm text-[var(--faint)]">
-              Export ist auf Watchlist und Portfolio beschränkt. Bereich oben wechseln, um zu exportieren.
-            </p>
-          ) : (
-            <button
-              onClick={() => {
-                const ics = generateICS(upcoming, `Tazkiyah — ${SCOPE_OPTIONS.find((o) => o.key === scope).label}`);
-                downloadICS(`tazkiyah-termine-${scope}-${today}`, ics);
-              }}
-              disabled={upcoming.length === 0}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--border)] px-4 text-sm text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
-            >
-              ⤓ Alle anstehenden Termine exportieren (.ics)
-            </button>
-          )}
-        </div>
-
-        {!showPast && (
-          <>
-            {/* Schnellumschalter */}
-            <div className="mt-5 flex gap-2">
-              {TIMEFRAME_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => { setTimeframe(opt.key); setSelectedDay(null); }}
-                  className={
-                    "min-h-[44px] rounded-full px-3 text-sm " +
-                    (timeframe === opt.key ? "bg-[var(--surface)] text-[var(--text)]" : "text-[var(--faint)] hover:text-[var(--muted)]")
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Horizontaler Datums-Strip */}
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-              {dayStripDates.map((d) => (
-                <DayTile
-                  key={d}
-                  dateISO={d}
-                  count={countsByDay[d]}
-                  isToday={d === today}
-                  isSelected={selectedDay === d}
-                  onClick={() => setSelectedDay(selectedDay === d ? null : d)}
-                />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Timeline */}
-        {eventsToShow.length === 0 ? (
-          <p className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-8 text-center text-sm text-[var(--muted)]">
-            {showPast
-              ? "Keine vergangenen Termine in diesem Bereich."
-              : scope === "watchlist" && watchlist.length === 0
-              ? "Deine Watchlist ist leer — füge Titel hinzu, um hier ihre Termine zu sehen."
-              : "Keine anstehenden Termine im gewählten Zeitraum."}
-          </p>
-        ) : (
-          <div className="mt-6 space-y-6">
-            {Object.entries(grouped)
-              .sort(([a], [b]) => (showPast ? b.localeCompare(a) : a.localeCompare(b)))
-              .map(([date, events]) => (
-                <div key={date}>
-                  <p className="mb-2.5 text-sm text-[var(--faint)] font-medium">
-                    {dateGroupLabel(date, showPast)}
-                  </p>
-                  <div className="space-y-2">
-                    {events.map((e, i) => (
-                      <EventCard key={i} e={e} showRelevance={scope === "alle"} onOpenStock={onOpenStock} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
       </main>
     </div>
   );
@@ -1209,9 +855,6 @@ export default function TazkiyahPrototype() {
   const [activeAnchor, setActiveAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
 
-  function openStock(ticker) {
-    navigate(routes.stock(ticker));
-  }
 
   // Seiten mit Hash-Adresse: Hauptseite, Detailseite, Erklärseite, Methodik, Kontakt.
   // Alle übrigen Seiten laufen weiter über den page-Zustand.
@@ -1386,9 +1029,7 @@ export default function TazkiyahPrototype() {
             onToggleWatchlist={wl.toggle}
           />
         )}
-        {page === "calendar" && (
-          <CalendarPage watchlist={wl.watchlist} onBack={() => goTo("home")} onOpenStock={openStock} />
-        )}
+        {page === "calendar" && <CalendarPage />}
         {page === "reports" && <ReportsPage onBack={() => goTo("home")} />}
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
         {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
