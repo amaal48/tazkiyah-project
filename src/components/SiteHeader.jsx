@@ -1,6 +1,7 @@
 // src/components/SiteHeader.jsx
 //
-// Kopfleiste (Design B) statt der früheren Sidebar. Ab 900 px: Logo, Hauptpunkte mit
+// Kopfleiste (Design B) statt der früheren Sidebar. Seit 15.10.2026 (Die Tazkiyah 30): Aktien,
+// Tazkiyah 30, Berichte, Kalender, Akademie. Ab 900 px: Logo, Hauptpunkte mit
 // Aufklappmenüs für die Unterpunkte, Anmelden bzw. Kontomenü. Darunter: Menüknopf, der ein
 // Panel mit allen Punkten öffnet. Escape und Klick außerhalb schließen offene Menüs.
 
@@ -71,7 +72,7 @@ function SubItems({ group, onPick, activeFilter }) {
   );
 }
 
-export default function SiteHeader({ page, navGroups, activeFilter, onGo, watchlistCount, watchlistMax, compareCount, session, onOpenAuth, onSignOut }) {
+export default function SiteHeader({ page, navGroups, activeFilter, onGo, compareCount, session, onOpenAuth, onSignOut }) {
   const [openGroup, setOpenGroup] = useState(null); // Aufklappmenü am Hauptpunkt (Desktop)
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -101,25 +102,23 @@ export default function SiteHeader({ page, navGroups, activeFilter, onGo, watchl
     onGo(p, anchor, filter);
   };
   const pick = (child) =>
-    child.type === "filter" ? go("screener", null, child.filter) : go(child.page, child.anchor, child.reset ? { type: "all" } : undefined);
+    child.type === "filter" ? go("tazkiyah30", null, child.filter) : go(child.page, child.anchor, child.reset ? { type: "all" } : undefined);
 
   // Hauptpunkte in der Reihenfolge der Kopfleiste
   const groupByKey = Object.fromEntries(navGroups.map((g) => [g.key, g]));
   const ACTIVE_PAGES = {
-    screener: ["screener", "detail", "sectors", "compare"],
-    portfolio: ["portfolio", "calendar"],
+    aktien: ["aktien"],
+    tazkiyah30: ["tazkiyah30", "detail", "sectors", "compare"],
     berichte: ["reports"],
-    watchlist: ["watchlist"],
+    kalender: ["calendar"],
     akademie: ["faq"],
-    methodik: ["methodik", "criterion"],
   };
   const items = [
-    { key: "screener", label: "Screener", page: "screener", group: groupByKey.screener },
-    { key: "portfolio", label: "Portfolio", page: "portfolio", group: groupByKey.portfolio },
+    { key: "aktien", label: "Aktien", page: "aktien" },
+    { key: "tazkiyah30", label: "Tazkiyah 30", page: "tazkiyah30" },
     { key: "berichte", label: "Berichte", page: "reports", group: groupByKey.berichte },
-    { key: "watchlist", label: "Watchlist", page: "watchlist", count: watchlistCount, max: watchlistMax },
+    { key: "kalender", label: "Kalender", page: "calendar" },
     { key: "akademie", label: "Akademie", page: "faq" },
-    { key: "methodik", label: "Methodik", page: "methodik" },
   ];
   const isActive = (it) => ACTIVE_PAGES[it.key]?.includes(page);
 

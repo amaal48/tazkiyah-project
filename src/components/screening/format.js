@@ -167,6 +167,17 @@ export function reasonLine(row) {
   return `Alle Prüfungen nach AAOIFI SS 21 bestanden. Ergebnis vom ${fmtDate(row.runAt)}.`;
 }
 
+/**
+ * Ein Satz für die Karten der Tazkiyah 30: die Kurzbegründung der Redaktion (tazkiyah30.kurzbegruendung),
+ * sonst ein Satz aus dem Prüfergebnis.
+ */
+export function cardReason(row) {
+  const own = row?.tazkiyah30?.kurzbegruendung;
+  if (own) return own;
+  if (row?.status === "konform") return "Alle Prüfungen nach AAOIFI SS 21 bestanden.";
+  return reasonLine(row);
+}
+
 /** Ausführliche Begründung für die Detailseite (alle durchgefallenen und offenen Prüfungen). */
 export function reasonDetails(headline) {
   const h = headline || { failed: [], notChecked: [] };

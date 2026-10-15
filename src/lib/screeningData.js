@@ -9,10 +9,16 @@
 //
 // Stammdaten wie Sektor kommen vorerst aus src/data/stocks.js (Zuordnung über ticker),
 // der Status nie. Die US-Börse (für die Kurs-Widgets) kommt aus securities.exchange.
+//
+// Die Tazkiyah 30 (Neue Ausrichtung 15.10.2026): Nur Titel aus der Tabelle tazkiyah30 tragen öffentlich
+// einen Halal-Status. Die Datenbank liefert seit supabase_tazkiyah30.sql nichts anderes mehr; hier wird
+// zusätzlich gefiltert (für die Zeit vor dem Ausführen der SQL-Datei). Alle übrigen Titel haben
+// status: null und inTazkiyah30: false.
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { ALL_STOCKS } from "../data/stocks";
+import { FINAL_STATUSES, TAZKIYAH30_FALLBACK } from "../data/tazkiyah30.js";
 
 const PAGE_SIZE = 1000; // Supabase-Grenze je Abfrage
 
@@ -35,6 +41,35 @@ async function fetchAll(buildQuery) {
   }
 }
 
+/** Tabelle tazkiyah30 (Rückfall: feste Liste aus src/data/tazkiyah30.js, solange die Tabelle fehlt). */
+async function fetchTazkiyah30() {
+  try {
+    const { data, error } = await supabase
+      .from("tazkiyah30")
+      .select("ticker,sort_order,gruppe,kurzbegruendung,aufgenommen_am")
+      .order("sort_order");
+    if (error) throw error;
+    if (!data?.length) return TAZKIYAH30_FALLBACK;
+    return data.map((r) => ({
+      ticker: r.ticker,
+      sortOrder: r.sort_order,
+      gruppe: r.gruppe,
+      kurzbegruendung: r.kurzbegruendung || null,
+      aufgenommenAm: r.aufgenommen_am,
+    }));
+  } catch {
+    return TAZKIYAH30_FALLBACK;
+  }
+}
+
+let t30Promise = null;
+
+/** Die Tazkiyah 30, einmal pro Sitzung geladen. */
+export function loadTazkiyah30() {
+  if (!t30Promise) t30Promise = fetchTazkiyah30();
+  return t30Promise;
+}
+
 async function fetchList() {
   let securities;
   try {
@@ -51,11 +86,17 @@ async function fetchList() {
   // Inaktive Titel (delistet o. Ä.) nicht anzeigen
   securities = securities.filter((s) => s.active !== false);
 
-  const current = await fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker"));
+  const [current, t30] = await Promise.all([
+    fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker")),
+    loadTazkiyah30(),
+  ]);
+  const t30ByTicker = new Map(t30.map((t) => [t.ticker, t]));
 
   const byId = new Map(current.map((r) => [r.security_id, r]));
   const rows = securities.map((s) => {
-    const r = byId.get(s.id) || null;
+    const t = t30ByTicker.get(s.ticker) || null;
+    // Status nur für die Tazkiyah 30, sonst kein Ergebnis (auch wenn die Datenbank noch eines liefert)
+    const r = t ? byId.get(s.id) || null : null;
     return {
       securityId: s.id,
       ticker: s.ticker,
@@ -63,9 +104,13 @@ async function fetchList() {
       assetType: s.asset_type,
       exchange: s.exchange ?? null,
       sector: SECTOR_BY_TICKER.get(s.ticker) ?? null,
+      inTazkiyah30: !!t,
+      tazkiyah30: t,
       hasResult: !!r,
-      // Kein Ergebnis in der Datenbank = für Nutzer „nicht geprüft“ (kein vierter Status)
-      status: r?.status ?? "nicht_geprueft",
+      // Tazkiyah 30 ohne Ergebnis = „nicht geprüft“; Titel außerhalb der Liste: kein Status (null)
+      status: t ? r?.status ?? "nicht_geprueft" : null,
+      // Öffentlich angezeigt wird nur ein Endergebnis (konform / nicht konform)
+      hasFinalResult: !!t && FINAL_STATUSES.has(r?.status),
       runAt: r?.run_at ?? null,
       annualPeriodEnd: r?.annual_period_end ?? null,
       quarterPeriodEnd: r?.quarter_period_end ?? null,
@@ -73,7 +118,7 @@ async function fetchList() {
       summary: r?.summary ?? null,
     };
   });
-  return { rows };
+  return { rows, tazkiyah30: t30 };
 }
 
 let listPromise = null;
@@ -89,14 +134,14 @@ export function loadScreeningList() {
   return listPromise;
 }
 
-/** { loading, error, rows, byTicker } */
+/** { loading, error, rows, byTicker, tazkiyah30 } */
 export function useScreeningList() {
-  const [state, setState] = useState({ loading: true, error: null, rows: [] });
+  const [state, setState] = useState({ loading: true, error: null, rows: [], tazkiyah30: [] });
   useEffect(() => {
     let cancelled = false;
     loadScreeningList().then(
-      ({ rows }) => !cancelled && setState({ loading: false, error: null, rows }),
-      (error) => !cancelled && setState({ loading: false, error, rows: [] })
+      ({ rows, tazkiyah30 }) => !cancelled && setState({ loading: false, error: null, rows, tazkiyah30 }),
+      (error) => !cancelled && setState({ loading: false, error, rows: [], tazkiyah30: [] })
     );
     return () => {
       cancelled = true;
@@ -108,17 +153,21 @@ export function useScreeningList() {
 
 const detailCache = new Map();
 
-/** Letztes Ergebnis eines Titels mit allen Prüfungen (ohne inputs). null = kein Ergebnis. */
+/** Letztes Ergebnis eines Titels mit allen Prüfungen (ohne inputs). null = kein Ergebnis oder nicht in den Tazkiyah 30. */
 export function loadScreeningDetail(ticker) {
   if (!detailCache.has(ticker)) {
-    const p = supabase
-      .from("screening_current")
-      .select("security_id,ticker,name,asset_type,status,run_at,result")
-      .eq("ticker", ticker)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) throw error;
-        return data;
+    const p = loadTazkiyah30()
+      .then((t30) => {
+        if (!t30.some((t) => t.ticker === ticker)) return null;
+        return supabase
+          .from("screening_current")
+          .select("security_id,ticker,name,asset_type,status,run_at,result")
+          .eq("ticker", ticker)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) throw error;
+            return data;
+          });
       })
       .catch((e) => {
         detailCache.delete(ticker);

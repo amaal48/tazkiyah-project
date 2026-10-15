@@ -15,7 +15,8 @@ import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRout
 import { useScreeningList } from "./lib/screeningData";
 import StatusBadge from "./components/screening/StatusBadge.jsx";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
-import ScreenerPage from "./components/screening/ScreenerPage.jsx";
+import Tazkiyah30Page from "./components/screening/Tazkiyah30Page.jsx";
+import AktienPage from "./components/AktienPage.jsx";
 import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
 import ContactPage from "./components/ContactPage.jsx";
@@ -23,7 +24,7 @@ import SiteHeader from "./components/SiteHeader.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
-import { STATUS_ORDER, STATUS_TEXT, reasonLine } from "./components/screening/format.js";
+import { cardReason } from "./components/screening/format.js";
 
 /* ============================================================
    TAZKIYAH — Basis-Prototyp
@@ -78,18 +79,19 @@ function StockDetailPage({ onBack, ticker, watchlist, onToggleWatchlist }) {
 
 function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
   const list = useScreeningList();
-  // Titel ohne Eintrag in der Prüfliste trotzdem zeigen („nicht geprüft“)
+  // Titel ohne Eintrag in der Liste trotzdem zeigen (ohne Status). Status nur für die Tazkiyah 30.
   const items = watchlist.map(
     (t) =>
       list.byTicker.get(t) || {
         ticker: t,
         name: sampleStocks.find((s) => s.ticker === t)?.name || t,
         assetType: "stock",
+        inTazkiyah30: false,
         hasResult: false,
-        status: "nicht_geprueft",
+        status: null,
       }
   );
-  const attention = items.filter((s) => s.status !== "konform");
+  const attention = items.filter((s) => s.hasFinalResult && s.status === "nicht_konform");
   return (
     <div className="font-body text-left">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
@@ -102,12 +104,12 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
         <p className="mt-1 text-sm text-[var(--muted)]">
           {items.length === 0
             ? "Noch keine Aktien gemerkt."
-            : "Statuswechsel (z. B. konform → nicht konform) erscheinen hier zuerst."}
+            : "Einen Halal-Status gibt es nur für Titel aus den Tazkiyah 30. Ändert er sich, steht es hier."}
         </p>
 
         {!list.loading && attention.length > 0 && (
           <p className="mt-4 rounded-xl border border-[var(--border)] px-4 py-3 text-sm text-[var(--text-soft)]">
-            {attention.length} {attention.length === 1 ? "Titel ist" : "Titel sind"} nicht konform oder noch nicht geprüft.
+            {attention.length} {attention.length === 1 ? "Titel aus den Tazkiyah 30 ist" : "Titel aus den Tazkiyah 30 sind"} nicht konform.
           </p>
         )}
 
@@ -484,7 +486,7 @@ const mockReports = [
       { name: "Sharia-Welt (Proxy)", value: "—", change: "überdurchschnittlich belastet", direction: "down", note: "iShares MSCI World Islamic ETF — Daten folgen mit Produktivanbindung." },
     ],
     aktienFokus:
-      "Im Zentrum der Woche standen Nvidia, Broadcom und AMD: Nvidia gab an mehreren Handelstagen in Folge nach, unter anderem am Montag um rund 3 %. Analysten von Lynx Equities Strategies und Bernstein bewerteten den Ausverkauf als überzogen: Anzeichen für eine tatsächlich sinkende Hardware-Nachfrage in der Lieferkette seien nicht erkennbar. Goldman Sachs bestätigte seine Kaufempfehlung für Nvidia mit einem Kursziel von 300 US-Dollar.",
+      "Im Zentrum der Woche standen Nvidia, Broadcom und AMD: Nvidia gab an mehreren Handelstagen in Folge nach, unter anderem am Montag um rund 3 %. Analysten von Lynx Equities Strategies und Bernstein bewerteten den Ausverkauf als überzogen: Anzeichen für eine tatsächlich sinkende Hardware-Nachfrage in der Lieferkette seien nicht erkennbar.",
     ausblick:
       "Am 20. September stehen mit den Landtagswahlen in Berlin und Mecklenburg-Vorpommern zwei weitere politische Stimmungstests an. Zudem veröffentlicht das ifo-Institut am 24. September sein Geschäftsklima für September, und Moody's nimmt am 18. September ein Rating-Review für Deutschland und Griechenland vor.",
     sourceNote: "Quellen: finanznachrichten.de · sharedeals.de · LBBW Research · tradingkey.com · ms-aktuell · wallstreet-online · Yahoo Finance",
@@ -821,7 +823,7 @@ const glossarAZ = [
 const einstiegsSteps = [
   { title: "1. Grundbegriffe verstehen", text: "Aktie, ETF, Dividende, Sparplan — bevor es um Halal-Kriterien geht, hilft ein Blick ins Glossar weiter unten. Niemand muss alles auf einmal verstehen." },
   { title: "2. Broker auswählen", text: "Ein Depot ist Voraussetzung fürs Investieren. Tazkiyah empfiehlt keinen bestimmten Anbieter — der Vergleich unten zeigt nur Kriterien, keine Wertung. Achte besonders auf schariakonforme Kontoführung, falls dir das wichtig ist." },
-  { title: "3. Screening verstehen", text: "Bevor du eine Aktie kaufst, prüf ihren Status im Screener und lies die Begründung auf der Detailseite. Bei „Nicht geprüft“ steht dort, welche Prüfung noch aussteht. Zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite." },
+  { title: "3. Screening verstehen", text: "Für die Tazkiyah 30 steht der Status mit Begründung auf der Detailseite jeder Aktie. Bei „Nicht konform“ steht dort, welche Prüfung nicht bestanden ist. Zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite." },
   { title: "4. Klein anfangen", text: "Ein Sparplan mit kleinen, regelmäßigen Beträgen ist oft sinnvoller als eine einzelne große Investition — gerade am Anfang, wenn Marktschwankungen noch ungewohnt sind." },
   { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um deine Titel im Blick zu behalten, und prüfe ihren Status regelmäßig. Unternehmen können sich verändern, deshalb wird der Status mit neuen Quartals- und Jahresabschlüssen neu berechnet." },
   { title: "6. Dividenden bereinigen", text: "Sobald du Dividenden erhältst, hilf dir der Reinheits-Rechner dabei, den Spendenanteil zu schätzen — ein fester Bestandteil vieler Muslim-Investment-Routinen." },
@@ -929,7 +931,7 @@ function AkademiePage({ onBack }) {
         {tab === "Glossar" && (
           <div className="mt-6 space-y-10">
             <div>
-              <p className="mb-3 text-sm text-[var(--muted)] font-medium">Top-Fragen</p>
+              <p className="mb-3 text-sm text-[var(--muted)] font-medium">Häufige Fragen</p>
               <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--gold)]/30 bg-[var(--surface)]">
                 {topFragen.map((item, i) => (
                   <div key={i}>
@@ -1126,11 +1128,13 @@ function AskQuestionBox() {
 
 function SectorsPage({ onBack }) {
   const list = useScreeningList();
+  // Nur die Tazkiyah 30 mit Endergebnis (andere Titel haben öffentlich keinen Status)
+  const checked = list.rows.filter((r) => r.hasFinalResult);
   const bySector = SECTORS.map((sector) => {
-    const items = list.rows.filter((r) => r.sector === sector);
+    const items = checked.filter((r) => r.sector === sector);
     const konform = items.filter((r) => r.status === "konform").length;
     return { sector, total: items.length, konform };
-  });
+  }).filter((b) => b.total > 0);
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
@@ -1140,7 +1144,7 @@ function SectorsPage({ onBack }) {
       </header>
       <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Sektor-Übersicht</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">Wie viele geprüfte Titel je Branche konform sind.</p>
+        <p className="mt-1 text-sm text-[var(--muted)]">Wie viele geprüfte Titel der Tazkiyah 30 je Branche konform sind.</p>
         <div className="mt-6 grid gap-3">
           {bySector.map((b) => (
             <div key={b.sector} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
@@ -1164,11 +1168,12 @@ function SectorsPage({ onBack }) {
 function ComparePage({ tickers, onBack }) {
   const list = useScreeningList();
   const items = sampleStocks.filter((s) => tickers.includes(s.ticker));
-  // TODO Schritt 3: Kennzahlen (B1, B2, B3) aus den Screening-Ergebnissen vergleichen
+  // Status nur für die Tazkiyah 30 mit Endergebnis, sonst kein Status
+  const final = (s) => (list.byTicker.get(s.ticker)?.hasFinalResult ? list.byTicker.get(s.ticker) : null);
+  const noStatus = (s) => (list.byTicker.get(s.ticker)?.inTazkiyah30 ? "Prüfung noch nicht abgeschlossen." : "Keine Sharia-Prüfung (nicht in den Tazkiyah 30).");
   const rows = [
-    { label: "Status", get: (s) => <StatusBadge status={list.byTicker.get(s.ticker)?.status ?? "nicht_geprueft"} /> },
-    { label: "Begründung", get: (s) => (list.byTicker.get(s.ticker) ? reasonLine(list.byTicker.get(s.ticker)) : "Wird demnächst geprüft.") },
-    { label: "Kurs (Beispielwert)", get: (s) => s.price },
+    { label: "Status", get: (s) => (final(s) ? <StatusBadge status={final(s).status} /> : "–") },
+    { label: "Begründung", get: (s) => (final(s) ? cardReason(final(s)) : noStatus(s)) },
     { label: "Sektor", get: (s) => s.sector },
   ];
   return (
@@ -1181,7 +1186,7 @@ function ComparePage({ tickers, onBack }) {
       <main className="page pb-24">
         <h1 className="font-display text-2xl text-[var(--text)]">Aktien vergleichen</h1>
         {items.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--muted)]">Wähle im Screener bis zu 3 Aktien zum Vergleichen aus.</p>
+          <p className="mt-4 text-sm text-[var(--muted)]">Noch keine Aktien zum Vergleichen ausgewählt.</p>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
             <table className="w-full text-sm">
@@ -1215,30 +1220,6 @@ function ComparePage({ tickers, onBack }) {
 
 const NAV_GROUPS = [
   {
-    key: "screener",
-    label: "Screener",
-    page: "screener",
-    children: [
-      { label: "Alle Aktien", page: "screener", reset: true },
-      { type: "heading", label: "Status" },
-      ...STATUS_ORDER.map((st) => ({ type: "filter", label: STATUS_TEXT[st], filter: { type: "status", value: st } })),
-      { type: "heading", label: "Sektor" },
-      ...SECTORS.map((sec) => ({ type: "filter", label: sec, filter: { type: "sector", value: sec } })),
-      { label: "Sektor-Explorer", page: "sectors" },
-      { label: "Vergleichen", page: "compare" },
-    ],
-  },
-  {
-    key: "portfolio",
-    label: "Portfolio",
-    page: "portfolio",
-    children: [
-      { label: "Übersicht", page: "portfolio" },
-      { label: "Reinheits-Rechner", page: "portfolio", anchor: "rechner" },
-      { label: "Kalender", page: "calendar" },
-    ],
-  },
-  {
     key: "berichte",
     label: "Berichte",
     page: "reports",
@@ -1250,13 +1231,17 @@ const NAV_GROUPS = [
 
 /* ---------- Root ---------- */
 
+const FOOTER_LINK =
+  "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
+
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["screener", "detail", "criterion", "methodik", "kontakt"];
+const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "kontakt"];
 
 export default function TazkiyahPrototype() {
-  const [page, setPage] = useState("home"); // home | screener | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | compare | …
+  const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | compare | …
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [criterionId, setCriterionId] = useState(null);
+  const [contactPrefill, setContactPrefill] = useState({ topic: null, ticker: null });
   const [session, setSession] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -1276,16 +1261,11 @@ export default function TazkiyahPrototype() {
 
   const userId = session?.user?.id ?? null;
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
-  const [compareTickers, setCompareTickers] = useState([]);
+  // Vergleich: derzeit ohne Auswahl-Knöpfe (früher im Screener); Seite zeigt Status nur für die Tazkiyah 30
+  const [compareTickers] = useState([]);
   const [activeAnchor, setActiveAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
-  const [presetFilter, setPresetFilter] = useState(null);
 
-  function toggleCompare(ticker) {
-    setCompareTickers((prev) =>
-      prev.includes(ticker) ? prev.filter((t) => t !== ticker) : prev.length >= 3 ? prev : [...prev, ticker]
-    );
-  }
   function openStock(ticker) {
     navigate(routes.stock(ticker));
   }
@@ -1304,10 +1284,11 @@ export default function TazkiyahPrototype() {
       setCriterionId(route.id);
       setPage("criterion");
       setActiveAnchor(null);
-    } else if (route.name === "screener") {
-      setPage("screener");
+    } else if (route.name === "tazkiyah30" || route.name === "aktien") {
+      setPage(route.name);
       setActiveAnchor(null);
     } else if (route.name === "kontakt") {
+      setContactPrefill({ topic: route.topic || null, ticker: route.ticker || null });
       setPage("kontakt");
       setActiveAnchor(null);
       window.scrollTo({ top: 0 });
@@ -1328,8 +1309,8 @@ export default function TazkiyahPrototype() {
       if (page === "methodik") setActiveAnchor(anchor || null);
       else methodikAnchorRef.current = anchor || null;
       navigate(routes.methodik());
-    } else if (targetPage === "home" || targetPage === "screener") {
-      navigate(targetPage === "home" ? routes.home() : routes.screener());
+    } else if (targetPage === "home" || targetPage === "tazkiyah30" || targetPage === "aktien") {
+      navigate(targetPage === "home" ? routes.home() : targetPage === "aktien" ? routes.aktien() : routes.tazkiyah30());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
       setPage(targetPage);
       setActiveAnchor(null);
@@ -1341,18 +1322,8 @@ export default function TazkiyahPrototype() {
     }
     if (filter) {
       setActiveFilter(filter.type === "all" ? null : filter);
-      setPresetFilter({ ...filter, ts: Date.now() });
     }
   }
-
-  // Filter aus der Navigation → Vorgabe für die Screener-Liste
-  const screenerPreset = presetFilter
-    ? {
-        ts: presetFilter.ts,
-        ...(presetFilter.type === "status" ? { statuses: [presetFilter.value] } : {}),
-        ...(presetFilter.type === "sector" ? { sector: presetFilter.value } : {}),
-      }
-    : null;
 
   return (
     <div className="app-root min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
@@ -1443,8 +1414,6 @@ export default function TazkiyahPrototype() {
         navGroups={NAV_GROUPS}
         activeFilter={activeFilter}
         onGo={goTo}
-        watchlistCount={wl.watchlist.length}
-        watchlistMax={wl.maxSize}
         compareCount={compareTickers.length}
         session={session}
         onOpenAuth={() => setShowAuth(true)}
@@ -1456,21 +1425,13 @@ export default function TazkiyahPrototype() {
 
       <div>
         {page === "home" && <StartPage onGo={goTo} />}
-        {page === "screener" && (
-          <ScreenerPage
-            sectors={SECTORS}
-            preset={screenerPreset}
-            watchlist={wl.watchlist}
-            onToggleWatchlist={wl.toggle}
-            compareTickers={compareTickers}
-            onToggleCompare={toggleCompare}
-          />
-        )}
+        {page === "tazkiyah30" && <Tazkiyah30Page />}
+        {page === "aktien" && <AktienPage />}
         {page === "portfolio" && <PortfolioPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "detail" && selectedTicker && (
           <StockDetailPage
             ticker={selectedTicker}
-            onBack={() => goTo("screener")}
+            onBack={() => goTo("tazkiyah30")}
             watchlist={wl.watchlist}
             onToggleWatchlist={wl.toggle}
           />
@@ -1495,17 +1456,27 @@ export default function TazkiyahPrototype() {
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
         {page === "privacy" && <PrivacyPage session={session} onGo={goTo} />}
-        {page === "kontakt" && <ContactPage onBack={() => goTo("home")} onOpenPrivacy={() => goTo("privacy")} />}
+        {page === "kontakt" && (
+          <ContactPage
+            onBack={() => goTo("home")}
+            onOpenPrivacy={() => goTo("privacy")}
+            prefillTopic={contactPrefill.topic}
+            prefillTicker={contactPrefill.ticker}
+          />
+        )}
 
         {/* Fußzeile über die volle Breite */}
         <footer className="mt-20 bg-[var(--footer)] py-8">
           <div className="page">
             <BasisLine variant="footer" />
-            <nav aria-label="Fußzeile" className="mt-3 text-sm">
-              <a
-                href={routes.kontakt()}
-                className="-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]"
-              >
+            <nav aria-label="Fußzeile" className="mt-3 flex flex-wrap gap-x-6 text-sm">
+              <a href={routes.methodik()} className={FOOTER_LINK}>
+                Methodik
+              </a>
+              <button type="button" onClick={() => goTo("watchlist")} className={FOOTER_LINK}>
+                Watchlist{wl.watchlist.length ? ` (${wl.watchlist.length})` : ""}
+              </button>
+              <a href={routes.kontakt()} className={FOOTER_LINK}>
                 Kontakt
               </a>
             </nav>

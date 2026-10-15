@@ -17,6 +17,18 @@ export const EMAIL_MAX = 254;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LINE_BREAK = /[\r\n]/;
 
+/**
+ * Vorbelegung aus der Adresse (#/kontakt?thema=pruefung&aktie=AAPL):
+ *   pruefung → Thema „Sonstiges“ und Text „Prüfung gewünscht: AAPL“ (Knopf „Prüfung wünschen“ auf der Aktienseite)
+ *   fehler   → Thema „Fehler auf der Seite“ (Link „Fehler melden“ auf den Tazkiyah 30)
+ * „Prüfung wünschen“ nutzt ein vorhandenes Thema, damit Server und Tabelle contact_messages unverändert bleiben.
+ */
+export function contactPrefill(topic, ticker) {
+  if (topic === "pruefung") return { topic: "sonstiges", message: `Prüfung gewünscht: ${ticker || "(Aktie)"}\n\n` };
+  if (topic === "fehler") return { topic: "fehler", message: ticker ? `Fehler bei ${ticker}: ` : "" };
+  return { topic: "allgemein", message: "" };
+}
+
 export function topicLabel(value) {
   return CONTACT_TOPICS.find((t) => t.value === value)?.label || "Sonstiges";
 }

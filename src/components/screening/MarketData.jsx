@@ -4,6 +4,8 @@
 // Finanzdaten mit aktueller Marktkapitalisierung (Fundamental Data) von TradingView, erst nach
 // Zustimmung. Symbol Info zeigt die Marktkapitalisierung bei keiner Breite, deshalb Fundamental Data.
 // Ohne bekannte US-Börse (securities.exchange) wird der Abschnitt nicht angezeigt.
+// Auf der Aktienseite ohne Halal-Status (variant "info") zusätzlich das Unternehmensprofil
+// (Widget „Symbol Profile“) und ein Hinweis ohne Bezug zur Prüfung.
 
 import TradingViewWidget, { TradingViewConsent } from "../TradingViewWidget.jsx";
 import { tradingViewColors } from "../../lib/tradingViewClient.js";
@@ -51,7 +53,12 @@ function symbolOverviewConfig(symbol, name) {
   };
 }
 
-function Widgets({ symbol, ticker, name }) {
+const NOTES = {
+  screening: "Kurs und Marktkapitalisierung von heute. Die Prüfung rechnet mit der Marktkapitalisierung am Bilanzstichtag, deshalb können die Werte abweichen.",
+  info: null, // Hinweis steht auf der Aktienseite selbst (StockInfoPage)
+};
+
+function Widgets({ symbol, ticker, name, variant }) {
   return (
     <>
       <div className="card p-3 sm:p-6">
@@ -72,24 +79,34 @@ function Widgets({ symbol, ticker, name }) {
           config={{ symbol, colorTheme: "light", isTransparent: true, displayMode: "regular", width: "100%", height: "100%", largeChartUrl: "" }}
         />
       </div>
-      <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-[var(--muted)]">
-        Kurs und Marktkapitalisierung von heute. Die Prüfung rechnet mit der Marktkapitalisierung am Bilanzstichtag, deshalb können die Werte abweichen.
-      </p>
+      {variant === "info" && (
+        <div className="card mt-4 p-3 sm:p-6">
+          <TradingViewWidget
+            widget="symbol-profile"
+            symbol={symbol}
+            linkLabel={`${ticker}-Unternehmensprofil`}
+            className="h-[480px] sm:h-[400px]"
+            config={{ symbol, colorTheme: "light", isTransparent: true, width: "100%", height: "100%" }}
+          />
+        </div>
+      )}
+      {NOTES[variant] !== null && <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-[var(--muted)]">{NOTES[variant] ?? NOTES.screening}</p>}
     </>
   );
 }
 
-export default function MarketData({ ticker, exchange, name }) {
+/** variant: "screening" (Detailseite der Tazkiyah 30) oder "info" (Aktienseite ohne Halal-Status) */
+export default function MarketData({ ticker, exchange, name, variant = "screening", className = "mt-[72px]" }) {
   const symbol = tradingViewSymbol(ticker, exchange);
   if (!symbol) return null;
   return (
-    <section className="mt-[72px]" aria-labelledby="kurs-marktdaten">
+    <section className={className} aria-labelledby="kurs-marktdaten">
       <h2 id="kurs-marktdaten" className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
-        Kurs und Marktdaten
+        {variant === "info" ? "Kurs, Chart und Unternehmensprofil" : "Kurs und Marktdaten"}
       </h2>
       <div className="mt-4">
         <TradingViewConsent>
-          <Widgets symbol={symbol} ticker={ticker} name={name || ticker} />
+          <Widgets symbol={symbol} ticker={ticker} name={name || ticker} variant={variant} />
         </TradingViewConsent>
       </div>
     </section>

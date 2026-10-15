@@ -4,8 +4,8 @@
 // nie direkt an Supabase. Prüfung der Eingaben wie auf dem Server (src/lib/contact.js).
 // Das Feld "website" ist eine Spam-Falle: für Menschen unsichtbar und nicht per Tab erreichbar.
 
-import { useState } from "react";
-import { CONTACT_TOPICS, MESSAGE_MAX, MESSAGE_MIN, NAME_MAX, validateContact } from "../lib/contact.js";
+import { useEffect, useState } from "react";
+import { CONTACT_TOPICS, MESSAGE_MAX, MESSAGE_MIN, NAME_MAX, contactPrefill, validateContact } from "../lib/contact.js";
 
 const FAILED = "Deine Nachricht konnte nicht gesendet werden. Bitte versuch es später noch einmal.";
 const THROTTLED = "Gerade kommen sehr viele Nachrichten an. Bitte versuch es später noch einmal.";
@@ -13,8 +13,14 @@ const THROTTLED = "Gerade kommen sehr viele Nachrichten an. Bitte versuch es sp�
 const labelClass = "block text-[15px] font-semibold text-[var(--text)]";
 const hintClass = "mt-1 text-sm text-[var(--muted)]";
 
-export default function ContactPage({ onBack, onOpenPrivacy }) {
-  const [form, setForm] = useState({ email: "", name: "", topic: "allgemein", message: "", website: "" });
+export default function ContactPage({ onBack, onOpenPrivacy, prefillTopic = null, prefillTicker = null }) {
+  const [form, setForm] = useState(() => ({ email: "", name: "", website: "", ...contactPrefill(prefillTopic, prefillTicker) }));
+
+  // Neue Vorbelegung (z. B. anderer Knopf „Prüfung wünschen“), solange noch nichts gesendet ist
+  useEffect(() => {
+    if (!prefillTopic) return;
+    setForm((f) => ({ ...f, ...contactPrefill(prefillTopic, prefillTicker) }));
+  }, [prefillTopic, prefillTicker]);
   const [status, setStatus] = useState("ready"); // ready | sending | sent | error
   const [errorText, setErrorText] = useState("");
 
