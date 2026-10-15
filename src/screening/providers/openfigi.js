@@ -5,10 +5,9 @@
 //   Ohne API-Key: 10 ISINs pro Anfrage, 25 Anfragen pro Minute.
 //   Mit kostenlosem Key (OPENFIGI_API_KEY): 100 ISINs pro Anfrage.
 //
-// ZU VERIFIZIEREN: Die Börsenkennungen unten stammen aus der
-// Bloomberg-Systematik. Vor dem Launch gegen die OpenFIGI-Dokumentation
-// (Liste „exchCode“) und an 2–3 bekannten Titeln prüfen, z. B. ob Apple auf
-// Xetra und Tradegate erscheint.
+// Börsenkennungen (exchCode) aus der Bloomberg-Systematik. Belegt am 15.10.2026 per Abfrage mit
+// MIC-Filter (NVDA, JNJ): XGAT → TH (Tradegate), XETR → GY, XFRA → GF, XMUN → GM.
+// gettex (MIC MUNC) kennt OpenFIGI nicht („No identifier found“), deshalb nicht ausgewertet.
 
 export const GERMAN_EXCH_CODES = {
   GR: "Deutschland (alle Plätze)",
@@ -20,6 +19,7 @@ export const GERMAN_EXCH_CODES = {
   GH: "Hamburg",
   GI: "Hannover",
   GB: "Berlin",
+  TH: "Tradegate",
 };
 
 const URL = "https://api.openfigi.com/v3/mapping";

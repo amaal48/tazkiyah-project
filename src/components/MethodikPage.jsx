@@ -327,9 +327,25 @@ export default function MethodikPage({ onBack, anchor }) {
         <section className="pb-12 pt-4">
           <h1 className="font-display" style={H1_STYLE}>So prüft Tazkiyah</h1>
           <p className="pt-4 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-            Tazkiyah prüft Aktien und ETFs in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der
+            Tazkiyah prüft die Tazkiyah 30 in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der
             Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative und Fundstelle.
           </p>
+          <section id="nur-30" aria-labelledby="nur-30-titel" className="mt-6 max-w-[68ch] rounded-2xl border border-[var(--note-border)] bg-[var(--note-bg)] p-5">
+            <h2 id="nur-30-titel" className="font-display" style={{ ...H2_STYLE, fontSize: "20px" }}>
+              Wir prüfen nur die Tazkiyah 30
+            </h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-[var(--text-soft)]">
+              Einen Halal-Status vergeben wir nur für eine feste Liste von 30 Aktien, die Tazkiyah 30. Satzung und
+              Umsatzsegmente lesen wir für jede dieser Aktien von Hand nach und belegen jedes Ergebnis mit Quelle; nach jedem
+              Quartalsbericht prüfen wir neu. Für Hunderte Aktien wäre diese Sorgfalt nicht möglich, und ein Ergebnis ohne
+              nachgelesene Quelle wollen wir nicht zeigen. Ausgewählt sind die Aktien danach, wie verbreitet sie bei Anlegern in
+              Deutschland sind und ob genug öffentliche Angaben für eine vollständige Prüfung vorliegen, nicht nach ihren
+              Ertragsaussichten. Für alle anderen Aktien zeigen wir Kurs und Unternehmensprofil, aber keinen Status.{" "}
+              <a href={routes.tazkiyah30()} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+                Zu den Tazkiyah 30
+              </a>
+            </p>
+          </section>
           <p className="pt-4 max-w-[68ch] text-sm leading-relaxed text-[var(--muted)]">
             Grundlage: AAOIFI Shari'ah Standards Nr. 21 (Wertpapiere), Nr. 27 (Indizes) und Nr. 35 (Zakat). Tazkiyah prüft
             nach den Standards der AAOIFI und ist nicht mit der AAOIFI verbunden. {NOTICE_NO_ADVICE}

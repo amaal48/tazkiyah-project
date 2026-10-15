@@ -225,6 +225,8 @@ test("Universum: deutsche Handelsplätze werden gespeichert", async () => {
 
 test("OpenFIGI-Auswertung", () => {
   assert.deepEqual(germanVenuesFromMapping({ data: [{ exchCode: "US" }, { exchCode: "GY" }, { exchCode: "GF" }, { exchCode: "GY" }] }), ["Frankfurt", "Xetra"]);
+  // Tradegate: exchCode TH (belegt per MIC XGAT, 15.10.2026)
+  assert.deepEqual(germanVenuesFromMapping({ data: [{ exchCode: "TH" }, { exchCode: "GY" }] }), ["Xetra", "Tradegate"]);
   assert.deepEqual(germanVenuesFromMapping({ warning: "No identifier found." }), []);
   assert.equal(germanVenuesFromMapping({ error: "Too many requests" }), undefined);
 });

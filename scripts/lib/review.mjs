@@ -603,7 +603,8 @@ export const sqlString = (s) => (s == null ? "null" : `'${String(s).replace(/'/g
  *     - gleiches Datum   → Eintrag
  *     - anderes Datum    → übersprungen und gemeldet (Entwurf veraltet oder Daten weichen ab)
  *     - null (kein Ergebnis) → Eintrag mit dem Entwurfsdatum, Aktie wird in notes gemeldet
- * Die SQL fügt zusätzlich nur ein, wenn screening_current beim Ausführen noch passt.
+ * Die SQL fügt zusätzlich nur ein, wenn screening_current_internal beim Ausführen noch passt
+ * (interne View: die öffentliche screening_current zeigt seit supabase_tazkiyah30.sql nur die 30).
  * Gegenprüfung (verification je Prüfung): Pflicht; pass nur mit "full", fail mit "full" oder "sample".
  * reviewer: Kürzel der prüfenden Person (z. B. "AMI"); ai_draft wird immer true gesetzt.
  * Ein zweites Ausführen fügt nichts doppelt ein.
@@ -682,7 +683,7 @@ export function draftToSql(draft, { reviewer, sources = null, currentAnnual }) {
         `select s.id, ${sqlString(criterion)}, ${sqlString(c.result)}, ${sqlString(JSON.stringify(details))}::jsonb,`,
         `       ${sqlString(c.sourceUrl ?? null)}, ${sqlString(c.sourceNote ?? null)}, ${sqlString(reviewer)}, ${basis}, ${sqlString(c.verification)}, true${notesJson ? `, ${sqlString(notesJson)}::jsonb` : ""}`,
         `from public.securities s`,
-        `left join public.screening_current sc on sc.security_id = s.id`,
+        `left join public.screening_current_internal sc on sc.security_id = s.id`,
         `where s.ticker = ${sqlString(draft.ticker)}`,
         `  and (sc.annual_period_end is null or sc.annual_period_end = ${basis})`,
         `  and not exists (select 1 from public.manual_reviews m where m.security_id = s.id and m.criterion = ${sqlString(criterion)}`,

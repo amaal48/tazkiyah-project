@@ -1,5 +1,9 @@
 -- supabase_b1_b2_binaer.sql — B1/B2 öffentlich nur binär (11.10.2026)
 --
+-- ACHTUNG (15.10.2026): Diese Datei legt die öffentliche View screening_current ohne den Filter auf die
+-- Tazkiyah 30 an. Wer sie erneut ausführt, muss danach supabase_tazkiyah30.sql ausführen, sonst liefern
+-- wieder alle Titel öffentlich einen Status.
+--
 -- Im Supabase SQL Editor ausführen. Wiederholbar (rechnet bei jedem Ausführen alle gespeicherten
 -- Ergebnisse neu durch die Funktion unten).
 --

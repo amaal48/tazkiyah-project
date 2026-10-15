@@ -1,15 +1,13 @@
 // src/components/StartPage.jsx
 //
-// Startseite (#/), Design B: Kopfbereich mit Beispielkarte aus echten Screening-Daten,
-// Legende der drei Status, die sechs Bereiche. Die Grundlage (AAOIFI) steht in der Fußzeile.
+// Startseite (#/), Design B: Kopfbereich mit Stand der Tazkiyah 30 (ohne einzelne Aktie hervorzuheben,
+// keine Rangfolge), Legende der Status, die Bereiche. Die Grundlage (AAOIFI) steht in der Fußzeile.
 
 import { routes } from "../lib/hashRoute.js";
 import { useScreeningList } from "../lib/screeningData.js";
-import { EXPLANATIONS, defaultParameterValues } from "../screening/explanations.js";
+import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
 import StatusLegend from "./screening/StatusLegend.jsx";
-import StatusBadge from "./screening/StatusBadge.jsx";
-import SourceLink from "./screening/SourceLink.jsx";
-import { H1_STYLE, H2_STYLE, binaryOutcome } from "./screening/format.js";
+import { H1_STYLE, H2_STYLE } from "./screening/format.js";
 
 // Einheitliche Linien-Icons (24 × 24, Strich in currentColor)
 const ICONS = {
@@ -19,10 +17,16 @@ const ICONS = {
       <path d="M15 15l5 5" />
     </>
   ),
-  portfolio: (
+  aktien: (
     <>
-      <path d="M12 3v9h9" />
-      <path d="M20.5 15A9 9 0 1 1 9 3.5" />
+      <path d="M4 19h16" />
+      <path d="M5 15l4-4 3 3 6-7" />
+    </>
+  ),
+  kalender: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M4 10h16" />
     </>
   ),
   berichte: (
@@ -47,8 +51,9 @@ const ICONS = {
 
 // Titel wie in der Navigation
 const AREAS = [
-  { key: "screener", title: "Screener", text: "Aktien und ETFs nach den AAOIFI-Standards prüfen.", href: routes.screener() },
-  { key: "portfolio", title: "Portfolio", text: "Eigenes Portfolio mit dem Status je Position, folgt in Kürze.", page: "portfolio" },
+  { key: "screener", title: "Die Tazkiyah 30", text: "30 Aktien, sorgfältig geprüft und mit Quelle belegt.", href: routes.tazkiyah30() },
+  { key: "aktien", title: "Aktien", text: "Kurs, Chart und Unternehmensprofil für alle Aktien, ohne Halal-Status.", href: routes.aktien() },
+  { key: "kalender", title: "Kalender", text: "Termine für Quartalszahlen und Hauptversammlungen.", page: "calendar" },
   { key: "berichte", title: "Berichte", text: "Wöchentliche Berichte zum Marktgeschehen.", page: "reports" },
   { key: "watchlist", title: "Watchlist", text: "Titel merken und im Blick behalten.", page: "watchlist" },
   { key: "akademie", title: "Akademie", text: "Grundlagen zum Investieren nach islamischen Grundsätzen.", page: "faq" },
@@ -84,55 +89,24 @@ function AreaCard({ area, onGo }) {
   );
 }
 
-/**
- * Kennzahl der Beispielkarte, nur binär (B1/B2 ohne Wert, Lizenz der Kursdaten). Ein konformer Titel
- * hat B1 und B2 in Jahresabschluss und Quartal bestanden, dafür ist kein Wert nötig.
- */
-function ExampleRatio({ id, limit }) {
+/** Stand der Tazkiyah 30 als Zahlen, ohne einzelne Aktie hervorzuheben. */
+function Tazkiyah30Card() {
+  const { rows, loading, error } = useScreeningList();
+  const done = rows.filter((r) => r.hasFinalResult);
+  const konform = done.filter((r) => r.status === "konform").length;
   return (
-    <div className="border-t border-[var(--line)] pt-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-        <span className="font-semibold text-[var(--text)]">
-          {EXPLANATIONS[id].name} <span className="font-[IBM_Plex_Mono] text-sm font-normal text-[var(--faint)]">{id}</span>
-        </span>
-        <span className="font-[IBM_Plex_Mono] text-[15px] text-[var(--ok-text)]">{binaryOutcome({ result: "pass", limit, comparator: "<=" })}</span>
-      </div>
-      {/* relative z-10: Quellenlink liegt über dem Karten-Link (keine verschachtelten Links) */}
-      <p className="relative z-10 mt-2 text-sm">
-        <SourceLink source={EXPLANATIONS[id].source} criterion={id} />
+    <a href={routes.tazkiyah30()} className="card group block space-y-4 text-left transition-colors hover:border-[var(--primary)]">
+      <p className="text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">Die Tazkiyah 30</p>
+      <p className="text-[16px] leading-relaxed text-[var(--muted)]">
+        Eine bewusst kleine Liste von {TAZKIYAH30_SIZE} Aktien, die wir nach jedem Quartalsbericht neu prüfen.
       </p>
-    </div>
-  );
-}
-
-/** Echte konforme Aktie; ohne solchen Titel keine Karte. */
-function ExampleCard() {
-  const { rows } = useScreeningList();
-  const ex = rows.find((r) => r.status === "konform" && r.assetType === "stock");
-  if (!ex) return null;
-  const p = defaultParameterValues();
-  return (
-    // Ganze Karte klickbar über einen gestreckten Link (after:inset-0); die Quellenlinks liegen darüber
-    <div className="card relative space-y-4 transition-colors hover:border-[var(--primary)] has-[a:focus-visible]:border-[var(--primary)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-[18px] font-semibold text-[var(--text)]">
-            <a
-              href={routes.stock(ex.ticker)}
-              className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
-              aria-label={`Beispiel: ${ex.name}, Detailseite öffnen`}
-            >
-              {ex.name}
-            </a>
-          </p>
-          <p className="font-[IBM_Plex_Mono] text-sm text-[var(--muted)]">{ex.ticker}</p>
-        </div>
-        <StatusBadge status={ex.status} />
-      </div>
-      <ExampleRatio id="B1" limit={p.debtMaxPct} />
-      <ExampleRatio id="B2" limit={p.depositsMaxPct} />
-      <p className="text-sm text-[var(--faint)]">Im Jahresabschluss und im letzten Quartal.</p>
-    </div>
+      {!loading && !error && (
+        <p className="border-t border-[var(--line)] pt-4 text-[16px] text-[var(--text-soft)]">
+          {done.length} von {TAZKIYAH30_SIZE} geprüft · {konform} konform · {done.length - konform} nicht konform
+        </p>
+      )}
+      <p className="text-[16px] font-semibold text-[var(--primary)]">Zur Liste →</p>
+    </a>
   );
 }
 
@@ -144,25 +118,26 @@ export default function StartPage({ onGo }) {
         <div>
           <p className="text-[15px] font-semibold text-[var(--gold-soft)]">Investieren nach islamischen Grundsätzen</p>
           <h1 className="font-display mt-3" style={{ ...H1_STYLE, fontSize: "clamp(34px, 5vw, 52px)", lineHeight: 1.1 }}>
-            Aktien und ETFs, geprüft nach AAOIFI-Standards.
+            Die Tazkiyah 30: Aktien, geprüft nach AAOIFI-Standards.
           </h1>
           <p className="mt-5 max-w-[62ch] text-[19px] leading-relaxed text-[var(--muted)]">
-            Tazkiyah zeigt, ob eine Aktie oder ein ETF die Prüfungen nach den AAOIFI-Standards besteht. Zu jeder Regel nennen wir die Quelle.
+            Tazkiyah zeigt für 30 Aktien, die bei deutschen Brokern handelbar sind, ob sie die Prüfungen nach den AAOIFI-Standards
+            bestehen. Zu jeder Aktie und jeder Regel nennen wir die Quelle.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href={routes.screener()} className="btn-primary">
-              Zum Screener
+            <a href={routes.tazkiyah30()} className="btn-primary">
+              Zu den Tazkiyah 30
             </a>
             <a href={routes.methodik()} className="btn-secondary">
               So prüfen wir
             </a>
           </div>
         </div>
-        <ExampleCard />
+        <Tazkiyah30Card />
       </section>
 
       {/* 2. Legende */}
-      <section className="mt-[80px]" aria-label="Die drei möglichen Ergebnisse">
+      <section className="mt-[80px]" aria-label="Die möglichen Ergebnisse">
         <StatusLegend />
       </section>
 

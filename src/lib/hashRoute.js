@@ -5,19 +5,21 @@
 // hier ignoriert.
 //
 //   #/                 Startseite (Überblick)
-//   #/screener         Screener (Filter und Liste)
-//   #/aktie/AAPL       Detailseite
+//   #/tazkiyah-30      Die Tazkiyah 30 (Liste mit Halal-Status; #/screener führt ebenfalls dorthin)
+//   #/aktien           Aktiensuche (alle Titel, ohne Status)
+//   #/aktie/AAPL       Detailseite (Tazkiyah 30) bzw. Aktienseite ohne Status (alle übrigen)
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
-//   #/kontakt          Kontaktformular
+//   #/kontakt          Kontaktformular, optional vorausgefüllt: #/kontakt?thema=fehler&aktie=AAPL
 
 import { useEffect, useState } from "react";
 
 /** Liest eine Hash-Adresse. null = keine Seitenadresse (Sprungmarke). */
 export function parseHash(hash = typeof window !== "undefined" ? window.location.hash : "") {
-  const h = String(hash || "").replace(/^#/, "");
-  if (h === "") return { name: "home" };
-  if (!h.startsWith("/")) return null;
+  const full = String(hash || "").replace(/^#/, "");
+  if (full === "") return { name: "home" };
+  if (!full.startsWith("/")) return null;
+  const [h, query = ""] = full.split("?");
   const parts = h
     .slice(1)
     .split("/")
@@ -32,18 +34,32 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "aktie" && parts[1]) return { name: "stock", ticker: parts[1].toUpperCase() };
   if (parts[0] === "kriterium" && parts[1]) return { name: "criterion", id: parts[1].toUpperCase() };
   if (parts[0] === "methodik") return { name: "methodik" };
-  if (parts[0] === "screener") return { name: "screener" };
-  if (parts[0] === "kontakt") return { name: "kontakt" };
+  if (parts[0] === "screener" || parts[0] === "tazkiyah-30") return { name: "tazkiyah30" };
+  if (parts[0] === "aktien") return { name: "aktien" };
+  if (parts[0] === "kontakt") {
+    const q = new URLSearchParams(query);
+    return { name: "kontakt", topic: q.get("thema") || null, ticker: (q.get("aktie") || "").toUpperCase() || null };
+  }
   return { name: "home" };
 }
 
 export const routes = {
   home: () => "#/",
-  screener: () => "#/screener",
+  tazkiyah30: () => "#/tazkiyah-30",
+  // Alte Adresse, führt auf die Tazkiyah 30
+  screener: () => "#/tazkiyah-30",
+  aktien: () => "#/aktien",
   stock: (ticker) => `#/aktie/${encodeURIComponent(ticker)}`,
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",
-  kontakt: () => "#/kontakt",
+  /** Kontaktformular; topic: Thema im Formular (z. B. "pruefung", "fehler"), ticker: Aktie für den Text */
+  kontakt: ({ topic, ticker } = {}) => {
+    const q = new URLSearchParams();
+    if (topic) q.set("thema", topic);
+    if (ticker) q.set("aktie", ticker);
+    const qs = q.toString();
+    return `#/kontakt${qs ? `?${qs}` : ""}`;
+  },
 };
 
 /** Wechselt die Adresse (neuer Verlaufseintrag, löst "hashchange" aus). */

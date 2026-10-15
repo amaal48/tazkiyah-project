@@ -1,4 +1,8 @@
 -- supabase_schema_screening.sql
+-- ACHTUNG (15.10.2026): Diese Datei legt die öffentliche View screening_current ohne den Filter auf die
+-- Tazkiyah 30 an. Wer sie erneut ausführt, muss danach supabase_tazkiyah30.sql ausführen, sonst liefern
+-- wieder alle Titel öffentlich einen Status.
+--
 --
 -- Schema für den AAOIFI-Screener (Engine: src/screening/engine.js).
 -- Manuell im Supabase SQL Editor ausführen (nicht über Claude Code).

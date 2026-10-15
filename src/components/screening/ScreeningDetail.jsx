@@ -5,11 +5,17 @@
 // Prüfung), Kurs und Marktdaten von TradingView (nach Zustimmung), Verlauf der Statuswechsel,
 // Hinweis zu Reinigung und Zakat. B1 und B2 nur binär („höchstens/über 30 %“), ohne Wert,
 // Abstand und Balken (Lizenz der Kursdaten, siehe BINARY_CRITERIA in format.js).
+//
+// Seit 15.10.2026 (Die Tazkiyah 30): Diese Seite mit Status gibt es nur für Titel der Tazkiyah 30 mit
+// Endergebnis. Alle übrigen Titel, und Titel der 30 mit noch offener Prüfung, zeigen die Aktienseite
+// ohne Halal-Status (StockInfoPage). Unten steht der rechtliche Hinweis (LegalNotice).
 
 import { useEffect, useState } from "react";
 import { ETF_STAGE, EXPLANATIONS, FLAG_TEXTS, RESULT_LABELS, STAGES } from "../../screening/explanations.js";
 import { loadScreeningDetail, loadStatusHistory, useScreeningList } from "../../lib/screeningData.js";
-import { routes } from "../../lib/hashRoute.js";
+import { navigate, routes } from "../../lib/hashRoute.js";
+import StockInfoPage from "../StockInfoPage.jsx";
+import { LegalNoticeFull, LegalNoticeShort } from "./LegalNotice.jsx";
 import StatusBadge, { StatusIcon } from "./StatusBadge.jsx";
 import SourceLink from "./SourceLink.jsx";
 import LimitBar from "./LimitBar.jsx";
@@ -19,7 +25,6 @@ import {
   BINARY_CRITERIA,
   H1_STYLE,
   H2_STYLE,
-  NOTICE_NO_ADVICE,
   STATUS_TEXT,
   binaryOutcome,
   fmtAmount,
@@ -322,7 +327,8 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
     };
   }, [ticker]);
 
-  const securityId = detail.data?.security_id || row?.securityId || null;
+  // Verlauf nur für Titel der Tazkiyah 30
+  const securityId = row?.inTazkiyah30 ? detail.data?.security_id || row.securityId || null : null;
   useEffect(() => {
     let cancelled = false;
     setHistory([]);
@@ -335,11 +341,28 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
     };
   }, [securityId]);
 
+  // Außerhalb der Tazkiyah 30 oder Prüfung noch offen: Aktienseite ohne Status
+  if (!list.loading && !list.error && row && (!row.inTazkiyah30 || !row.hasFinalResult)) {
+    return (
+      <StockInfoPage
+        ticker={ticker}
+        row={row}
+        pending={row.inTazkiyah30}
+        onBack={row.inTazkiyah30 ? onBack : () => navigate(routes.aktien())}
+        backLabel={row.inTazkiyah30 ? "← Zurück zu den Tazkiyah 30" : "← Zur Aktiensuche"}
+        watchlist={watchlist}
+        onToggleWatchlist={onToggleWatchlist}
+      />
+    );
+  }
+
   const result = detail.data?.result || null;
   const name = detail.data?.name || row?.name || ticker;
   const assetType = detail.data?.asset_type || row?.assetType;
   const status = detail.data?.status || "nicht_geprueft";
   const loading = detail.loading || (list.loading && !detail.data);
+  // Ohne Liste ist unklar, ob der Titel zu den Tazkiyah 30 gehört: dann nur mit geladenem Ergebnis weiter
+  const failed = !!detail.error || (!!list.error && !detail.data);
   const notFound = !loading && !detail.error && !detail.data && !row && !list.error;
   const saved = watchlist.includes(ticker);
   const headline = result ? result.headline || headlineFromCriteria(result.criteria) : null;
@@ -352,12 +375,12 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
   return (
     <div className="font-body page pb-12 pt-8 text-left">
       <button type="button" onClick={onBack} className="inline-flex min-h-[44px] items-center text-[16px] font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] hover:underline">
-        ← Zurück zum Screener
+        ← Zurück zu den Tazkiyah 30
       </button>
 
       {loading && <p className="py-10 text-[var(--muted)]">Lade Ergebnis…</p>}
 
-      {detail.error && (
+      {failed && (
         <p className="card mt-6 border-[var(--bad-border)] bg-[var(--bad-bg)] text-[var(--bad-strong)]">
           Das Ergebnis konnte nicht geladen werden. Bitte später erneut versuchen.
         </p>
@@ -365,14 +388,14 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
 
       {notFound && (
         <div className="py-10">
-          <p className="text-[var(--text)]">Zu „{ticker}“ gibt es keinen Titel in der Prüfliste.</p>
-          <a href={routes.screener()} className="mt-3 inline-block text-[var(--primary)] underline underline-offset-2">
-            Zum Screener
+          <p className="text-[var(--text)]">Zu „{ticker}“ gibt es keinen Titel in unserer Liste.</p>
+          <a href={routes.aktien()} className="mt-3 inline-block text-[var(--primary)] underline underline-offset-2">
+            Zur Aktiensuche
           </a>
         </div>
       )}
 
-      {!loading && !detail.error && !notFound && (
+      {!loading && !failed && !notFound && (
         <>
           {/* 1. Kopf */}
           <header className="mt-4 flex flex-wrap items-end justify-between gap-4">
@@ -492,13 +515,16 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
             </p>
           </section>
 
-          {/* 5. Hinweis */}
-          <p className="mt-10 max-w-[62ch] text-sm leading-relaxed text-[var(--muted)]">
-            {NOTICE_NO_ADVICE}{" "}
-            <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
-              So prüft Tazkiyah
-            </a>
-          </p>
+          {/* 5. Rechtlicher Hinweis (kurz sichtbar, voller Text eingeklappt) */}
+          <div className="mt-10">
+            <LegalNoticeShort />
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+                So prüft Tazkiyah
+              </a>
+            </p>
+            <LegalNoticeFull className="mt-6" />
+          </div>
         </>
       )}
     </div>
