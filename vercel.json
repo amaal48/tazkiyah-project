@@ -13,8 +13,12 @@
       "schedule": "0 4 * * *"
     },
     {
-      "path": "/api/publish-weekly-report",
-      "schedule": "0 * * * 1"
+      "path": "/api/publish-weekly-report?slot=10",
+      "schedule": "0 10 * * 1"
+    },
+    {
+      "path": "/api/publish-weekly-report?slot=11",
+      "schedule": "0 11 * * 1"
     }
   ],
   "functions": {

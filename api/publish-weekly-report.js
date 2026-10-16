@@ -1,6 +1,7 @@
 // api/publish-weekly-report.js
 //
-// Cron (vercel.json, montags stündlich): veröffentlicht freigegebene Wochenberichte, deren erscheint_am
+// Cron (vercel.json, montags 10:00 und 11:00 UTC = 12:00 Berlin in Sommer- bzw. Winterzeit; der Vercel-Tarif
+// erlaubt keine stündlichen Crons): veröffentlicht freigegebene Wochenberichte, deren erscheint_am
 // (Montag 12:00 Europe/Berlin) erreicht ist, und schickt der Redaktion eine kurze Mail (src/weekly/publish.js).
 // Ohne Freigabe erscheint nichts. Keine KI, kein Generator.
 //
