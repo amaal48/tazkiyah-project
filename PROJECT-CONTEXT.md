@@ -25,6 +25,9 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
   5. Seite Berichte zeigt ohne echten Bericht Demo-Berichte, die Startseite dagegen „Die erste Ausgabe folgt in Kürze.“ Entscheiden, ob die Demo-Berichte entfallen. Der Demo-Bericht erklärt außerdem noch „grenzwertig“ (gibt es nicht mehr).
   6. Lektionen sind ohne Inhalt keine Links; sobald Texte da sind, je Lektion eine eigene Adresse (z. B. `#/lernen/1`) und Status „folgt“ entfernen.
   7. Entwurfs-Hinweis auf der Methodik-Seite (TEMPORÄR) entfernen, sobald entschieden ist, welche Fassung bleibt.
+  8. Kontoseiten (Profil, Sicherheit, Einstellungen, Datenschutz): in Design B2 umgestellt und von der Nutzerin geprüft (16.10.2026); sie überarbeitet sie später selbst im Detail.
+- **Entschieden 16.10.2026:** Der Wochenbericht erscheint **montags** (so steht es auf der Seite Berichte; die Startseite nennt keinen Wochentag, das „samstags“ aus der B2-Vorlage ist nicht übernommen).
+- **Design B2 „Das Muster, hell“** am 16.10.2026 auf `main` gemergt (Merge-Commit `8050ffe`), Details in Abschnitt 5.
 
 ### Neue Ausrichtung (15.10.2026)
 
@@ -556,7 +559,7 @@ Offen: FMP-Tarifwahl und Display-Lizenz vor Launch. Stichprobe gegen 10-K/10-Q: 
 
 ## 5. Konventionen & Design
 
-**Design B2 „Das Muster, hell“ (seit 16.10.2026, Branch `design-b2`; ersetzt Design B vom 05.10.2026).** Vorlagen: `tazkiyah-design-b2-startseite.html` und `tazkiyah-design-b2-anmeldung.html` (Entwürfe aus dem Design-Tool, nicht im Repository). Helles Theme, kein Dark Mode. Farben nur über CSS-Variablen im `<style>`-Block von `App.jsx` (keine generischen Tailwind-Farben wie `slate`/`zinc`, keine Hex-Werte außerhalb von `:root`; Ausnahme: Rückfallwerte in `src/lib/tradingViewClient.js`). Navigation als Kopfleiste (`src/components/SiteHeader.jsx`) mit Menü fürs Handy, keine Seitenleiste. Kein „KI“-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten: Fehlendes wird als „folgt“ gekennzeichnet. Neutrale Formulierungen (keine Fatwas, keine Handlungsanweisungen).
+**Design B2 „Das Muster, hell“ (seit 16.10.2026, auf `main` seit Merge `8050ffe`; ersetzt Design B vom 05.10.2026).** Vorlagen: `tazkiyah-design-b2-startseite.html` und `tazkiyah-design-b2-anmeldung.html` (Entwürfe aus dem Design-Tool, nicht im Repository). Helles Theme, kein Dark Mode. Farben nur über CSS-Variablen im `<style>`-Block von `App.jsx` (keine generischen Tailwind-Farben wie `slate`/`zinc`, keine Hex-Werte außerhalb von `:root`; Ausnahme: Rückfallwerte in `src/lib/tradingViewClient.js`). Navigation als Kopfleiste (`src/components/SiteHeader.jsx`) mit Menü fürs Handy, keine Seitenleiste. Kein „KI“-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten: Fehlendes wird als „folgt“ gekennzeichnet. Neutrale Formulierungen (keine Fatwas, keine Handlungsanweisungen).
 
 **Farben (Vorgabe B2)**
 
