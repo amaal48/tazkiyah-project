@@ -14,9 +14,13 @@
 //   #/lernen           Akademie mit Lernpfad (Navigation „Lernen“)
 //   #/berichte         Berichte, führt zum Wochenbericht
 //   #/berichte/wochenbericht             aktuelle Ausgabe und frühere Ausgaben
-//   #/berichte/wochenbericht/2026-10-19  eine Ausgabe (Datum des Berichts)
+//   #/berichte/wochenbericht/2026-kw42   eine Ausgabe (Jahr und Kalenderwoche)
 //   #/berichte/blog                      Blog (Übersicht)
 //   #/berichte/blog/gibt-es-eine-ki-blase  ein Beitrag (Dateiname in content/blog/)
+//   #/redaktion/wochenbericht            intern: Liste der Wochenberichte (nur Admin)
+//   #/redaktion/wochenbericht/neu        intern: Entwurf einfügen
+//   #/redaktion/wochenbericht/<id>       intern: Ausgabe prüfen
+//   #/redaktion/vorschau                 intern: Handy-Vorschau im iframe der Prüfseite
 //   #/kontakt          Kontaktformular, optional vorausgefüllt: #/kontakt?thema=fehler&aktie=AAPL
 
 import { useEffect, useState } from "react";
@@ -43,10 +47,14 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "methodik") return { name: "methodik" };
   if (parts[0] === "methodik-2") return { name: "methodik2" };
   if (parts[0] === "lernen") return { name: "lernen" };
+  if (parts[0] === "redaktion") {
+    if (parts[1] === "vorschau") return { name: "redaktionVorschau" };
+    return { name: "redaktion", id: parts[2] || null };
+  }
   if (parts[0] === "berichte") {
     if (parts[1] === "blog") return parts[2] ? { name: "blogpost", slug: parts[2].toLowerCase() } : { name: "blog" };
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(parts[2] || "") ? parts[2] : null;
-    return { name: "wochenbericht", date };
+    const slug = /^\d{4}-kw\d{1,2}$/i.test(parts[2] || "") ? parts[2].toLowerCase() : null;
+    return { name: "wochenbericht", slug };
   }
   if (parts[0] === "screener" || parts[0] === "tazkiyah-30") return { name: "tazkiyah30" };
   if (parts[0] === "aktien") return { name: "aktien" };
@@ -68,7 +76,9 @@ export const routes = {
   methodik: () => "#/methodik",
   methodik2: () => "#/methodik-2",
   lernen: () => "#/lernen",
-  wochenbericht: (date) => (date ? `#/berichte/wochenbericht/${date}` : "#/berichte/wochenbericht"),
+  wochenbericht: (slug) => (slug ? `#/berichte/wochenbericht/${slug}` : "#/berichte/wochenbericht"),
+  redaktion: (id) => (id ? `#/redaktion/wochenbericht/${encodeURIComponent(id)}` : "#/redaktion/wochenbericht"),
+  redaktionVorschau: () => "#/redaktion/vorschau",
   blog: () => "#/berichte/blog",
   blogPost: (slug) => `#/berichte/blog/${encodeURIComponent(slug)}`,
   /** Kontaktformular; topic: Thema im Formular (z. B. "pruefung", "fehler"), ticker: Aktie für den Text */

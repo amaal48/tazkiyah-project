@@ -1,26 +1,30 @@
 // src/components/berichte/WochenberichtPage.jsx
 //
 // Wochenbericht (#/berichte/wochenbericht), Design B2 nach der Vorlage tazkiyah-design-b2-wochenbericht.html:
-// aktuelle Ausgabe im Manuskript-Rahmen (KW, Datum, Lesezeit, „Das Wichtigste in drei Sätzen“,
+// aktuelle veröffentlichte Ausgabe im Manuskript-Rahmen (KW, Datum, Lesezeit, „Das Wichtigste in drei Sätzen“,
 // Inhaltsverzeichnis), daneben das Abo-Feld, darunter frühere Ausgaben mit Jahresfilter.
-// Eine einzelne Ausgabe: #/berichte/wochenbericht/<Datum>.
+// Eine Ausgabe: #/berichte/wochenbericht/2026-kw42 (WochenberichtArticle.jsx).
+// Daten: nur status = 'veroeffentlicht' (supabase_wochenbericht.sql); Entwürfe sind hier nie sichtbar.
 //
 // Abo-Feld vorerst NUR OPTIK („folgt in Kürze“): Es wird keine E-Mail-Adresse gespeichert oder gesendet,
 // bis eigene Domain, Double-Opt-in und Datenschutzerklärung stehen.
 
 import { useEffect, useMemo, useState } from "react";
 import { routes } from "../../lib/hashRoute.js";
-import { useReports } from "../../lib/reportsData.js";
+import { usePublishedReports } from "../../lib/weeklyReportsData.js";
+import { parseReportSlug, reportMinutes, reportSlug, splitSections } from "../../lib/weeklyReport.js";
 import { GreenBand, ManuscriptFrame, StarOutline } from "../ornaments.jsx";
 import BerichteHeader from "./BerichteHeader.jsx";
+import WochenberichtArticle from "./WochenberichtArticle.jsx";
 
-const INTRO = "Jeden Montag: was an den Märkten passiert ist, was es bedeutet und was nächste Woche ansteht.";
+const INTRO = "Jeden Montag: was an den Märkten in der vergangenen Woche passiert ist und was es bedeutet.";
 const EARLIER_LIMIT = 8;
 const linkClass = "font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
 
-function fmtLong(iso) {
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+function fmtLong(ts) {
+  return new Date(ts).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
 }
+const issueDate = (r) => r.veroeffentlicht_am || `${r.zeitraum_bis}T12:00:00Z`;
 
 /** Abo-Feld, nur Optik. Kein Formular, das etwas absendet. */
 function SubscribeBox() {
@@ -32,7 +36,7 @@ function SubscribeBox() {
           Jeden Montag in deinem Postfach
         </h2>
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--on-green-soft)]">
-          Die drei wichtigsten Sätze und die Termine der Woche, mit Link zur ganzen Ausgabe. Kostenlos, ohne Konto.
+          Die drei wichtigsten Sätze der Woche, mit Link zur ganzen Ausgabe. Kostenlos, ohne Konto.
         </p>
         <div className="mt-6 flex flex-col gap-2.5">
           <label htmlFor="abo-mail" className="text-[14px] font-semibold text-[var(--gold-light)]">
@@ -59,35 +63,37 @@ function SubscribeBox() {
 }
 
 function CurrentIssue({ report }) {
+  const sections = splitSections(report.body_md).filter((s) => s.heading);
+  const toc = [...sections.map((s) => s.heading), ...(String(report.einordnung || "").trim() ? ["Einordnung für muslimische Anleger"] : [])];
   return (
     <ManuscriptFrame as="article" className="min-w-0 flex-[2_1_560px]" innerClassName="bg-[var(--surface)] px-10 pb-9 pt-10 max-[640px]:px-5 max-[640px]:pt-7" aria-labelledby="aktuell-titel">
       <div className="kicker flex flex-wrap justify-between gap-2">
-        <span>Aktuelle Ausgabe · KW {report.week}</span>
+        <span>Aktuelle Ausgabe · KW {report.kw}</span>
         <span>
-          {fmtLong(report.date)} · ca. {report.minutes} Min.
+          {fmtLong(issueDate(report))} · ca. {reportMinutes(report)} Min.
         </span>
       </div>
       <h2 id="aktuell-titel" className="font-display text-[var(--heading)]" style={{ margin: "16px 0 0", fontSize: "clamp(36px, 5vw, 48px)", lineHeight: 1.05, fontWeight: 500 }}>
-        {report.title}
+        {report.titel}
       </h2>
       <div className="mt-[22px] border-l-[3px] border-[var(--gold-line)] py-1 pl-5">
         <p className="text-[13px] uppercase tracking-[0.12em] text-[var(--muted)]">Das Wichtigste in drei Sätzen</p>
-        <p className="mt-2 text-[18px] leading-relaxed text-[var(--text)]">{report.tldr}</p>
+        <p className="mt-2 text-[18px] leading-relaxed text-[var(--text)]">{report.drei_saetze}</p>
       </div>
-      {report.sections.length > 0 && (
+      {toc.length > 0 && (
         <>
           <p className="mt-7 text-[13px] uppercase tracking-[0.12em] text-[var(--muted)]">In dieser Ausgabe</p>
           <ol className="mt-2.5 grid gap-x-8 text-[16px]" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 230px), 1fr))" }}>
-            {report.sections.map((s, i) => (
-              <li key={s.id} className="flex gap-3 border-b border-[var(--line)] py-2.5">
-                <span className="font-display w-[18px] text-[20px] leading-none text-[var(--gold-soft)]">{i + 1}</span>
-                <span>{s.title}</span>
+            {toc.map((t, i) => (
+              <li key={t + i} className="flex gap-3 border-b border-[var(--line)] py-2.5">
+                <span className="font-display w-[22px] flex-none text-[20px] leading-none text-[var(--gold-soft)]">{i + 1}</span>
+                <span>{t}</span>
               </li>
             ))}
           </ol>
         </>
       )}
-      <a href={routes.wochenbericht(report.date)} className="btn-primary mt-7">
+      <a href={routes.wochenbericht(reportSlug(report))} className="btn-primary mt-7">
         Ganze Ausgabe lesen
       </a>
     </ManuscriptFrame>
@@ -102,17 +108,17 @@ function EmptyIssue() {
         Die erste Ausgabe erscheint in Kürze.
       </h2>
       <p className="mt-4 max-w-[52ch] text-[17px] leading-relaxed text-[var(--text-soft)]">
-        Jede Ausgabe fasst die Woche in drei Sätzen zusammen, ordnet ein und nennt die Termine der nächsten Woche.
+        Jede Ausgabe fasst die vergangene Woche in drei Sätzen zusammen und ordnet sie für muslimische Anleger ein, mit Quellen zu jeder Aussage.
       </p>
     </ManuscriptFrame>
   );
 }
 
 function EarlierIssues({ reports }) {
-  const years = useMemo(() => [...new Set(reports.map((r) => r.weekYear))].sort((a, b) => b - a), [reports]);
+  const years = useMemo(() => [...new Set(reports.map((r) => r.jahr))].sort((a, b) => b - a), [reports]);
   const [year, setYear] = useState(years[0]);
   const [all, setAll] = useState(false);
-  const inYear = reports.filter((r) => r.weekYear === year);
+  const inYear = reports.filter((r) => r.jahr === year);
   const shown = all ? inYear : inYear.slice(0, EARLIER_LIMIT);
 
   return (
@@ -145,14 +151,14 @@ function EarlierIssues({ reports }) {
       ) : (
         <ul>
           {shown.map((r) => (
-            <li key={r.date}>
+            <li key={r.id}>
               <a
-                href={routes.wochenbericht(r.date)}
+                href={routes.wochenbericht(reportSlug(r))}
                 className="grid items-baseline gap-x-5 gap-y-1 border-b border-[var(--line)] py-[18px] text-[var(--text)] hover:text-[var(--primary)] min-[641px]:grid-cols-[90px_minmax(0,1fr)_150px]"
               >
-                <span className="font-display text-[24px] text-[var(--gold-soft)]">KW {r.week}</span>
-                <span className="text-[18px]">{r.title}</span>
-                <span className="text-[14px] text-[var(--muted)] min-[641px]:text-right">{fmtLong(r.date)}</span>
+                <span className="font-display text-[24px] text-[var(--gold-soft)]">KW {r.kw}</span>
+                <span className="text-[18px]">{r.titel}</span>
+                <span className="text-[14px] text-[var(--muted)] min-[641px]:text-right">{fmtLong(issueDate(r))}</span>
               </a>
             </li>
           ))}
@@ -167,118 +173,62 @@ function EarlierIssues({ reports }) {
   );
 }
 
-const DIRECTION = { up: "text-[var(--ok-text)]", down: "text-[var(--bad-text)]", flat: "text-[var(--text-soft)]" };
-
-/** Eine ganze Ausgabe. */
-function IssueView({ report, reports }) {
+function IssueNav({ report, reports }) {
   const i = reports.indexOf(report);
   const newer = i > 0 ? reports[i - 1] : null;
   const older = i < reports.length - 1 ? reports[i + 1] : null;
-  const h2 = { margin: "44px 0 0", fontSize: "36px", lineHeight: 1.15, fontWeight: 600 };
+  if (!newer && !older) return null;
+  const card = (r, label) => (
+    <ManuscriptFrame as="div" className="min-w-0 flex-[1_1_260px] p-[5px]" innerClassName="px-5 py-4">
+      <a href={routes.wochenbericht(reportSlug(r))} className="block text-[var(--text)] hover:text-[var(--primary)]">
+        <span className="kicker">
+          {label} · KW {r.kw}
+        </span>
+        <span className="font-display mt-1.5 block text-[24px] font-semibold text-[var(--heading)]">{r.titel}</span>
+      </a>
+    </ManuscriptFrame>
+  );
   return (
-    <article className="pb-[72px] pt-14" aria-labelledby="ausgabe-titel">
-      <div className="mx-auto max-w-[760px] text-center">
-        <nav aria-label="Brotkrumen" className="text-[14px] text-[var(--muted)]">
-          <a href={routes.wochenbericht()} className={linkClass}>
-            Berichte
-          </a>{" "}
-          ·{" "}
-          <a href={routes.wochenbericht()} className={linkClass}>
-            Wochenbericht
-          </a>{" "}
-          · KW {report.week}
-        </nav>
-        <h1 id="ausgabe-titel" className="font-display text-[var(--heading)]" style={{ margin: "22px 0 0", fontSize: "clamp(44px, 7vw, 64px)", lineHeight: 1.02, fontWeight: 500 }}>
-          {report.title}
-        </h1>
-        <p className="mt-5 text-[15px] text-[var(--muted)]">
-          KW {report.week} · {fmtLong(report.date)} · ca. {report.minutes} Min. Lesezeit
-        </p>
-      </div>
-
-      <div className="mx-auto mt-8 max-w-[680px]">
-        <div className="border-l-[3px] border-[var(--gold-line)] py-1 pl-5">
-          <p className="text-[13px] uppercase tracking-[0.12em] text-[var(--muted)]">Das Wichtigste in drei Sätzen</p>
-          <p className="mt-2 text-[19px] leading-relaxed text-[var(--text)]">{report.tldr}</p>
-        </div>
-
-        {report.indices.length > 0 && (
-          <section aria-labelledby="maerkte">
-            <h2 id="maerkte" className="font-display text-[var(--heading)]" style={h2}>
-              Die Woche an den Märkten
-            </h2>
-            <ul className="mt-3">
-              {report.indices.map((idx) => (
-                <li key={idx.name} className="grid gap-x-4 border-b border-[var(--line)] py-3 min-[541px]:grid-cols-[minmax(0,1fr)_auto]">
-                  <span className="font-semibold text-[var(--text)]">{idx.name}</span>
-                  <span className="font-[IBM_Plex_Mono] text-[15px] text-[var(--text)] min-[541px]:text-right">
-                    {idx.value} <span className={DIRECTION[idx.direction] || DIRECTION.flat}>{idx.change}</span>
-                  </span>
-                  {idx.note && <span className="text-[14px] text-[var(--muted)] min-[541px]:col-span-2">{idx.note}</span>}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        {[
-          ["makro", "Makro und Politik", report.makroPolitik],
-          ["aktien", "Aktien im Fokus", report.aktienFokus],
-          ["ausblick", "Nächste Woche", report.ausblick],
-        ]
-          .filter(([, , text]) => text)
-          .map(([id, title, text]) => (
-            <section key={id} aria-labelledby={id}>
-              <h2 id={id} className="font-display text-[var(--heading)]" style={h2}>
-                {title}
-              </h2>
-              <p className="mt-3.5 text-[18px] leading-[1.75] text-[var(--text)]">{text}</p>
-            </section>
-          ))}
-
-        <footer className="mt-12 border-t border-[var(--green-deep)] pt-4">
-          {report.sourceNote && <p className="text-[15px] leading-relaxed text-[var(--text-soft)]">{report.sourceNote}</p>}
-          <p className="mt-3 text-[14px] text-[var(--muted)]">Keine Anlageberatung, keine Fatwa. Berichte bleiben 6 Monate abrufbar.</p>
-          <div className="mt-6 flex flex-wrap gap-4">
-            {older && (
-              <ManuscriptFrame as="div" className="min-w-0 flex-[1_1_260px]" innerClassName="px-5 py-4">
-                <a href={routes.wochenbericht(older.date)} className="block text-[var(--text)] hover:text-[var(--primary)]">
-                  <span className="kicker">Vorherige Ausgabe · KW {older.week}</span>
-                  <span className="font-display mt-1.5 block text-[24px] font-semibold text-[var(--heading)]">{older.title}</span>
-                </a>
-              </ManuscriptFrame>
-            )}
-            {newer && (
-              <ManuscriptFrame as="div" className="min-w-0 flex-[1_1_260px]" innerClassName="px-5 py-4">
-                <a href={routes.wochenbericht(newer.date)} className="block text-[var(--text)] hover:text-[var(--primary)]">
-                  <span className="kicker">Nächste Ausgabe · KW {newer.week}</span>
-                  <span className="font-display mt-1.5 block text-[24px] font-semibold text-[var(--heading)]">{newer.title}</span>
-                </a>
-              </ManuscriptFrame>
-            )}
-          </div>
-        </footer>
-      </div>
-    </article>
+    <div className="mt-8 flex flex-wrap gap-4">
+      {older && card(older, "Vorherige Ausgabe")}
+      {newer && card(newer, "Nächste Ausgabe")}
+    </div>
   );
 }
 
-export default function WochenberichtPage({ date = null }) {
-  const { loading, reports } = useReports();
+export default function WochenberichtPage({ slug = null }) {
+  const { loading, reports } = usePublishedReports();
   useEffect(() => {
     window.scrollTo({ top: 0 });
-  }, [date]);
+  }, [slug]);
 
-  if (date) {
-    const report = reports.find((r) => r.date === date);
+  if (slug) {
+    const key = parseReportSlug(slug);
+    const report = key && reports.find((r) => r.jahr === key.jahr && r.kw === key.kw);
     return (
-      <div className="font-body page text-left">
+      <div className="page pb-16">
         {loading ? (
           <p className="py-14 text-[var(--text-soft)]">Lade Ausgabe …</p>
         ) : report ? (
-          <IssueView report={report} reports={reports} />
+          <WochenberichtArticle
+            report={report}
+            breadcrumb={
+              <nav aria-label="Brotkrumen" className="text-[14px] text-[var(--muted)]">
+                <a href={routes.wochenbericht()} className={linkClass}>
+                  Berichte
+                </a>{" "}
+                ·{" "}
+                <a href={routes.wochenbericht()} className={linkClass}>
+                  Wochenbericht
+                </a>{" "}
+                · KW {report.kw}
+              </nav>
+            }
+            footer={<IssueNav report={report} reports={reports} />}
+          />
         ) : (
           <div className="py-14">
-            <p className="text-[18px] text-[var(--text-soft)]">Diese Ausgabe gibt es nicht (mehr). Berichte bleiben 6 Monate abrufbar.</p>
+            <p className="text-[18px] text-[var(--text-soft)]">Diese Ausgabe gibt es nicht.</p>
             <a href={routes.wochenbericht()} className={"mt-3 inline-flex min-h-[44px] items-center " + linkClass}>
               Zum aktuellen Wochenbericht
             </a>

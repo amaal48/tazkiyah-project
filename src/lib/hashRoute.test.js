@@ -20,12 +20,20 @@ test("Lernpfad und vereinfachte Methodik haben eigene Adressen", () => {
 });
 
 test("Berichte: Wochenbericht (auch einzelne Ausgabe), Blog und Beitrag", () => {
-  assert.deepEqual(parseHash("#/berichte"), { name: "wochenbericht", date: null });
-  assert.deepEqual(parseHash(routes.wochenbericht()), { name: "wochenbericht", date: null });
-  assert.deepEqual(parseHash(routes.wochenbericht("2026-10-19")), { name: "wochenbericht", date: "2026-10-19" });
-  assert.deepEqual(parseHash("#/berichte/wochenbericht/quatsch"), { name: "wochenbericht", date: null });
+  assert.deepEqual(parseHash("#/berichte"), { name: "wochenbericht", slug: null });
+  assert.deepEqual(parseHash(routes.wochenbericht()), { name: "wochenbericht", slug: null });
+  assert.deepEqual(parseHash(routes.wochenbericht("2026-kw42")), { name: "wochenbericht", slug: "2026-kw42" });
+  assert.deepEqual(parseHash("#/berichte/wochenbericht/2026-KW42"), { name: "wochenbericht", slug: "2026-kw42" });
+  assert.deepEqual(parseHash("#/berichte/wochenbericht/quatsch"), { name: "wochenbericht", slug: null });
   assert.deepEqual(parseHash(routes.blog()), { name: "blog" });
   assert.deepEqual(parseHash(routes.blogPost("gibt-es-eine-ki-blase")), { name: "blogpost", slug: "gibt-es-eine-ki-blase" });
+});
+
+test("Redaktion (intern): Liste, Neuer Entwurf, Ausgabe, Vorschau", () => {
+  assert.deepEqual(parseHash(routes.redaktion()), { name: "redaktion", id: null });
+  assert.deepEqual(parseHash(routes.redaktion("neu")), { name: "redaktion", id: "neu" });
+  assert.deepEqual(parseHash(routes.redaktion("3f2a")), { name: "redaktion", id: "3f2a" });
+  assert.deepEqual(parseHash(routes.redaktionVorschau()), { name: "redaktionVorschau" });
 });
 
 test("Detailseite und Sprungmarken wie bisher", () => {

@@ -4,12 +4,13 @@
 // tazkiyah-design-b2-startseite.html: Aufmacher mit Spitzbogen und Wochenbericht, grünes Band
 // „Drei Wege durch Tazkiyah“ (Lernen → Selbst prüfen → Dranbleiben), die Tazkiyah 30 und „Diese Woche“
 // in Manuskript-Rahmen, darunter der rechtliche Hinweis. Platzhalter der Vorlage sind durch echte Daten
-// ersetzt (Wochenbericht aus weekly_reports, Endergebnisse der Tazkiyah 30, Termine aus company_calendar)
+// ersetzt (Wochenbericht: neueste veröffentlichte Ausgabe aus weekly_reports, Endergebnisse der Tazkiyah 30, Termine aus company_calendar)
 // oder durch „folgt“. Die Legende (konform / nicht konform) steht nur auf der Seite der Tazkiyah 30.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { routes } from "../lib/hashRoute.js";
-import { supabase } from "../lib/supabaseClient";
+import { usePublishedReports } from "../lib/weeklyReportsData.js";
+import { reportSlug } from "../lib/weeklyReport.js";
 import { useScreeningList } from "../lib/screeningData.js";
 import { todayIso, upcomingEvents, useCalendarList } from "../lib/calendarData.js";
 import { addDays } from "../calendar/secCalendar.js";
@@ -63,57 +64,38 @@ const WAYS = [
   },
 ];
 
-/** Neuester Wochenbericht mit Inhalt (leere Einträge zählen nicht). null = keiner, undefined = lädt. */
-function useLatestReport() {
-  const [report, setReport] = useState(undefined);
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from("weekly_reports")
-      .select("week_label,report_date,tldr")
-      .order("report_date", { ascending: false })
-      .limit(5)
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        const first = !error && (data || []).find((r) => String(r.tldr || "").trim());
-        setReport(first || null);
-      })
-      .catch(() => !cancelled && setReport(null));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return report;
+function fmtLong(ts) {
+  return new Date(ts).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
 }
 
-function fmtLong(iso) {
-  return new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-}
-
-/** Karte im Spitzbogen. */
+/** Karte im Spitzbogen: neueste veröffentlichte Ausgabe (nur status = veroeffentlicht). */
 function WeeklyReportCard() {
-  const report = useLatestReport();
+  const { loading, reports } = usePublishedReports();
+  const report = reports[0] || null;
   return (
     <section className="border-t-[3px] border-[var(--gold-line)] bg-[var(--paper)] px-[26px] py-7 text-[var(--text)]" aria-labelledby="wochenbericht">
-      <p className="kicker">{report ? `Wochenbericht · ${fmtLong(report.report_date)}` : "Wochenbericht"}</p>
-      {report === undefined ? (
+      <p className="kicker">{report ? `Wochenbericht · KW ${report.kw}` : "Wochenbericht"}</p>
+      {loading ? (
         <p className="mt-3 text-[15px] text-[var(--text-soft)]">Lade …</p>
-      ) : report === null ? (
+      ) : !report ? (
         <>
           <h2 id="wochenbericht" className="font-display mt-2.5 text-[32px] font-semibold leading-[1.1] text-[var(--heading)]">
-            Die erste Ausgabe folgt in Kürze.
+            Die erste Ausgabe erscheint in Kürze.
           </h2>
-          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--text-soft)]">Das Wichtigste der Woche in wenigen Sätzen.</p>
+          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--text-soft)]">Das Wichtigste der Woche in drei Sätzen, jeden Montag.</p>
         </>
       ) : (
         <>
           <h2 id="wochenbericht" className="font-display mt-2.5 text-[32px] font-semibold leading-[1.1] text-[var(--heading)]">
-            {report.week_label}
+            {report.titel}
           </h2>
-          <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-[var(--text-soft)]">{report.tldr}</p>
-          <a href={routes.wochenbericht(String(report.report_date).slice(0, 10))} className={"mt-3.5 inline-flex min-h-[44px] items-center " + linkClass}>
-            Zum Bericht
-          </a>
+          <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-[var(--text-soft)]">{report.drei_saetze}</p>
+          <div className="mt-3.5 flex flex-wrap items-baseline justify-between gap-x-4">
+            <a href={routes.wochenbericht(reportSlug(report))} className={"inline-flex min-h-[44px] items-center " + linkClass}>
+              Zum Bericht
+            </a>
+            {report.veroeffentlicht_am && <span className="text-[13px] text-[var(--muted)]">{fmtLong(report.veroeffentlicht_am)}</span>}
+          </div>
         </>
       )}
     </section>
