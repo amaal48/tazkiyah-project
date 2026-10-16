@@ -1,10 +1,30 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 15.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
+
+### Neue Ausrichtung (16.10.)
+
+**Entscheidung 16.10.2026:** Tazkiyah wird vom Prüfwerkzeug zum **Begleiter für Einsteiger**. Drei Säulen: **Lernen → Selbst prüfen → Dranbleiben.** Die Tazkiyah 30 sind ein Bereich unter mehreren, nicht mehr der Aufmacher. Keine Wörter wie „kaufen“, „Top“, keine Kursziele, keine Preise oder Abos auf der Seite.
+
+- **Hauptmenü (Desktop und Handy), alle Punkte gleich gewichtet:** Lernen · Methodik · Tazkiyah 30 · Aktien · Berichte · Kalender. „Lernen“ führt zur Akademie mit dem Lernpfad (`#/lernen`). Das Aufklappmenü bei „Berichte“ (einziger Unterpunkt „PDF-Berichte“, dieselbe Seite) ist entfernt. Watchlist und Kontakt bleiben in der Fußzeile.
+- **Neue Startseite:** Aufmacher „Halal investieren auf Deutsch“ / „Investieren verstehen. Schritt für Schritt.“ mit den Knöpfen „Mit den Grundlagen starten“ (→ `#/lernen`) und „Worauf du achten solltest“ (→ `#/methodik-2`), rechts die Karte „Aktueller Wochenbericht“ (neuester Eintrag in `weekly_reports` mit Inhalt; leere Einträge zählen nicht; sonst „Die erste Ausgabe folgt in Kürze.“). Darunter drei gleich große Blöcke Lernen / Selbst prüfen / Dranbleiben, unten der rechtliche Hinweis. Entfernt: Tazkiyah 30 als Aufmacher, Legende „Konform / Nicht konform“ (bleibt auf der Seite der Tazkiyah 30), Kachelliste „Was es bei Tazkiyah gibt“.
+- **Methodik 2 zum Vergleich:** neue Seite `#/methodik-2` (`src/components/Methodik2Page.jsx`), Text wörtlich nach Vorgabe (vier Fragen als nummerierte Blöcke, „Wichtig“ als Hinweiskasten, Link „Ausführlich: Methodik im Detail“, rechtlicher Hinweis). Nicht im Hauptmenü. Die bestehende Methodik-Seite ist inhaltlich unverändert und hat oben einen temporären Hinweis „Entwurf: vereinfachte Fassung ansehen“ (im Code als TEMPORÄR markiert; entfernen, sobald entschieden ist, welche Fassung bleibt).
+- **Lernpfad-Gerüst:** Akademie unter `#/lernen` mit Übersicht von 11 Lektionen als Karten (Nummer, Titel, ein Satz, Status „folgt“; Daten in `src/data/lernpfad.js`, Anzeige `src/components/LernpfadOverview.jsx`). Inhalte schreibt die Nutzerin später, die Karten sind bis dahin keine Links. Die bisherigen Akademie-Inhalte (Einstieg, Broker-Vergleich, Glossar, Methodik, Vertiefen) stehen unverändert darunter als „Weitere Fragen“, das Feld „Frage nicht gefunden?“ bleibt.
+- **Wochenbericht breit:** Der Wochenbericht behandelt das Marktgeschehen allgemein; die Tazkiyah 30 erscheinen darin nur mit Fakten (z. B. Statusänderungen mit Datum und Grund), ohne Wertung oder Empfehlung.
+- **Monetarisierung später über einmalige Kurse.** Kein Abo auf der Seite, keine Preise.
+- Umsetzung auf Branch `neue-ausrichtung` (von `tazkiyah-30`), gepusht, nicht gemergt.
+- **Offen (16.10.2026):**
+  1. Rechtlicher Hinweis: `LegalNotice.jsx` ist für die Tazkiyah 30 formuliert („Die Tazkiyah 30 zeigen …“) und steht jetzt auch auf Startseite und Methodik 2. Allgemeiner Text kommt von der Nutzerin, vor dem Launch mit zur Anwaltsprüfung.
+  2. Methodik 2 enthält wörtlich „Mit einer Aktie kaufst du …“ (erklärend, keine Aufforderung). Prüfen, ob umformulieren.
+  3. Watchlist ist nur noch über die Fußzeile erreichbar (Kachelliste der alten Startseite entfernt).
+  4. Akademie „Weitere Fragen“ enthält alte Platzhalter: Broker-Vergleich mit „Broker A/B/C“, Texte teils noch aus der Screener-Zeit. Bei den Lernpfad-Inhalten mit überarbeiten.
+  5. Seite Berichte zeigt ohne echten Bericht Demo-Berichte, die Startseite dagegen „Die erste Ausgabe folgt in Kürze.“ Entscheiden, ob die Demo-Berichte entfallen. Der Demo-Bericht erklärt außerdem noch „grenzwertig“ (gibt es nicht mehr).
+  6. Lektionen sind ohne Inhalt keine Links; sobald Texte da sind, je Lektion eine eigene Adresse (z. B. `#/lernen/1`) und Status „folgt“ entfernen.
+  7. Entwurfs-Hinweis auf der Methodik-Seite (TEMPORÄR) entfernen, sobald entschieden ist, welche Fassung bleibt.
 
 ### Neue Ausrichtung (15.10.2026)
 
@@ -18,6 +38,29 @@ Stand: 15.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - **Schwerpunkt nach dem Launch:** Wochenbericht, Kalender, Akademie.
 - **Entfällt:** alle weiteren A2/B3-Pakete, großer Lauf, restliche ca. 430 Aktien, Free/Pro. APH/ZBH (B3, Zoya-Grund) für die 30 nicht mehr nötig. Paket 2 (45 Aktien, 15.10.2026) ist geprüft und eingetragen, wird aber nicht fortgesetzt; aus Paket 2 gehören nur MU, QCOM, ANET, SNPS, FTNT, WDAY, BSX, EW, SHW, ITW zu den 30.
 - **Bis zum Launch:** (1) Tiingo Commercial buchen + Adapter, (2) Zinserträge nachtragen (`interestIncomeNotes`, braucht die 10-Q; Analyse vom 15.10.2026: FMP Free liefert Kurse nur für eine Beispielliste von Symbolen, Zinserträge fehlen in den SEC-Daten bei TXN, LLY u. a.), (3) Paket AMD/META/PLTR/ADBE, (4) Seite „Tazkiyah 30“ und Aktiensuche bauen, (5) bisherigen Screener auf die 30 begrenzen. **Code erst nach Freigabe durch die Nutzerin.**
+
+### Positionierung & Wettbewerb (16.10.2026)
+
+**Kernsatz:** „Halal investieren auf Deutsch, für deutsche Anleger: verständlich erklärt, sorgfältig belegt, unabhängig.“
+
+**Wettbewerb in Deutschland**
+- **Mizaan Invest** (mizaaninvest.com): Bildung nach AAOIFI, Kurse auf Warteliste, Gründer mit Gesicht und Abschlüssen. Keine Aktienliste, kein Kalender, keine Berichte.
+- **Amanah** (amanah-invest.de): Ratgeber, Rechner, Kriterien-Checks, Gratis-Guide.
+
+**Wettbewerb global:** Musaffa, Zoya, Mizaan-App, amana. Automatisierte Massenprüfung, Apps, Broker-Anbindung, Abos; nicht auf Deutschland zugeschnitten.
+
+**Folgerung:** Mit Bildung allein fällt Tazkiyah nicht auf. Mit Gesichtern und Abschlüssen konkurrieren wir bewusst nicht (Tazkiyah bleibt anonym).
+
+**Unsere Lücke (Leitlinie für alle Entscheidungen zu Inhalten und Funktionen)**
+1. **Konkrete, belegte Prüfungen:** Tazkiyah 30 mit Fundstellen, Datum und Änderungsprotokoll. Andere bringen bei, wie man prüft; Tazkiyah zeigt, was bei echten Aktien herauskommt.
+2. **Werkzeug statt nur Wissen:** Aktiensuche mit Unternehmensprofil, Terminen (HV, Quartalszahlen) und amtlichen Berichten auf Deutsch.
+3. **Regelmäßigkeit:** Wochenbericht und Kalender als Grund, jede Woche wiederzukommen.
+4. **Akademie:** kurz, kostenlos, immer an echten Fällen aus der Liste (z. B. „Warum Salesforce an C1 scheitert“, „Was in der Satzung von NVIDIA steht“). Lernen am Beispiel, kein Kurs-Curriculum.
+5. **Vertrauen ohne Gesicht:** Quellen bei jeder Aussage, öffentliche Methodik, Änderungsprotokoll; später Bestätigung der Auslegungen durch eine gelehrte Person.
+
+**Bewusst nicht:** Massenprüfung, Erweiterung der 30 gegen Bezahlung, App, Broker-Anbindung, Abo, Kaufempfehlungen/Rankings/Kursziele, Fatwa, Gesicht.
+
+**Folge für die Umsetzung:** Vorrang haben das Änderungsprotokoll (öffentlich, mit Datum und Begründung) und Fundstellen je Aussage auf der Detailseite der 30. Akademie-Artikel verlinken auf die jeweilige Aktie der Liste.
 
 **Umsetzung „Die Tazkiyah 30 + Aktiensuche“ (Branch `tazkiyah-30`, 15.10.2026, nicht auf `main`; Freigabe der Nutzerin für die Umsetzung, Merge erst nach Prüfung der Vercel-Vorschau)**
 - **SQL `supabase_tazkiyah30.sql` (noch nicht ausgeführt, die Nutzerin führt es aus):** Tabelle `tazkiyah30` (ticker PK mit Verweis auf `securities.ticker`, sort_order, gruppe `beliebt`/`datenlage`, kurzbegruendung leer, aufgenommen_am), RLS, öffentlich nur lesen, mit den 30 Titeln befüllt (gruppe ist ein **Vorschlag**: beliebt = NVDA, MU, AMD, CRM, META, PLTR, ADBE, LLY, JNJ, PFE). Öffentlich nur noch die 30: View `screening_current` mit Join auf `tazkiyah30`; RLS von `screening_runs`, `screening_status_changes` und `user_notifications` auf `is_tazkiyah30(security_id)` beschränkt; ETFs damit nicht öffentlich. Cron und Wochenbericht (Service-Role) und `screening_current_internal` unverändert; `manual_reviews_due` liest jetzt die interne View. Zwei Kontrollabfragen am Ende (als anon: 30 Zeilen, nichts außerhalb der Liste). Getestet mit PGlite (`src/screening/tazkiyah30.test.js`). **Achtung:** `supabase_b1_b2_binaer.sql` und `supabase_schema_screening.sql` legen `screening_current` ohne Filter an; nach erneutem Ausführen `supabase_tazkiyah30.sql` wiederholen (Hinweis steht in beiden Dateien).

@@ -10,6 +10,8 @@ import { PrivacyPage } from "./components/PrivacyPage";
 import { useWatchlist } from "./hooks/useWatchlist";
 import { Toast } from "./components/Toast";
 import MethodikPage from "./components/MethodikPage.jsx";
+import Methodik2Page from "./components/Methodik2Page.jsx";
+import LernpfadOverview from "./components/LernpfadOverview.jsx";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
@@ -499,6 +501,8 @@ const vertiefenItems = [
 const AKADEMIE_TABS = ["Einstieg", "Broker-Vergleich", "Glossar", "Methodik", "Vertiefen"];
 
 
+// Akademie (#/lernen, Navigation „Lernen“): oben der Lernpfad (seit 16.10.2026), darunter die bisherigen
+// Inhalte unverändert als „Weitere Fragen“, am Ende „Frage nicht gefunden?“.
 function AkademiePage({ onBack }) {
   const [tab, setTab] = useState("Einstieg");
   const [open, setOpen] = useState(0);
@@ -508,10 +512,12 @@ function AkademiePage({ onBack }) {
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
-        <span className="text-[var(--text)]">Akademie</span>
+        <span className="text-[var(--text)]">Lernen</span>
       </header>
       <main className="page pb-24">
-        <h1 className="font-display text-3xl text-[var(--text)]">Akademie</h1>
+        <LernpfadOverview />
+
+        <h2 className="font-display mt-16 text-3xl text-[var(--text)]">Weitere Fragen</h2>
         <p className="mt-2 max-w-xl text-sm text-[var(--muted)]">
           Grundlagen, Vergleiche und Erklärungen — unabhängig davon, wo du dein Depot führst.
         </p>
@@ -807,26 +813,13 @@ function SectorsPage({ onBack }) {
   );
 }
 
-/* ---------- Navigation (Kopfleiste, siehe components/SiteHeader.jsx) ---------- */
-
-const NAV_GROUPS = [
-  {
-    key: "berichte",
-    label: "Berichte",
-    page: "reports",
-    children: [
-      { label: "PDF-Berichte", page: "reports" },
-    ],
-  },
-];
-
 /* ---------- Root ---------- */
 
 const FOOTER_LINK =
   "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "kontakt"];
+const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt"];
 
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
@@ -873,6 +866,14 @@ export default function TazkiyahPrototype() {
     } else if (route.name === "tazkiyah30" || route.name === "aktien") {
       setPage(route.name);
       setActiveAnchor(null);
+    } else if (route.name === "lernen") {
+      // Akademie mit Lernpfad (page "faq")
+      setPage("faq");
+      setActiveAnchor(null);
+      window.scrollTo({ top: 0 });
+    } else if (route.name === "methodik2") {
+      setPage("methodik2");
+      setActiveAnchor(null);
     } else if (route.name === "kontakt") {
       setContactPrefill({ topic: route.topic || null, ticker: route.ticker || null });
       setPage("kontakt");
@@ -895,6 +896,11 @@ export default function TazkiyahPrototype() {
       if (page === "methodik") setActiveAnchor(anchor || null);
       else methodikAnchorRef.current = anchor || null;
       navigate(routes.methodik());
+    } else if (targetPage === "faq" || targetPage === "methodik2") {
+      navigate(targetPage === "faq" ? routes.lernen() : routes.methodik2());
+      if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
+      setPage(targetPage);
+      setActiveAnchor(null);
     } else if (targetPage === "home" || targetPage === "tazkiyah30" || targetPage === "aktien") {
       navigate(targetPage === "home" ? routes.home() : targetPage === "aktien" ? routes.aktien() : routes.tazkiyah30());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -997,7 +1003,6 @@ export default function TazkiyahPrototype() {
 
       <SiteHeader
         page={page}
-        navGroups={NAV_GROUPS}
         activeFilter={activeFilter}
         onGo={goTo}
         session={session}
@@ -1033,6 +1038,7 @@ export default function TazkiyahPrototype() {
         {page === "reports" && <ReportsPage onBack={() => goTo("home")} />}
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
         {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
+        {page === "methodik2" && <Methodik2Page />}
         {page === "sectors" && <SectorsPage onBack={() => goTo("home")} />}
         {page === "profile" && <ProfilePage session={session} onGo={goTo} />}
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}

@@ -10,6 +10,8 @@
 //   #/aktie/AAPL       Detailseite (Tazkiyah 30) bzw. Aktienseite ohne Status (alle übrigen)
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
+//   #/methodik-2       Methodik, vereinfachte Fassung (Entwurf zum Vergleich, 16.10.2026)
+//   #/lernen           Akademie mit Lernpfad (Navigation „Lernen“)
 //   #/kontakt          Kontaktformular, optional vorausgefüllt: #/kontakt?thema=fehler&aktie=AAPL
 
 import { useEffect, useState } from "react";
@@ -34,6 +36,8 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "aktie" && parts[1]) return { name: "stock", ticker: parts[1].toUpperCase() };
   if (parts[0] === "kriterium" && parts[1]) return { name: "criterion", id: parts[1].toUpperCase() };
   if (parts[0] === "methodik") return { name: "methodik" };
+  if (parts[0] === "methodik-2") return { name: "methodik2" };
+  if (parts[0] === "lernen") return { name: "lernen" };
   if (parts[0] === "screener" || parts[0] === "tazkiyah-30") return { name: "tazkiyah30" };
   if (parts[0] === "aktien") return { name: "aktien" };
   if (parts[0] === "kontakt") {
@@ -52,6 +56,8 @@ export const routes = {
   stock: (ticker) => `#/aktie/${encodeURIComponent(ticker)}`,
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",
+  methodik2: () => "#/methodik-2",
+  lernen: () => "#/lernen",
   /** Kontaktformular; topic: Thema im Formular (z. B. "pruefung", "fehler"), ticker: Aktie für den Text */
   kontakt: ({ topic, ticker } = {}) => {
     const q = new URLSearchParams();

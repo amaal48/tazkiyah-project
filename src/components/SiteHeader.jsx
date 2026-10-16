@@ -1,7 +1,7 @@
 // src/components/SiteHeader.jsx
 //
-// Kopfleiste (Design B) statt der früheren Sidebar. Seit 15.10.2026 (Die Tazkiyah 30): Aktien,
-// Tazkiyah 30, Berichte, Kalender, Akademie. Ab 900 px: Logo, Hauptpunkte mit
+// Kopfleiste (Design B) statt der früheren Sidebar. Seit 16.10.2026 (Neue Ausrichtung), alle Punkte
+// gleich gewichtet: Lernen, Methodik, Tazkiyah 30, Aktien, Berichte, Kalender. Ab 900 px: Logo, Hauptpunkte mit
 // Aufklappmenüs für die Unterpunkte, Anmelden bzw. Kontomenü. Darunter: Menüknopf, der ein
 // Panel mit allen Punkten öffnet. Escape und Klick außerhalb schließen offene Menüs.
 
@@ -72,7 +72,7 @@ function SubItems({ group, onPick, activeFilter }) {
   );
 }
 
-export default function SiteHeader({ page, navGroups, activeFilter, onGo, session, onOpenAuth, onSignOut }) {
+export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAuth, onSignOut }) {
   const [openGroup, setOpenGroup] = useState(null); // Aufklappmenü am Hauptpunkt (Desktop)
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -104,21 +104,24 @@ export default function SiteHeader({ page, navGroups, activeFilter, onGo, sessio
   const pick = (child) =>
     child.type === "filter" ? go("tazkiyah30", null, child.filter) : go(child.page, child.anchor, child.reset ? { type: "all" } : undefined);
 
-  // Hauptpunkte in der Reihenfolge der Kopfleiste
-  const groupByKey = Object.fromEntries(navGroups.map((g) => [g.key, g]));
+  // Hauptpunkte in der Reihenfolge der Kopfleiste. Ohne Aufklappmenüs, damit alle Punkte gleich gewichtet
+  // sind (das Untermenü „PDF-Berichte“ führte auf dieselbe Seite). Die Unterstützung für it.group bleibt.
   const ACTIVE_PAGES = {
-    aktien: ["aktien"],
+    lernen: ["faq"],
+    methodik: ["methodik", "methodik2", "criterion"],
     tazkiyah30: ["tazkiyah30", "detail", "sectors"],
+    aktien: ["aktien"],
     berichte: ["reports"],
     kalender: ["calendar"],
-    akademie: ["faq"],
   };
+  // „Lernen“ führt zur Akademie mit dem Lernpfad (#/lernen)
   const items = [
-    { key: "aktien", label: "Aktien", page: "aktien" },
+    { key: "lernen", label: "Lernen", page: "faq" },
+    { key: "methodik", label: "Methodik", page: "methodik" },
     { key: "tazkiyah30", label: "Tazkiyah 30", page: "tazkiyah30" },
-    { key: "berichte", label: "Berichte", page: "reports", group: groupByKey.berichte },
+    { key: "aktien", label: "Aktien", page: "aktien" },
+    { key: "berichte", label: "Berichte", page: "reports" },
     { key: "kalender", label: "Kalender", page: "calendar" },
-    { key: "akademie", label: "Akademie", page: "faq" },
   ];
   const isActive = (it) => ACTIVE_PAGES[it.key]?.includes(page);
 
