@@ -32,11 +32,11 @@ export default function StageDiagram({ parameters = defaultParameterValues() }) 
     <div>
       <ol className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(13rem, 1fr))" }}>
         {STAGES.map((stage, i) => (
-          <li key={stage.id} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+          <li key={stage.id} className="border border-[var(--border)] bg-[var(--surface)] p-5">
             <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="font-display text-xl text-[var(--gold-soft)]">{i + 1}</span>
+              <span className="font-display text-[28px] text-[var(--gold-soft)]">{i + 1}</span>
               <span className="text-[15px] text-[var(--text)]">{stage.title}</span>
-              <span className="ml-auto whitespace-nowrap font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">Stufe {stage.id}</span>
+              <span className="kicker ml-auto whitespace-nowrap">Stufe {stage.id}</span>
             </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{stage.question}</p>
             <ul className="mt-3 border-t border-[var(--border)] pt-2">

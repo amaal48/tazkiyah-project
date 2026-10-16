@@ -1,6 +1,6 @@
 // src/components/screening/StatusLegend.jsx
 //
-// Die Status mit je einem Satz (Texte: STATUS_EXPLANATIONS in format.js). Design B: eine weiße Karte.
+// Die Status mit je einem Satz (Texte: STATUS_EXPLANATIONS in format.js). Design B2: Karte mit Linie, Symbol ohne Kreis.
 
 import { StatusIcon } from "./StatusBadge.jsx";
 import { STATUS_EXPLANATIONS, STATUS_TEXT } from "./format.js";
@@ -9,9 +9,9 @@ import { STATUS_EXPLANATIONS, STATUS_TEXT } from "./format.js";
 const ORDER = ["konform", "nicht_konform"];
 
 const TILE = {
-  konform: "bg-[var(--ok-bg)] text-[var(--ok-text)]",
-  nicht_konform: "bg-[var(--bad-bg)] text-[var(--bad-text)]",
-  nicht_geprueft: "bg-[var(--none-bg)] text-[var(--none-text)]",
+  konform: "text-[var(--ok-text)]",
+  nicht_konform: "text-[var(--bad-text)]",
+  nicht_geprueft: "text-[var(--none-text)]",
 };
 
 export default function StatusLegend() {
@@ -19,8 +19,8 @@ export default function StatusLegend() {
     <dl className="card grid gap-6 md:grid-cols-2">
       {ORDER.map((status) => (
         <div key={status} className="flex items-start gap-3">
-          <span className={"flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full " + TILE[status]}>
-            <StatusIcon status={status} size={16} />
+          <span className={"flex h-7 w-5 flex-shrink-0 items-center " + TILE[status]}>
+            <StatusIcon status={status} size={18} />
           </span>
           <div>
             <dt className="font-semibold text-[var(--text)]">{STATUS_TEXT[status]}</dt>

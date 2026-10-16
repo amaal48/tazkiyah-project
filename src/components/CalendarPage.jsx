@@ -52,7 +52,7 @@ export default function CalendarPage() {
   return (
     <div className="font-body page pb-8 pt-14 text-left">
       <header className="max-w-[68ch]">
-        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
           Kalender
         </h1>
         <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
@@ -81,7 +81,7 @@ export default function CalendarPage() {
       <div className="space-y-8">
         {byDay.map((d) => (
           <section key={d.date} aria-labelledby={`tag-${d.date}`}>
-            <h2 id={`tag-${d.date}`} className="font-display" style={{ ...H2_STYLE, fontSize: "20px" }}>
+            <h2 id={`tag-${d.date}`} className="font-display" style={{ ...H2_STYLE, fontSize: "25px" }}>
               {dayLabel(d.date)}
             </h2>
             <ul className="card mt-3 divide-y divide-[var(--line)] py-2">

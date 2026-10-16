@@ -101,7 +101,7 @@ export default function MarketData({ ticker, exchange, name, variant = "screenin
   if (!symbol) return null;
   return (
     <section className={className} aria-labelledby="kurs-marktdaten">
-      <h2 id="kurs-marktdaten" className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+      <h2 id="kurs-marktdaten" className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
         {variant === "info" ? "Kurs, Chart und Unternehmensprofil" : "Kurs und Marktdaten"}
       </h2>
       <div className="mt-4">

@@ -33,7 +33,7 @@ function Tag({ tone, children }) {
     gold: "border-[var(--gold)]/50 text-[var(--gold-soft)]",
     neutral: "border-[var(--border)] text-[var(--text-soft)]",
   };
-  return <span className={"rounded-full border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
+  return <span className={" border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
 }
 
 export default function CriterionPage({ id, onBack }) {
@@ -132,7 +132,7 @@ export default function CriterionPage({ id, onBack }) {
               {deviations.map((k) => {
                 const d = DEFAULT_PARAMETERS[k];
                 return (
-                  <li key={k} className="rounded-xl border border-[var(--gold)]/40 bg-[var(--gold)]/5 px-4 py-3">
+                  <li key={k} className="border border-[var(--gold)]/40 bg-[var(--gold)]/5 px-4 py-3">
                     <p className="flex flex-wrap items-center gap-2 text-[var(--text)]">
                       {PARAMETER_TITLES[k] || k}
                       {d.derivation && <Tag tone="gold">Ableitung</Tag>}

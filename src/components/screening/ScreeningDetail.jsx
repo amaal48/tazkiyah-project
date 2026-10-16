@@ -64,7 +64,7 @@ const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 
 // Ergebnisfeld je Status (Farben aus Design B)
 const RESULT_PANEL = {
-  konform: { box: "bg-[var(--primary)] text-[var(--on-primary-soft)]", sub: "text-[var(--on-primary-muted)]", link: "text-[var(--on-primary-soft)]" },
+  konform: { box: "on-green bg-[var(--green-deep)] text-[var(--on-primary-soft)]", sub: "text-[var(--on-primary-muted)]", link: "text-[var(--on-primary-soft)]" },
   nicht_konform: { box: "bg-[var(--bad-bg)] border border-[var(--bad-border)] text-[var(--bad-strong)]", sub: "text-[var(--bad-strong)]", link: "text-[var(--bad-strong)]" },
   nicht_geprueft: { box: "bg-[var(--none-bg)] text-[var(--none-strong)]", sub: "text-[var(--none-strong)]", link: "text-[var(--none-strong)]" },
 };
@@ -187,7 +187,7 @@ function Review({ review }) {
   const verification = VERIFICATION_TEXT[review.verification];
   const month = fmtMonthYear(review.reviewedAt);
   return (
-    <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text-soft)]">
+    <div className="mt-3 border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text-soft)]">
       <p>
         Geprüft von der Tazkiyah-Redaktion
         {verification && ` · ${verification}`}
@@ -401,10 +401,10 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
           {/* 1. Kopf */}
           <header className="mt-4 flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+              <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
                 {name}
               </h1>
-              <p className="mt-2 font-[IBM_Plex_Mono] text-sm text-[var(--muted)]">{meta}</p>
+              <p className="mt-2 text-[15px] text-[var(--muted)]">{meta}</p>
             </div>
             <button type="button" onClick={() => onToggleWatchlist(ticker)} aria-pressed={saved} className="btn-secondary">
               {saved ? "✓ In der Watchlist" : "+ Zur Watchlist"}
@@ -412,7 +412,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
           </header>
 
           {/* 2. Ergebnisfeld */}
-          <section aria-label="Ergebnis" className={"mt-8 rounded-[18px] p-8 " + panel.box}>
+          <section aria-label="Ergebnis" className={"mt-8 p-8 " + panel.box}>
             <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
               <StatusBadge status={status} size="lg" inverse={status === "konform"} />
               <div className="min-w-0 flex-1">
@@ -464,7 +464,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
             <div className="mt-[72px] grid gap-x-8 gap-y-12 lg:grid-cols-2">
               {groups.map((g) => (
                 <section key={g.id} aria-labelledby={`stufe-${g.id}`}>
-                  <h2 id={`stufe-${g.id}`} className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+                  <h2 id={`stufe-${g.id}`} className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
                     {g.id !== "weitere" ? `${g.id} ${g.title}` : g.title}
                   </h2>
                   {g.question && <p className="mt-1 text-[15px] text-[var(--muted)]">{g.question}</p>}
@@ -486,7 +486,7 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
 
           {/* Verlauf */}
           <section className="mt-[72px]">
-            <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+            <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
               Verlauf
             </h2>
             {history.length === 0 ? (
@@ -510,8 +510,8 @@ export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWat
           </section>
 
           {/* 4. Reinigung und Zakat */}
-          <section className="mt-12 rounded-2xl border border-[var(--note-border)] bg-[var(--note-bg)] p-6">
-            <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+          <section className="mt-12 border border-[var(--note-border)] bg-[var(--note-bg)] p-6">
+            <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
               Reinigung und Zakat
             </h2>
             <p className="mt-2 max-w-[62ch] leading-relaxed text-[var(--text-soft)]">

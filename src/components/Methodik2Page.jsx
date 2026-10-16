@@ -8,6 +8,7 @@
 import { useEffect } from "react";
 import { routes } from "../lib/hashRoute.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
+import { StarNumber } from "./ornaments.jsx";
 import { H1_STYLE, H2_STYLE } from "./screening/format.js";
 
 const QUESTIONS = [
@@ -40,7 +41,7 @@ export default function Methodik2Page() {
   return (
     <div className="font-body page pb-8 pt-14 text-left">
       <header className="max-w-[68ch]">
-        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
           Worauf du als Muslim beim Investieren achten solltest
         </h1>
         <p className="mt-5 text-[19px] leading-relaxed text-[var(--text-soft)]">
@@ -51,19 +52,14 @@ export default function Methodik2Page() {
       </header>
 
       <section className="mt-12" aria-labelledby="vier-fragen">
-        <h2 id="vier-fragen" className="font-display" style={{ ...H2_STYLE, fontSize: "28px" }}>
+        <h2 id="vier-fragen" className="font-display" style={{ ...H2_STYLE, fontSize: "35px" }}>
           Vier Fragen an jede Aktie
         </h2>
         <ol className="mt-6 grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))" }}>
           {QUESTIONS.map((item, i) => (
             <li key={item.q} className="card flex h-full flex-col gap-3">
-              <span
-                className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--tile)] font-[IBM_Plex_Mono] text-[18px] font-medium text-[var(--primary)]"
-                aria-hidden="true"
-              >
-                {i + 1}
-              </span>
-              <h3 className="font-display text-[20px] font-medium leading-snug text-[var(--text)]">
+              <StarNumber n={i + 1} size={52} stroke="var(--gold)" color="var(--gold-soft)" />
+              <h3 className="font-display text-[20px] font-medium leading-snug text-[var(--heading)]">
                 <span className="sr-only-label">{i + 1}. </span>
                 {item.q}
               </h3>
@@ -78,7 +74,7 @@ export default function Methodik2Page() {
       </section>
 
       <section className="mt-12" aria-labelledby="selbst-tun">
-        <h2 id="selbst-tun" className="font-display" style={{ ...H2_STYLE, fontSize: "28px" }}>
+        <h2 id="selbst-tun" className="font-display" style={{ ...H2_STYLE, fontSize: "35px" }}>
           Was du selbst tun kannst
         </h2>
         <ul className="mt-4 max-w-[68ch] list-disc space-y-2 pl-6 text-[17px] leading-relaxed text-[var(--text-soft)] marker:text-[var(--gold)]">
@@ -88,8 +84,8 @@ export default function Methodik2Page() {
         </ul>
       </section>
 
-      <aside className="mt-12 max-w-[68ch] rounded-2xl border border-[var(--note-border)] bg-[var(--note-bg)] p-5" aria-labelledby="wichtig">
-        <h2 id="wichtig" className="font-display" style={{ ...H2_STYLE, fontSize: "20px" }}>
+      <aside className="mt-12 max-w-[68ch] border border-[var(--note-border)] bg-[var(--note-bg)] p-5" aria-labelledby="wichtig">
+        <h2 id="wichtig" className="font-display" style={{ ...H2_STYLE, fontSize: "25px" }}>
           Wichtig
         </h2>
         <p className="mt-2 text-[16px] leading-relaxed text-[var(--text-soft)]">

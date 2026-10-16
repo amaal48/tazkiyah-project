@@ -6,20 +6,19 @@
 // Panel mit allen Punkten öffnet. Escape und Klick außerhalb schließen offene Menüs.
 
 import { useEffect, useRef, useState } from "react";
+import { Frieze, StarMark } from "./ornaments.jsx";
 
-/** Logo: grüne Kachel mit goldenem Punkt, daneben der Name. */
+/** Logo: achtzackiger Stern (Dunkelgrün, Punkt in Hellgold), daneben der Name (Design B2). */
 function Logo({ onGo }) {
   return (
     <a
       href="#/"
       onClick={() => onGo("home")}
-      className="flex min-h-[44px] items-center gap-2.5 rounded-[8px]"
+      className="flex min-h-[44px] items-center gap-2.5"
       aria-label="Tazkiyah, zur Startseite"
     >
-      <span className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-[var(--primary)]">
-        <span className="h-[10px] w-[10px] rounded-full bg-[var(--logo-dot)]" />
-      </span>
-      <span className="font-display text-[24px] leading-none text-[var(--text)]">Tazkiyah</span>
+      <StarMark size={36} />
+      <span className="font-display text-[32px] font-semibold leading-none text-[var(--heading)]">Tazkiyah</span>
     </a>
   );
 }
@@ -27,7 +26,7 @@ function Logo({ onGo }) {
 function Count({ n, max }) {
   if (!n) return null;
   return (
-    <span className="ml-1.5 rounded-full bg-[var(--primary)] px-2 py-0.5 text-[13px] font-semibold leading-none text-[var(--on-primary)]">
+    <span className="ml-1.5 bg-[var(--primary)] px-2 py-0.5 text-[13px] font-semibold leading-none text-[var(--on-primary)]">
       {n}
       {max ? `/${max}` : ""}
     </span>
@@ -134,15 +133,15 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
 
   const navLink = (it) =>
     "inline-flex min-h-[44px] items-center border-b-2 text-[16px] font-medium " +
-    (isActive(it) ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted)] hover:text-[var(--primary)]");
+    (isActive(it) ? "border-[var(--gold)] text-[var(--green-deep)]" : "border-transparent text-[var(--green-deep)] hover:border-[var(--border)]");
 
   return (
-    <header ref={ref} className="relative z-30 border-b border-[var(--header-border)] bg-[var(--bg)]">
-      <div className="page flex min-h-[72px] items-center gap-6">
+    <header ref={ref} className="relative z-30 bg-[var(--bg)]">
+      <div className="page flex min-h-[84px] items-center gap-6">
         <Logo onGo={go} />
 
         {/* Hauptpunkte ab 900 px */}
-        <nav aria-label="Hauptnavigation" className="ml-4 hidden flex-1 items-center gap-6 min-[900px]:flex">
+        <nav aria-label="Hauptnavigation" className="ml-4 hidden flex-1 items-center justify-center gap-7 min-[900px]:flex">
           {items.map((it) => (
             <div key={it.key} className="relative flex items-center">
               <button type="button" onClick={() => go(it.page)} className={navLink(it)} aria-current={isActive(it) ? "page" : undefined}>
@@ -161,7 +160,7 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
                     <Chevron open={openGroup === it.key} />
                   </button>
                   {openGroup === it.key && (
-                    <div className="absolute left-0 top-full z-40 mt-1 max-h-[70vh] w-64 overflow-y-auto rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
+                    <div className="absolute left-0 top-full z-40 mt-1 max-h-[70vh] w-64 overflow-y-auto border border-[var(--border)] bg-[var(--surface)]">
                       <SubItems group={it.group} onPick={pick} activeFilter={activeFilter} />
                     </div>
                   )}
@@ -179,13 +178,13 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
                 type="button"
                 onClick={() => setAccountOpen((v) => !v)}
                 aria-expanded={accountOpen}
-                className="inline-flex min-h-[44px] max-w-[16rem] items-center gap-2 rounded-[10px] border border-[var(--control-border)] bg-[var(--surface)] px-4 text-[15px] text-[var(--text)]"
+                className="inline-flex min-h-[44px] max-w-[16rem] items-center gap-2 border border-[var(--control-border)] bg-[var(--surface)] px-4 text-[15px] text-[var(--text)]"
               >
                 <span className="truncate">{session.user.email}</span>
                 <Chevron open={accountOpen} />
               </button>
               {accountOpen && (
-                <div className="absolute right-0 top-full z-40 mt-1 w-56 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] py-1">
+                <div className="absolute right-0 top-full z-40 mt-1 w-56 border border-[var(--border)] bg-[var(--surface)] py-1">
                   {accountEntries.map(([label, p]) => (
                     <button key={p} type="button" onClick={() => go(p)} className="flex min-h-[44px] w-full items-center px-4 text-left text-[15px] text-[var(--text)] hover:bg-[var(--bg)]">
                       {label}
@@ -219,13 +218,15 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
           aria-label={mobileOpen ? "Menü schließen" : "Menü öffnen"}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-[10px] border border-[var(--control-border)] bg-[var(--surface)] text-[var(--text)] min-[900px]:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center border border-[var(--control-border)] bg-[var(--surface)] text-[var(--text)] min-[900px]:hidden"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
             {mobileOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
           </svg>
         </button>
       </div>
+
+      <Frieze />
 
       {/* Panel unter der Kopfleiste (unter 900 px) */}
       {mobileOpen && (
@@ -256,7 +257,7 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
                   )}
                 </div>
                 {it.group && mobileGroup === it.key && (
-                  <div className="mb-2 rounded-[10px] bg-[var(--bg)]">
+                  <div className="mb-2 bg-[var(--bg)]">
                     <SubItems group={it.group} onPick={pick} activeFilter={activeFilter} />
                   </div>
                 )}

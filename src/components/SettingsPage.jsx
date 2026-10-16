@@ -8,7 +8,7 @@
 
 import { AccountNav } from "./AccountNav";
 
-const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
+const cardClass = " border border-[var(--border)] bg-[var(--surface)] p-6";
 
 export function SettingsPage({ session, onGo }) {
   if (!session) {
@@ -21,11 +21,11 @@ export function SettingsPage({ session, onGo }) {
 
   return (
     <div className="page max-w-2xl py-12">
-      <h1 className="font-display mb-2 text-2xl text-[var(--text)]">Mein Konto</h1>
+      <h1 className="font-display mb-2 text-[34px] text-[var(--heading)]">Mein Konto</h1>
       <AccountNav active="settings" onGo={onGo} />
 
       <div className={cardClass}>
-        <h2 className="font-display mb-2 text-lg text-[var(--text)]">Lokalisierung & Anzeige</h2>
+        <h2 className="font-display mb-2 text-[24px] text-[var(--heading)]">Lokalisierung & Anzeige</h2>
         <p className="text-sm text-[var(--faint)]">
           Basiswährung, Sprache, Zahlen-/Datumsformat und Zeitzone folgen in einem späteren
           Ausbauschritt.

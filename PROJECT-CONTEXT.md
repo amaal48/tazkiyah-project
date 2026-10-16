@@ -556,32 +556,43 @@ Offen: FMP-Tarifwahl und Display-Lizenz vor Launch. Stichprobe gegen 10-K/10-Q: 
 
 ## 5. Konventionen & Design
 
-Helles Theme (Design B, entschieden 05.10.2026), kein Dark Mode. Vorgabe und Begründung: `docs/UI-DESIGN-B.md`. Farben nur über CSS-Variablen im `<style>`-Block von `App.jsx` — keine generischen Tailwind-Farben wie `slate`/`zinc`, keine Hex-Werte außerhalb von `:root`. Fraunces (Überschriften), Source Sans 3 (Fließtext, 17 px), IBM Plex Mono (Zahlen, Ticker, Fundstellen). Kein Text in Großbuchstaben mit Sperrung, nichts unter 13 px. Kontrast mindestens 4,5:1 (3:1 ab 24 px), Tippflächen mindestens 44×44 px, Fokus immer sichtbar (2 px `--primary`). Navigation als Kopfleiste (`src/components/SiteHeader.jsx`) mit Menü fürs Handy, keine Seitenleiste. Kein "KI"-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten — fehlende/noch nicht gebaute Bereiche werden klar als "folgt später" gekennzeichnet. Neutrale Formulierungen im Screener (keine Fatwas, keine Handlungsanweisungen wie "musst verkaufen").
+**Design B2 „Das Muster, hell“ (seit 16.10.2026, Branch `design-b2`; ersetzt Design B vom 05.10.2026).** Vorlagen: `tazkiyah-design-b2-startseite.html` und `tazkiyah-design-b2-anmeldung.html` (Entwürfe aus dem Design-Tool, nicht im Repository). Helles Theme, kein Dark Mode. Farben nur über CSS-Variablen im `<style>`-Block von `App.jsx` (keine generischen Tailwind-Farben wie `slate`/`zinc`, keine Hex-Werte außerhalb von `:root`; Ausnahme: Rückfallwerte in `src/lib/tradingViewClient.js`). Navigation als Kopfleiste (`src/components/SiteHeader.jsx`) mit Menü fürs Handy, keine Seitenleiste. Kein „KI“-Branding. Radikale Ehrlichkeit bei Demo-/Platzhalterdaten: Fehlendes wird als „folgt“ gekennzeichnet. Neutrale Formulierungen (keine Fatwas, keine Handlungsanweisungen).
 
-**Farbtabelle (Design B)**
+**Farben (Vorgabe B2)**
 
 | Variable | Wert | Verwendung |
 |---|---|---|
-| `--bg` | #F5F2E9 | Seitenhintergrund (Papierton) |
-| `--bg-deep` | #EFEADD | abgesetzte Flächen |
-| `--surface` | #FFFFFF | Karten |
-| `--track` | #EFEADD | Balken-Hintergrund, neutrale Flächen |
-| `--border` | #E2DBC9 | Ränder, Trennlinien |
-| `--text` | #1B241F | Haupttext |
-| `--text-soft` | #3A433D | Fließtext zweiter Ebene |
-| `--muted` | #4F5751 | Beschreibungen |
-| `--faint` | #656B66 | Platzhalter, Kleingedrucktes (nie kleiner als 13 px) |
-| `--gold` | #B08A3E | Grenzmarken, Linien, Icon-Akzente (nicht als Textfarbe) |
-| `--gold-soft` | #836527 | Gold als Textfarbe (Kicker, kleine Akzente) |
-| `--emerald` | #2E7A55 | Flächen „konform“ (mit Transparenz) |
-| `--emerald-soft` | #1D5E41 | Text „konform“ |
-| `--red` | #C0533F | Flächen „nicht konform“ (mit Transparenz) |
-| `--red-soft` | #9A3426 | Text „nicht konform“ |
-| `--amber` | #B07A1F | Hinweise, Auslegungsfragen (Flächen) |
-| `--amber-soft` | #7A5410 | Hinweise, Auslegungsfragen (Text) |
-| `--primary` | #1F5A43 | Hauptknöpfe, Links, aktive Navigation, Fokus |
-| `--primary-hover` | #123B2B | Hover von Knöpfen und Links |
-| `--on-primary` | #FFFFFF | Text auf `--primary` |
-| `--footer` | #13231C | Fußzeile (Text darauf `--footer-text` #CFD6CF, Links `--footer-link` #E2C27A) |
+| `--paper` (= `--bg`) | #F6F1E4 | Papier, Seitenhintergrund |
+| `--surface` | #FBF8F0 | Fläche: Karten, Eingabefelder |
+| `--green-deep` | #14352A | Dunkelgrün: gefüllte Knöpfe, grüne Bänder, Spitzbogen, Fußzeile, Überschriften (`--heading`) |
+| `--primary` | #1F5A43 | Link-Grün, Text „konform“, Fokus (Hover #123828) |
+| `--gold-line` | #C9A45C | Gold-Linie: Rosette, Spitzbogen-Linie, Kante unter Knöpfen |
+| `--gold` | #B08A3E | Gold: Fries, äußerer Manuskript-Rahmen, Sterne. **Nicht als Textfarbe** (2,8 : 1) |
+| `--gold-soft` | #7A5B1F | Gold-Text: Kicker, Tage im Kalender, kursive Hervorhebung |
+| `--gold-light` | #E7CF95 | Hellgold auf Grün: Links und Zahlen auf grünen Flächen (8,8 : 1) |
+| `--text` | #1A2621 | Text |
+| `--text-soft` | #3B4842 | Text gedämpft |
+| `--muted` (= `--faint`) | #56625C | grau: Nebenangaben (5,7 : 1 auf Papier) |
+| `--border` (= `--line`) | #D9CDB0 | Linien, innerer Manuskript-Rahmen |
+| `--control-border` | #B9AC8C | Eingabe-Rand |
+| `--red-soft` | #8E2F22 | Rot: „nicht konform“, Fehler |
 
-Abweichung von der Vorgabe: `--faint` (#6B716C → #656B66) und `--gold-soft` (#8A6A2C → #836527) sind leicht abgedunkelt, weil die Vorgabewerte auf `--bg` nur 4,46:1 bzw. 4,49:1 erreichten. Weitere Hilfsvariablen für Status-Pillen, Kacheln und Formulare (`--ok-*`, `--bad-*`, `--none-*`, `--tile`, `--tile-gold`, `--note-*`, `--field`, `--control-border`, `--line`, `--header-border`, `--logo-dot`) stehen ebenfalls in `:root`.
+Abgeleitet (mit * im Code markiert): `--bg-deep`/`--track` #EFE7D3 (Hover, Balken), Statusflächen `--ok-bg`, `--bad-bg`, `--none-bg`, `--tile`, Text auf Grün gedämpft `--on-green-soft` #DCE5DF. Alte Namen (`--emerald`, `--amber`, `--faint` …) zeigen auf die neuen Werte, damit bestehende Seiten ohne Umbau mitziehen.
+
+**Schriften:** Cormorant Garamond 500/600 und kursiv 500 (Überschriften, Klasse `font-display`; wirkt kleiner als Fraunces, deshalb größere Grundgrößen in `H1_STYLE` 2,75 rem / `H2_STYLE` 1,75 rem), Source Sans 3 (Text, 17 px), IBM Plex Mono nur für Zahlen und Kürzel (Ticker, Prüfungs-IDs, Formulare wie 10-K, Datumsspalten). Kicker (`.kicker`): 13 px, Großbuchstaben, Sperrung 0,14 em, `--gold-soft` – die einzige Stelle mit Großbuchstaben. Nichts unter 13 px.
+
+**Bausteine** (`src/components/ornaments.jsx`, alle inline SVG mit `aria-hidden`, keine Bilddateien, keine Emojis):
+- `Frieze`: goldenes Rautenband, unter der Kopfzeile und über der Fußzeile.
+- `RosetteOverlay` / `GreenBand`: Rosettenmuster auf grünen Flächen, Deckkraft ca. 18–22 %.
+- `ArchFrame`: Spitzbogen (grün, Rosette, goldene Innenlinie, optional doppelt), dehnt sich mit dem Inhalt.
+- `ManuscriptFrame` (CSS `.manuscript`): doppelter Rahmen, außen Gold, innen helle Linie.
+- `StarMark` (Logo) und `StarNumber` (Nummern, z. B. Schritte, Lektionen): achtzackiger Stern.
+- Knöpfe `.btn-primary` (gefüllt Dunkelgrün, optional `.btn-gold-edge` mit goldener Unterkante) und `.btn-secondary` (Umriss Dunkelgrün): eckig, ohne Schatten, mind. 48 px hoch. `.chip` (Filter) eckig.
+- Eingabefelder `.field`: eckig, Rand `--control-border`, mind. 50 px hoch, sichtbares Label (`.field-label`).
+- Status (`StatusBadge`): Farbe plus Linie und Symbol, kein gefülltes Etikett.
+
+**Verbote:** keine abgerundeten Ecken (keine `rounded-*`-Klassen), keine Schatten, keine Farbverläufe, keine Symbole in Kreisen oder Kacheln, keine Emojis, keine Bilddateien für Muster. Ordnung über Linien, Rahmen und Typografie.
+
+**Barrierefreiheit:** Text mind. 4,5 : 1 (3 : 1 ab 24 px bzw. 18,7 px fett); am 16.10.2026 automatisch auf allen Seiten gemessen (Startseite, Tazkiyah 30, Aktien, Aktienseiten, Methodik, Methodik 2, Lernen mit allen Reitern, Kontakt, Erklärseite, Kalender, Berichte, Anmeldung): keine Unterschreitung. Tippflächen mind. 44 × 44 px, Fokus immer sichtbar (2 px `--primary`, auf Grün `--gold-light`). Bekannt: Der vorgegebene Eingabe-Rand #B9AC8C erreicht auf Papier nur 2,0 : 1 (für Feldränder werden 3 : 1 empfohlen); Felder haben deshalb immer ein sichtbares Label. Handy (390 px): kein seitliches Scrollen (die Tabelle der Aktiensuche scrollt in ihrem eigenen Kasten).
+
+Design B (05.10.2026, `docs/UI-DESIGN-B.md`) gilt nicht mehr.

@@ -1,50 +1,49 @@
 // src/components/StartPage.jsx
 //
-// Startseite (#/), Neue Ausrichtung 16.10.2026: Tazkiyah als Begleiter für Einsteiger mit drei Säulen
-// Lernen → Selbst prüfen → Dranbleiben. Aufmacher mit Karte „Aktueller Wochenbericht“, darunter drei
-// gleich große Blöcke, unten der rechtliche Hinweis. Die Tazkiyah 30 sind ein Bereich unter mehreren;
-// ihre Legende (konform / nicht konform) steht nur noch auf der Seite der Tazkiyah 30.
+// Startseite (#/), Design B2 „Das Muster, hell“ (16.10.2026), Aufbau nach der Vorlage
+// tazkiyah-design-b2-startseite.html: Aufmacher mit Spitzbogen und Wochenbericht, grünes Band
+// „Drei Wege durch Tazkiyah“ (Lernen → Selbst prüfen → Dranbleiben), die Tazkiyah 30 und „Diese Woche“
+// in Manuskript-Rahmen, darunter der rechtliche Hinweis. Platzhalter der Vorlage sind durch echte Daten
+// ersetzt (Wochenbericht aus weekly_reports, Endergebnisse der Tazkiyah 30, Termine aus company_calendar)
+// oder durch „folgt“. Die Legende (konform / nicht konform) steht nur auf der Seite der Tazkiyah 30.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { routes } from "../lib/hashRoute.js";
 import { supabase } from "../lib/supabaseClient";
+import { useScreeningList } from "../lib/screeningData.js";
+import { todayIso, upcomingEvents, useCalendarList } from "../lib/calendarData.js";
+import { addDays } from "../calendar/secCalendar.js";
+import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
-import { H1_STYLE, H2_STYLE } from "./screening/format.js";
+import { ArchFrame, GreenBand, ManuscriptFrame, StarNumber } from "./ornaments.jsx";
 
-// Einheitliche Linien-Icons (24 × 24, Strich in currentColor)
-const ICONS = {
-  lernen: (
-    <>
-      <path d="M3 9l9-5 9 5-9 5z" />
-      <path d="M7 11.5V16c0 1.5 2.5 3 5 3s5-1.5 5-3v-4.5" />
-    </>
-  ),
-  pruefen: (
-    <>
-      <circle cx="10.5" cy="10.5" r="6" />
-      <path d="M15 15l5 5" />
-    </>
-  ),
-  dranbleiben: (
-    <>
-      <rect x="4" y="5" width="16" height="15" rx="2" />
-      <path d="M8 3v4M16 3v4M4 10h16" />
-    </>
-  ),
-};
+const linkClass = "font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
+const goldLink = "inline-flex min-h-[44px] items-center font-semibold text-[var(--gold-light)] underline underline-offset-4 decoration-[var(--gold-light)]/50 hover:decoration-[var(--gold-light)]";
 
-// Links je Block: href = Seite mit Adresse, page = Seite über den page-Zustand (onGo)
-const PILLARS = [
+/** Link auf eine Seite mit Adresse (href) oder über den page-Zustand (page → onGo). */
+function NavLink({ link, onGo, className }) {
+  return link.href ? (
+    <a href={link.href} className={className}>
+      {link.label}
+    </a>
+  ) : (
+    <button type="button" onClick={() => onGo(link.page)} className={className}>
+      {link.label}
+    </button>
+  );
+}
+
+const WAYS = [
   {
-    key: "lernen",
+    n: 1,
     title: "Lernen",
     text: "Die Grundlagen, kurz erklärt – von der ersten Aktie bis zur Reinigung.",
     links: [{ label: "Zum Lernpfad", href: routes.lernen() }],
   },
   {
-    key: "pruefen",
+    n: 2,
     title: "Selbst prüfen",
-    text: "Wie du erkennst, ob eine Aktie zu deinen Werten passt. Mit der Methodik, 30 durchgerechneten Beispielen und der Aktiensuche.",
+    text: "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit Methodik, 30 Beispielen und der Aktiensuche.",
     links: [
       { label: "Methodik", href: routes.methodik() },
       { label: "Tazkiyah 30", href: routes.tazkiyah30() },
@@ -52,7 +51,7 @@ const PILLARS = [
     ],
   },
   {
-    key: "dranbleiben",
+    n: 3,
     title: "Dranbleiben",
     text: "Wochenbericht und Kalender: was an den Märkten passiert und welche Termine anstehen.",
     links: [
@@ -61,44 +60,6 @@ const PILLARS = [
     ],
   },
 ];
-
-const linkClass =
-  "inline-flex min-h-[44px] items-center text-[16px] font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
-
-function PillarLink({ link, onGo }) {
-  return link.href ? (
-    <a href={link.href} className={linkClass}>
-      {link.label} →
-    </a>
-  ) : (
-    <button type="button" onClick={() => onGo(link.page)} className={linkClass}>
-      {link.label} →
-    </button>
-  );
-}
-
-function PillarCard({ pillar, onGo }) {
-  return (
-    <section className="card flex h-full flex-col" aria-labelledby={`saeule-${pillar.key}`}>
-      <span className="icon-tile">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {ICONS[pillar.key]}
-        </svg>
-      </span>
-      <h2 id={`saeule-${pillar.key}`} className="font-display mt-4" style={{ ...H2_STYLE, fontSize: "24px" }}>
-        {pillar.title}
-      </h2>
-      <p className="mt-2 flex-1 text-[16px] leading-relaxed text-[var(--muted)]">{pillar.text}</p>
-      <ul className="mt-4 flex flex-wrap gap-x-5 border-t border-[var(--line)] pt-2">
-        {pillar.links.map((l) => (
-          <li key={l.label}>
-            <PillarLink link={l} onGo={onGo} />
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
 
 /** Neuester Wochenbericht mit Inhalt (leere Einträge zählen nicht). null = keiner, undefined = lädt. */
 function useLatestReport() {
@@ -123,26 +84,33 @@ function useLatestReport() {
   return report;
 }
 
+function fmtLong(iso) {
+  return new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+/** Karte im Spitzbogen. */
 function WeeklyReportCard({ onGo }) {
   const report = useLatestReport();
   return (
-    <section className="card space-y-3 text-left" aria-labelledby="wochenbericht">
-      <h2 id="wochenbericht" className="text-[18px] font-semibold text-[var(--text)]">
-        Aktueller Wochenbericht
-      </h2>
+    <section className="border-t-[3px] border-[var(--gold-line)] bg-[var(--paper)] px-[26px] py-7 text-[var(--text)]" aria-labelledby="wochenbericht">
+      <p className="kicker">{report ? `Wochenbericht · ${fmtLong(report.report_date)}` : "Wochenbericht"}</p>
       {report === undefined ? (
-        <p className="text-[16px] text-[var(--muted)]">Lade …</p>
+        <p className="mt-3 text-[15px] text-[var(--text-soft)]">Lade …</p>
       ) : report === null ? (
-        <p className="text-[16px] leading-relaxed text-[var(--muted)]">Die erste Ausgabe folgt in Kürze.</p>
+        <>
+          <h2 id="wochenbericht" className="font-display mt-2.5 text-[32px] font-semibold leading-[1.1] text-[var(--heading)]">
+            Die erste Ausgabe folgt in Kürze.
+          </h2>
+          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--text-soft)]">Das Wichtigste der Woche in wenigen Sätzen.</p>
+        </>
       ) : (
         <>
-          <p className="font-display text-[20px] text-[var(--text)]">{report.week_label}</p>
-          <p className="font-[IBM_Plex_Mono] text-[14px] text-[var(--muted)]">
-            {new Date(report.report_date).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
-          </p>
-          <p className="line-clamp-4 text-[16px] leading-relaxed text-[var(--text-soft)]">{report.tldr}</p>
-          <button type="button" onClick={() => onGo("reports")} className={linkClass}>
-            Zum Bericht →
+          <h2 id="wochenbericht" className="font-display mt-2.5 text-[32px] font-semibold leading-[1.1] text-[var(--heading)]">
+            {report.week_label}
+          </h2>
+          <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-[var(--text-soft)]">{report.tldr}</p>
+          <button type="button" onClick={() => onGo("reports")} className={"mt-3.5 inline-flex min-h-[44px] items-center " + linkClass}>
+            Zum Bericht
           </button>
         </>
       )}
@@ -150,43 +118,179 @@ function WeeklyReportCard({ onGo }) {
   );
 }
 
+/** Endergebnisse der Tazkiyah 30, alphabetisch (keine Rangfolge). */
+function Tazkiyah30Box() {
+  const { rows, loading, error } = useScreeningList();
+  const done = rows.filter((r) => r.hasFinalResult).sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const shown = done.slice(0, 6);
+  return (
+    <ManuscriptFrame className="min-w-0 flex-[1_1_400px]" as="section" aria-labelledby="t30-titel">
+      <p className="kicker">Aus der Prüfung</p>
+      <h2 id="t30-titel" className="font-display mt-2.5 text-[42px] leading-[1.05] text-[var(--heading)]">
+        Die Tazkiyah 30
+      </h2>
+      <p className="mt-2.5 text-[17px] leading-relaxed text-[var(--text-soft)]">
+        Dreißig Aktien, von Hand nach AAOIFI-Standard Nr. 21 geprüft, jede Aussage mit Fundstelle.
+      </p>
+      <ul className="mt-5">
+        {loading && <li className="border-b border-[var(--line)] py-3 text-[var(--text-soft)]">Lade …</li>}
+        {!loading && (error || shown.length === 0) && (
+          <li className="border-b border-[var(--line)] py-3 text-[var(--text-soft)]">Erste Ergebnisse folgen.</li>
+        )}
+        {shown.map((r) => (
+          <li key={r.ticker} className="border-b border-[var(--line)]">
+            <a href={routes.stock(r.ticker)} className="flex min-h-[48px] items-center justify-between gap-4 py-2 text-[17px] text-[var(--text)] hover:text-[var(--primary)]">
+              <span className="min-w-0">{r.name}</span>
+              <span className={"flex-none font-semibold " + (r.status === "konform" ? "text-[var(--ok-text)]" : "text-[var(--bad-text)]")}>
+                {r.status === "konform" ? "konform" : "nicht konform"}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <a href={routes.tazkiyah30()} className={"inline-flex min-h-[44px] items-center " + linkClass}>
+          Alle 30 ansehen
+        </a>
+        {!loading && !error && (
+          <span className="text-[14px] text-[var(--muted)]">
+            {done.length} von {TAZKIYAH30_SIZE} geprüft
+          </span>
+        )}
+      </div>
+    </ManuscriptFrame>
+  );
+}
+
+const KIND_TEXT = { zahlen: "Quartalszahlen", hv: "Hauptversammlung" };
+const MAX_EVENTS = 5;
+
+function dayShort(iso) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  const wd = d.toLocaleDateString("de-DE", { weekday: "short", timeZone: "UTC" }).replace(".", "");
+  return `${wd} ${d.getUTCDate()}.`;
+}
+
+/** Termine der nächsten 7 Tage: Tazkiyah 30 zuerst, aufgefüllt mit weiteren Aktien, nach Datum. */
+function ThisWeekBox({ onGo }) {
+  const cal = useCalendarList();
+  const list = useScreeningList();
+  const from = todayIso();
+  const to = addDays(from, 6);
+  const { shown, total } = useMemo(() => {
+    const all = upcomingEvents(cal.rows, from, to)
+      .map((e) => ({ ...e, sec: list.byTicker.get(e.ticker) }))
+      .filter((e) => e.sec);
+    const t30 = all.filter((e) => e.sec.inTazkiyah30);
+    const pick = [...t30, ...all.filter((e) => !e.sec.inTazkiyah30)].slice(0, MAX_EVENTS);
+    pick.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    return { shown: pick, total: all.length };
+  }, [cal.rows, list.rows, from, to]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loading = cal.loading || list.loading;
+
+  return (
+    <ManuscriptFrame className="min-w-0 flex-[1_1_400px]" as="section" aria-labelledby="woche-titel">
+      <p className="kicker">Kalender</p>
+      <h2 id="woche-titel" className="font-display mt-2.5 text-[42px] leading-[1.05] text-[var(--heading)]">
+        Diese Woche
+      </h2>
+      <ul className="mt-5">
+        {loading && <li className="border-b border-[var(--line)] py-3 text-[var(--text-soft)]">Lade …</li>}
+        {!loading && shown.length === 0 && (
+          <li className="border-b border-[var(--line)] py-3 text-[var(--text-soft)]">In den nächsten sieben Tagen stehen keine Termine an.</li>
+        )}
+        {shown.map((e) => (
+          <li key={`${e.ticker}-${e.kind}`} className="flex items-baseline gap-[18px] border-b border-[var(--line)] py-3">
+            <span className="font-display w-16 flex-none text-[24px] text-[var(--gold-soft)]">{dayShort(e.date)}</span>
+            <a href={routes.stock(e.ticker)} className="min-w-0 text-[17px] text-[var(--text)] hover:text-[var(--primary)]">
+              {KIND_TEXT[e.kind]} · {e.sec.name}
+              {e.kind === "zahlen" && e.status !== "bestaetigt" && <span className="text-[var(--muted)]"> (voraussichtlich)</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <button type="button" onClick={() => onGo("calendar")} className={"inline-flex min-h-[44px] items-center " + linkClass}>
+          Zum Kalender
+        </button>
+        {!loading && total > shown.length && <span className="text-[14px] text-[var(--muted)]">{total - shown.length} weitere Termine</span>}
+      </div>
+    </ManuscriptFrame>
+  );
+}
+
 export default function StartPage({ onGo }) {
   return (
-    <div className="font-body page pb-8 pt-20">
-      {/* a) Aufmacher */}
-      <section className="grid items-center gap-10 min-[1000px]:grid-cols-[1.4fr_1fr] min-[1000px]:gap-14">
-        <div>
-          <p className="text-[15px] font-semibold text-[var(--gold-soft)]">Halal investieren auf Deutsch</p>
-          <h1 className="font-display mt-3" style={{ ...H1_STYLE, fontSize: "clamp(34px, 5vw, 52px)", lineHeight: 1.1 }}>
-            Investieren verstehen. Schritt für Schritt.
-          </h1>
-          <p className="mt-5 max-w-[62ch] text-[19px] leading-relaxed text-[var(--muted)]">
-            Was ist Investieren, wie geht das in Deutschland und worauf solltest du als Muslim achten? Verständlich erklärt, sorgfältig
-            belegt, unabhängig.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href={routes.lernen()} className="btn-primary">
-              Mit den Grundlagen starten
-            </a>
-            <a href={routes.methodik2()} className="btn-secondary">
-              Worauf du achten solltest
-            </a>
+    <div className="font-body">
+      {/* Aufmacher */}
+      <div className="page">
+        <section className="flex flex-wrap items-center gap-14 pb-20 pt-[72px] max-[640px]:gap-10 max-[640px]:pt-12">
+          <div className="min-w-0 flex-[3_1_520px]">
+            <p className="kicker text-[15px]">Halal investieren auf Deutsch</p>
+            <h1
+              className="font-display text-[var(--heading)]"
+              style={{ fontSize: "clamp(48px, 8vw, 84px)", lineHeight: 0.98, fontWeight: 500, margin: "18px 0 0" }}
+            >
+              Investieren verstehen. <span className="italic text-[var(--gold-soft)]">Schritt für Schritt.</span>
+            </h1>
+            <p className="mt-[26px] max-w-[560px] text-[20px] leading-relaxed text-[var(--text-soft)]">
+              Was ist Investieren, wie geht das in Deutschland, und worauf solltest du als Muslim achten? Verständlich erklärt, sorgfältig
+              belegt, unabhängig.
+            </p>
+            <div className="mt-[34px] flex flex-wrap gap-3.5">
+              <a href={routes.lernen()} className="btn-primary">
+                Mit den Grundlagen starten
+              </a>
+              <a href={routes.methodik2()} className="btn-secondary">
+                Worauf du achten solltest
+              </a>
+            </div>
+          </div>
+
+          <div className="w-full min-w-0 flex-[2_1_340px]">
+            <ArchFrame minHeight={520} paddingTop={200} className="mx-auto max-w-[460px]">
+              <div className="px-9 pb-9 max-[640px]:px-6 max-[640px]:pb-6">
+                <WeeklyReportCard onGo={onGo} />
+              </div>
+            </ArchFrame>
+          </div>
+        </section>
+      </div>
+
+      {/* Drei Wege */}
+      <GreenBand as="section" aria-labelledby="drei-wege">
+        <div className="page py-[72px] max-[640px]:py-14">
+          <h2 id="drei-wege" className="font-display text-center text-[48px] leading-tight max-[640px]:text-[38px]" style={{ margin: 0, fontWeight: 500 }}>
+            Drei Wege durch Tazkiyah
+          </h2>
+          <div className="mt-12 grid gap-10" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
+            {WAYS.map((w) => (
+              <section key={w.n} className="text-center" aria-labelledby={`weg-${w.n}`}>
+                <StarNumber n={w.n} className="mx-auto" />
+                <h3 id={`weg-${w.n}`} className="font-display text-[34px] font-semibold leading-tight" style={{ margin: "14px 0 0" }}>
+                  <span className="sr-only-label">Weg {w.n}: </span>
+                  {w.title}
+                </h3>
+                <p className="mx-auto mt-2.5 max-w-[320px] text-[17px] leading-relaxed text-[var(--on-green-soft)]">{w.text}</p>
+                <div className="mt-3 flex flex-wrap justify-center gap-x-4">
+                  {w.links.map((l) => (
+                    <NavLink key={l.label} link={l} onGo={onGo} className={goldLink} />
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
-        <WeeklyReportCard onGo={onGo} />
-      </section>
+      </GreenBand>
 
-      {/* b) Drei Säulen, gleich groß */}
-      <section className="mt-[80px]" aria-label="Lernen, selbst prüfen, dranbleiben">
-        <div className="grid gap-4 min-[900px]:grid-cols-3">
-          {PILLARS.map((p) => (
-            <PillarCard key={p.key} pillar={p} onGo={onGo} />
-          ))}
+      {/* Tazkiyah 30 und Diese Woche */}
+      <div className="page pb-8 pt-[72px] max-[640px]:pt-12">
+        <div className="flex flex-wrap gap-8">
+          <Tazkiyah30Box />
+          <ThisWeekBox onGo={onGo} />
         </div>
-      </section>
-
-      {/* d) Rechtlicher Hinweis */}
-      <LegalNoticeFull className="mt-[80px]" />
+        <LegalNoticeFull className="mt-12" />
+      </div>
     </div>
   );
 }

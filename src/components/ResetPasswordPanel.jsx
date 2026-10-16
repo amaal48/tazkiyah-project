@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { ManuscriptFrame, StarMark } from "./ornaments.jsx";
 
 export function ResetPasswordPanel({ onDone }) {
   const [password, setPassword] = useState("");
@@ -40,40 +41,38 @@ export function ResetPasswordPanel({ onDone }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--text)]/40 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="font-display mb-4 text-xl text-[var(--text)]">Neues Passwort setzen</h2>
+    <div className="font-body fixed inset-0 z-50 overflow-y-auto bg-[var(--paper)] px-5 py-14" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+      <div className="mx-auto w-full max-w-[460px]">
+        <div className="flex items-center gap-3">
+          <StarMark size={34} />
+          <span className="font-display text-[30px] font-semibold leading-none text-[var(--heading)]">Tazkiyah</span>
+        </div>
+        <ManuscriptFrame className="mt-8">
+          <h1 id="reset-title" className="font-display text-[var(--heading)]" style={{ margin: 0, fontSize: "40px", lineHeight: 1.1, fontWeight: 500 }}>
+            Neues Passwort setzen
+          </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="password"
-            required
-            minLength={6}
-            placeholder="Neues Passwort (mind. 6 Zeichen)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
-          />
-          <input
-            type="password"
-            required
-            minLength={6}
-            placeholder="Neues Passwort bestätigen"
-            value={passwordConfirm}
-            onChange={(e) => setPasswordConfirm(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]"
-          />
+          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="reset-pw" className="field-label">
+                Neues Passwort (mind. 6 Zeichen)
+              </label>
+              <input id="reset-pw" type="password" required minLength={6} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="field w-full" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="reset-pw2" className="field-label">
+                Neues Passwort bestätigen
+              </label>
+              <input id="reset-pw2" type="password" required minLength={6} autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="field w-full" />
+            </div>
 
-          {error && <p className="text-sm text-[var(--red-soft)]">{error}</p>}
+            <div role="status" aria-live="polite">{error && <p className="text-[15px] text-[var(--bad-text)]">{error}</p>}</div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
-          >
-            {loading ? "…" : "Passwort speichern"}
-          </button>
-        </form>
+            <button type="submit" disabled={loading} className="btn-primary btn-gold-edge min-h-[54px] w-full disabled:opacity-60">
+              {loading ? "…" : "Passwort speichern"}
+            </button>
+          </form>
+        </ManuscriptFrame>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import { supabase } from "../lib/supabaseClient";
 import { Toast } from "./Toast";
 import { AccountNav } from "./AccountNav";
 
-const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
+const cardClass = " border border-[var(--border)] bg-[var(--surface)] p-6";
 
 function downloadBlob(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
@@ -92,7 +92,7 @@ function DataExportCard({ session, onToast }) {
 
   return (
     <div className={cardClass}>
-      <h2 className="font-display mb-2 text-lg text-[var(--text)]">Meine Daten exportieren</h2>
+      <h2 className="font-display mb-2 text-[24px] text-[var(--heading)]">Meine Daten exportieren</h2>
       <p className="mb-4 text-sm text-[var(--faint)]">
         Lade eine Kopie deiner gespeicherten Daten herunter — Profilangaben und Watchlist.
       </p>
@@ -103,14 +103,14 @@ function DataExportCard({ session, onToast }) {
         <button
           onClick={handleExportJson}
           disabled={exporting}
-          className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
+          className="btn-primary disabled:opacity-50"
         >
           {exporting ? "…" : "Alle Daten als JSON"}
         </button>
         <button
           onClick={handleExportCsv}
           disabled={exporting}
-          className="rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-medium text-[var(--text)] hover:border-[var(--primary)] disabled:opacity-50"
+          className="btn-secondary disabled:opacity-50"
         >
           {exporting ? "…" : "Watchlist als CSV"}
         </button>
@@ -121,8 +121,8 @@ function DataExportCard({ session, onToast }) {
 
 function DangerZoneCard() {
   return (
-    <div className="rounded-2xl border border-[var(--red)]/40 bg-[var(--surface)] p-6">
-      <h2 className="font-display mb-2 text-lg text-[var(--red-soft)]">Gefahrenzone</h2>
+    <div className="border border-[var(--red)]/40 bg-[var(--surface)] p-6">
+      <h2 className="font-display mb-2 text-[24px] text-[var(--red-soft)]">Gefahrenzone</h2>
       <p className="text-sm text-[var(--faint)]">
         Konto löschen ist noch nicht verfügbar — das braucht eine serverlose Funktion mit erhöhten
         Rechten, die aus Sicherheitsgründen nicht direkt im Frontend laufen darf. Folgt in einem
@@ -149,7 +149,7 @@ export function PrivacyPage({ session, onGo }) {
 
   return (
     <div className="page max-w-2xl py-12">
-      <h1 className="font-display mb-2 text-2xl text-[var(--text)]">Mein Konto</h1>
+      <h1 className="font-display mb-2 text-[34px] text-[var(--heading)]">Mein Konto</h1>
       <AccountNav active="privacy" onGo={onGo} />
 
       <div className="space-y-6">

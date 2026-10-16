@@ -12,9 +12,9 @@ import { supabase } from "../lib/supabaseClient";
 import { Toast } from "./Toast";
 import { AccountNav } from "./AccountNav";
 
-const cardClass = "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6";
+const cardClass = " border border-[var(--border)] bg-[var(--surface)] p-6";
 const inputClass =
-  "w-full rounded-full border border-[var(--border)] bg-[var(--bg-deep)] px-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--faint)]";
+  "field w-full";
 const labelClass = "mb-1 block text-sm text-[var(--muted)]";
 
 function passwordStrength(pw) {
@@ -61,7 +61,7 @@ function PasswordCard({ onToast }) {
 
   return (
     <div className={cardClass}>
-      <h2 className="font-display mb-4 text-lg text-[var(--text)]">Passwort ändern</h2>
+      <h2 className="font-display mb-4 text-[24px] text-[var(--heading)]">Passwort ändern</h2>
 
       <form onSubmit={handleSave} className="space-y-4">
         <div>
@@ -96,7 +96,7 @@ function PasswordCard({ onToast }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--on-primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50"
+          className="btn-primary disabled:opacity-50"
         >
           {saving ? "…" : "Passwort speichern"}
         </button>
@@ -108,7 +108,7 @@ function PasswordCard({ onToast }) {
 function ConnectedAccountsPlaceholder() {
   return (
     <div className={cardClass}>
-      <h2 className="font-display mb-2 text-lg text-[var(--text)]">Verknüpfte Konten & 2FA</h2>
+      <h2 className="font-display mb-2 text-[24px] text-[var(--heading)]">Verknüpfte Konten & 2FA</h2>
       <p className="text-sm text-[var(--faint)]">
         OAuth-Verknüpfungen (Google/Apple), aktive Sitzungen und Zwei-Faktor-Authentifizierung folgen in
         einem späteren Ausbauschritt.
@@ -134,7 +134,7 @@ export function SecurityPage({ session, onGo }) {
 
   return (
     <div className="page max-w-2xl py-12">
-      <h1 className="font-display mb-2 text-2xl text-[var(--text)]">Mein Konto</h1>
+      <h1 className="font-display mb-2 text-[34px] text-[var(--heading)]">Mein Konto</h1>
       <AccountNav active="security" onGo={onGo} />
 
       <div className="space-y-6">

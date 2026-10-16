@@ -12,7 +12,7 @@ const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text
 function Card({ title, children }) {
   return (
     <section className="card h-full">
-      <h3 className="font-display text-[20px] font-medium text-[var(--text)]">{title}</h3>
+      <h3 className="font-display text-[20px] font-medium text-[var(--heading)]">{title}</h3>
       <div className="mt-2 text-[16px] leading-relaxed text-[var(--text-soft)]">{children}</div>
     </section>
   );
@@ -23,7 +23,7 @@ function StatusPill({ status }) {
   return (
     <span
       className={
-        "ml-2 inline-flex rounded-full px-2.5 py-0.5 text-[13px] font-semibold align-middle " +
+        "ml-2 inline-flex px-2.5 py-0.5 text-[13px] font-semibold align-middle " +
         (confirmed ? "bg-[var(--ok-bg)] text-[var(--ok-text)]" : "bg-[var(--none-bg)] text-[var(--none-text)]")
       }
     >
@@ -48,7 +48,7 @@ export default function CompanyCalendar({ ticker, className = "mt-12" }) {
 
   return (
     <section className={className} aria-labelledby="termine-berichte">
-      <h2 id="termine-berichte" className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+      <h2 id="termine-berichte" className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
         Termine und Berichte
       </h2>
       {loading ? (
@@ -100,7 +100,7 @@ export default function CompanyCalendar({ ticker, className = "mt-12" }) {
           </div>
 
           <div className="card mt-4">
-            <h3 className="font-display text-[20px] font-medium text-[var(--text)]">Berichte</h3>
+            <h3 className="font-display text-[20px] font-medium text-[var(--heading)]">Berichte</h3>
             {reports.length === 0 ? (
               <p className="mt-2 text-[var(--muted)]">Keine Berichte gefunden.</p>
             ) : (

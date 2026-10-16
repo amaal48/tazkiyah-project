@@ -172,7 +172,7 @@ function Tag({ tone, children }) {
     amber: "border-[var(--amber)]/50 text-[var(--amber-soft)]",
     gold: "border-[var(--gold)]/50 text-[var(--gold-soft)]",
   };
-  return <span className={"rounded-full border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
+  return <span className={" border px-2 py-0.5 text-sm " + tones[tone]}>{children}</span>;
 }
 
 function ParameterEntry({ id, def, showLimit }) {
@@ -181,7 +181,7 @@ function ParameterEntry({ id, def, showLimit }) {
   return (
     <article id={`methodik-${id}`} className="scroll-mt-24 border-t border-[var(--border)] py-6 first:border-t-0">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-        <h3 className="font-display text-lg text-[var(--text)]">{TITLES[id] || id}</h3>
+        <h3 className="font-display text-[24px] text-[var(--heading)]">{TITLES[id] || id}</h3>
         {showLimit && (
           <span className="font-[IBM_Plex_Mono] text-sm text-[var(--gold-soft)]">
             {isMin ? "mindestens " : "höchstens "}
@@ -220,7 +220,7 @@ function ParameterEntry({ id, def, showLimit }) {
 export function IndustryGroups() {
   return (
     <div id="methodik-industryGroups" className="scroll-mt-24 mt-8">
-      <h3 className="font-display text-lg text-[var(--text)]">Branchen</h3>
+      <h3 className="font-display text-[24px] text-[var(--heading)]">Branchen</h3>
       <p className="pt-2 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
         SS 21, 2/1 nennt als verbotene Haupttätigkeit beispielhaft Alkohol, Schweinefleisch und Riba-Geschäfte. Weitere
         Gruppen ordnen wir unter „und Ähnliches“ ein oder schließen sie nach dem Vorsichtsprinzip aus; das ist jeweils
@@ -239,7 +239,7 @@ export function IndustryGroups() {
             <div className="text-sm leading-relaxed text-[var(--text-soft)]">
               <p>{nb(g.rationale)}</p>
               {(g.decisions || []).map((d) => (
-                <div key={d.text} className="mt-3 rounded-[10px] border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
+                <div key={d.text} className="mt-3 border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3">
                   <p className="flex flex-wrap items-center gap-2 font-semibold text-[var(--text)]">
                     <span>Unsere Festlegung ({formatDate(d.date)})</span>
                     {d.interpretation && !g.interpretation && <Tag tone="amber">Auslegungsfrage</Tag>}
@@ -264,7 +264,7 @@ export function IndustryGroups() {
 function IncomeCategories() {
   return (
     <div id="methodik-prohibitedIncomeCategories" className="scroll-mt-24 mt-8">
-      <h3 className="font-display text-lg text-[var(--text)]">Was als verbotene Einnahme erfasst wird</h3>
+      <h3 className="font-display text-[24px] text-[var(--heading)]">Was als verbotene Einnahme erfasst wird</h3>
       <p className="pt-2 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
         Zinserträge aus der Gewinn- und Verlustrechnung werden automatisch gezählt. Alle übrigen Anteile stammen aus einer
         manuellen Prüfung der Umsatzsegmente im Jahresbericht, jeweils mit Quellenangabe.
@@ -338,8 +338,8 @@ export default function MethodikPage({ onBack, anchor }) {
             Tazkiyah prüft die Tazkiyah 30 in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der
             Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative und Fundstelle.
           </p>
-          <section id="nur-30" aria-labelledby="nur-30-titel" className="mt-6 max-w-[68ch] rounded-2xl border border-[var(--note-border)] bg-[var(--note-bg)] p-5">
-            <h2 id="nur-30-titel" className="font-display" style={{ ...H2_STYLE, fontSize: "20px" }}>
+          <section id="nur-30" aria-labelledby="nur-30-titel" className="mt-6 max-w-[68ch] border border-[var(--note-border)] bg-[var(--note-bg)] p-5">
+            <h2 id="nur-30-titel" className="font-display" style={{ ...H2_STYLE, fontSize: "25px" }}>
               Wir prüfen nur die Tazkiyah 30
             </h2>
             <p className="mt-2 text-[15px] leading-relaxed text-[var(--text-soft)]">
@@ -429,7 +429,7 @@ export default function MethodikPage({ onBack, anchor }) {
               <ol className="mt-6 max-w-[68ch] space-y-4">
                 {STEPS.map(([title, text], i) => (
                   <li key={title} className="grid grid-cols-[2rem_1fr] gap-3">
-                    <span className="font-display text-xl text-[var(--gold-soft)]">{i + 1}</span>
+                    <span className="font-display text-[28px] text-[var(--gold-soft)]">{i + 1}</span>
                     <div>
                       <p className="text-[var(--text)]">{title}</p>
                       <p className="pt-1 text-sm leading-relaxed text-[var(--text-soft)]">{text}</p>
