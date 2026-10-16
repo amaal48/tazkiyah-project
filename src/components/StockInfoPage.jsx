@@ -33,10 +33,10 @@ export default function StockInfoPage({ ticker, row, pending = false, onBack, ba
 
       <header className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+          <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
             {name}
           </h1>
-          <p className="mt-2 font-[IBM_Plex_Mono] text-sm text-[var(--muted)]">{meta}</p>
+          <p className="mt-2 text-[15px] text-[var(--muted)]">{meta}</p>
         </div>
         {onToggleWatchlist && (
           <button type="button" onClick={() => onToggleWatchlist(ticker)} aria-pressed={saved} className="btn-secondary">
@@ -45,7 +45,7 @@ export default function StockInfoPage({ ticker, row, pending = false, onBack, ba
         )}
       </header>
 
-      <section aria-label="Hinweis zur Sharia-Prüfung" className="mt-8 rounded-[18px] border border-[var(--note-border)] bg-[var(--note-bg)] p-6">
+      <section aria-label="Hinweis zur Sharia-Prüfung" className="mt-8 border border-[var(--note-border)] bg-[var(--note-bg)] p-6">
         {pending ? (
           <p className="max-w-[68ch] text-[17px] leading-relaxed text-[var(--text-soft)]">
             Diese Aktie gehört zu den Tazkiyah 30. Die Prüfung ist noch nicht abgeschlossen; das Ergebnis erscheint, sobald sie

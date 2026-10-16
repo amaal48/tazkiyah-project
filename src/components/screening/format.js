@@ -11,8 +11,9 @@ export const NOTICE_NO_ADVICE = `Keine Anlageberatung und kein Rechtsgutachten (
 
 // src/index.css setzt globale h1/h2-Regeln außerhalb der Tailwind-Layer;
 // Überschriften deshalb mit Inline-Stil (wie MethodikPage.jsx).
-export const H1_STYLE = { fontSize: "2rem", color: "var(--text)", margin: 0, letterSpacing: 0, fontWeight: 500, lineHeight: 1.2 };
-export const H2_STYLE = { fontSize: "1.375rem", color: "var(--text)", margin: 0, letterSpacing: 0, fontWeight: 500, lineHeight: 1.25 };
+// Design B2: Cormorant Garamond wirkt kleiner als Fraunces, deshalb größere Grundgrößen; Farbe Dunkelgrün.
+export const H1_STYLE = { fontSize: "2.75rem", color: "var(--heading)", margin: 0, letterSpacing: 0, fontWeight: 500, lineHeight: 1.1 };
+export const H2_STYLE = { fontSize: "1.75rem", color: "var(--heading)", margin: 0, letterSpacing: 0, fontWeight: 500, lineHeight: 1.15 };
 
 export const STATUS_TEXT = {
   konform: "Konform",

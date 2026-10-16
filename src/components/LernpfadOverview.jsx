@@ -5,17 +5,18 @@
 
 import { LESSONS } from "../data/lernpfad.js";
 import { H1_STYLE } from "./screening/format.js";
+import { StarNumber } from "./ornaments.jsx";
 
 function StatusPill({ status }) {
   return (
-    <span className="inline-flex rounded-full bg-[var(--none-bg)] px-2.5 py-0.5 text-[13px] font-semibold text-[var(--none-text)]">{status}</span>
+    <span className="inline-flex border border-[var(--control-border)] px-2.5 py-0.5 text-[13px] font-semibold text-[var(--text-soft)]">{status}</span>
   );
 }
 
 export default function LernpfadOverview() {
   return (
     <section aria-labelledby="lernpfad">
-      <h1 id="lernpfad" className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+      <h1 id="lernpfad" className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
         Lernen
       </h1>
       <p className="mt-4 max-w-[68ch] text-[19px] leading-relaxed text-[var(--muted)]">
@@ -25,10 +26,13 @@ export default function LernpfadOverview() {
         {LESSONS.map((l) => (
           <li key={l.nr} className="card flex h-full flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="font-[IBM_Plex_Mono] text-[15px] text-[var(--gold-soft)]">Lektion {l.nr}</span>
+              <span className="flex items-center gap-2">
+                <StarNumber n={l.nr} size={40} stroke="var(--gold)" color="var(--gold-soft)" />
+                <span className="kicker">Lektion {l.nr}</span>
+              </span>
               <StatusPill status={l.status} />
             </div>
-            <h2 className="font-display text-[20px] font-medium leading-snug text-[var(--text)]">{l.title}</h2>
+            <h2 className="font-display text-[26px] font-semibold leading-tight text-[var(--heading)]">{l.title}</h2>
             <p className="text-[16px] leading-relaxed text-[var(--muted)]">{l.text}</p>
           </li>
         ))}

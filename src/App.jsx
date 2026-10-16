@@ -23,6 +23,7 @@ import PortfolioPage from "./components/PortfolioPage.jsx";
 import ContactPage from "./components/ContactPage.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
+import { Frieze } from "./components/ornaments.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
 import CriterionPage from "./components/screening/CriterionPage.jsx";
 
@@ -72,7 +73,7 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
         <span className="text-[var(--text)]">Watchlist</span>
       </header>
       <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Deine Watchlist</h1>
+        <h1 className="font-display text-[34px] text-[var(--heading)]">Deine Watchlist</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           {items.length === 0
             ? "Noch keine Aktien gemerkt."
@@ -80,7 +81,7 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
         </p>
 
         {!list.loading && attention.length > 0 && (
-          <p className="mt-4 rounded-xl border border-[var(--border)] px-4 py-3 text-sm text-[var(--text-soft)]">
+          <p className="mt-4 border border-[var(--border)] px-4 py-3 text-sm text-[var(--text-soft)]">
             {attention.length} {attention.length === 1 ? "Titel aus den Tazkiyah 30 ist" : "Titel aus den Tazkiyah 30 sind"} nicht konform.
           </p>
         )}
@@ -263,28 +264,28 @@ function ReportsPage({ onBack }) {
           >
             ← Alle Berichte
           </button>
-          <h1 className="font-display text-2xl text-[var(--text)]">{r.title}</h1>
+          <h1 className="font-display text-[34px] text-[var(--heading)]">{r.title}</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">{r.date} · Automatisch erstellt</p>
 
-          <section className="mt-8 rounded-2xl border-l-[3px] border-[var(--gold)] bg-[var(--surface)] px-5 py-4">
-            <p className="mb-2 font-display text-sm text-[var(--gold-soft)]">Das Wichtigste in Kürze</p>
+          <section className="mt-8 border-l-[3px] border-[var(--gold)] bg-[var(--surface)] px-5 py-4">
+            <p className="mb-2 font-display text-[20px] text-[var(--gold-soft)]">Das Wichtigste in Kürze</p>
             <p className="text-sm leading-relaxed text-[var(--text-soft)]">{r.tldr}</p>
           </section>
 
           <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-lg text-[var(--text)]">
+            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
               Makro &amp; Politik der Woche
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.makroPolitik}</p>
           </section>
 
           <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-lg text-[var(--text)]">
+            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
               Index-Entwicklung
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {r.indices.map((idx) => (
-                <div key={idx.name} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-4">
+                <div key={idx.name} className="border border-[var(--border)] bg-[var(--surface)] px-4 py-4">
                   <p className="text-sm text-[var(--muted)]">{idx.name}</p>
                   <p className="mt-2 font-[IBM_Plex_Mono] text-lg text-[var(--text)]">{idx.value}</p>
                   <p className={"mt-1 font-[IBM_Plex_Mono] text-sm " + indexDirectionClasses[idx.direction]}>
@@ -297,14 +298,14 @@ function ReportsPage({ onBack }) {
           </section>
 
           <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-lg text-[var(--text)]">
+            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
               Aktien &amp; ETFs im Fokus
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.aktienFokus}</p>
           </section>
 
-          <section className="mt-8 rounded-2xl border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-5 py-4">
-            <p className="mb-2 font-display text-sm text-[var(--amber-soft)]">Kurz erklärt: Was bedeutet „grenzwertig"?</p>
+          <section className="mt-8 border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-5 py-4">
+            <p className="mb-2 font-display text-[20px] text-[var(--amber-soft)]">Kurz erklärt: Was bedeutet „grenzwertig"?</p>
             <p className="text-sm leading-relaxed text-[var(--text-soft)]">
               Ein Titel gilt bei Tazkiyah als grenzwertig, wenn er die grundsätzliche Geschäftstätigkeits-Prüfung besteht,
               aber bei einer Finanzkennzahl — etwa Verschuldung oder Cash-Quote — nahe an der 30-%-Schwelle liegt.
@@ -313,7 +314,7 @@ function ReportsPage({ onBack }) {
           </section>
 
           <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-lg text-[var(--text)]">
+            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
               Ausblick auf die kommende Woche
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.ausblick}</p>
@@ -335,7 +336,7 @@ function ReportsPage({ onBack }) {
         <span className="text-[var(--text)]">Berichte</span>
       </header>
       <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Wöchentliche Berichte</h1>
+        <h1 className="font-display text-[34px] text-[var(--heading)]">Wöchentliche Berichte</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
           Automatisch erstellt, jeden Montag aktualisiert · Berichte bleiben 6 Monate abrufbar.
         </p>
@@ -352,7 +353,7 @@ function ReportsPage({ onBack }) {
               <button
                 key={r.title}
                 onClick={() => setSelectedReport(r)}
-                className="flex w-full items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
+                className="flex w-full items-center justify-between border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
               >
                 <div className="pr-6">
                   <p className="text-sm text-[var(--text)]">{r.title}</p>
@@ -517,7 +518,7 @@ function AkademiePage({ onBack }) {
       <main className="page pb-24">
         <LernpfadOverview />
 
-        <h2 className="font-display mt-16 text-3xl text-[var(--text)]">Weitere Fragen</h2>
+        <h2 className="font-display mt-16 text-[40px] text-[var(--heading)]">Weitere Fragen</h2>
         <p className="mt-2 max-w-xl text-sm text-[var(--muted)]">
           Grundlagen, Vergleiche und Erklärungen — unabhängig davon, wo du dein Depot führst.
         </p>
@@ -540,7 +541,7 @@ function AkademiePage({ onBack }) {
         {tab === "Einstieg" && (
           <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             {einstiegsSteps.map((s) => (
-              <div key={s.title} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+              <div key={s.title} className="border border-[var(--border)] bg-[var(--surface)] p-5">
                 <p className="text-sm text-[var(--text)]">{s.title}</p>
                 <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{s.text}</p>
               </div>
@@ -549,7 +550,7 @@ function AkademiePage({ onBack }) {
         )}
 
         {tab === "Broker-Vergleich" && (
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="mt-6 overflow-x-auto border border-[var(--border)] bg-[var(--surface)]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-left text-sm text-[var(--muted)] font-medium">
@@ -582,7 +583,7 @@ function AkademiePage({ onBack }) {
           <div className="mt-6 space-y-10">
             <div>
               <p className="mb-3 text-sm text-[var(--muted)] font-medium">Häufige Fragen</p>
-              <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--gold)]/30 bg-[var(--surface)]">
+              <div className="divide-y divide-[var(--border)] border border-[var(--gold)]/30 bg-[var(--surface)]">
                 {topFragen.map((item, i) => (
                   <div key={i}>
                     <button
@@ -600,7 +601,7 @@ function AkademiePage({ onBack }) {
 
             <div>
               <p className="mb-3 text-sm text-[var(--muted)] font-medium">A–Z Glossar</p>
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1">
+              <div className="border border-[var(--border)] bg-[var(--surface)] p-1">
                 {Object.entries(
                   glossarAZ.reduce((groups, item) => {
                     const letter = item.term[0].toUpperCase();
@@ -609,7 +610,7 @@ function AkademiePage({ onBack }) {
                   }, {})
                 ).map(([letter, items]) => (
                   <div key={letter} className="border-b border-[var(--border)] px-4 py-4 last:border-0">
-                    <p className="mb-2 font-[IBM_Plex_Mono] text-sm text-[var(--gold-soft)]">{letter}</p>
+                    <p className="font-display mb-2 text-[26px] font-semibold leading-none text-[var(--gold-soft)]">{letter}</p>
                     <div className="space-y-3">
                       {items.map((item) => (
                         <div key={item.term}>
@@ -626,7 +627,7 @@ function AkademiePage({ onBack }) {
         )}
 
         {tab === "Methodik" && (
-          <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+          <div className="mt-6 border border-[var(--border)] bg-[var(--surface)] p-6">
             <p className="text-sm leading-relaxed text-[var(--text-soft)]">
               Das Screening folgt den AAOIFI Shari'ah Standards Nr. 21, 27 und 35. Jede Aktie durchläuft vier Stufen:
               Tätigkeit (ist das Hauptgeschäft erlaubt, und was sagt die Satzung zum Zweck?), Kennzahlen (zinstragende
@@ -647,7 +648,7 @@ function AkademiePage({ onBack }) {
           <div className="mt-6 space-y-6">
             <div className="grid gap-3 sm:grid-cols-2">
               {vertiefenItems.map((v) => (
-                <div key={v.title} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+                <div key={v.title} className="border border-[var(--border)] bg-[var(--surface)] p-5">
                   <p className="text-sm text-[var(--text)]">{v.title}</p>
                   <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">{v.text}</p>
                 </div>
@@ -656,7 +657,7 @@ function AkademiePage({ onBack }) {
 
             <div>
               <p className="mb-3 text-sm text-[var(--muted)] font-medium">Literaturempfehlungen</p>
-              <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+              <div className="divide-y divide-[var(--border)] border border-[var(--border)] bg-[var(--surface)]">
                 {literaturItems.map((b) => (
                   <div key={b.title} className="px-5 py-4">
                     <p className="text-sm text-[var(--text)]">{b.title}</p>
@@ -793,17 +794,17 @@ function SectorsPage({ onBack }) {
         <span className="text-[var(--text)]">Sektoren</span>
       </header>
       <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Sektor-Übersicht</h1>
+        <h1 className="font-display text-[34px] text-[var(--heading)]">Sektor-Übersicht</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">Wie viele geprüfte Titel der Tazkiyah 30 je Branche konform sind.</p>
         <div className="mt-6 grid gap-3">
           {bySector.map((b) => (
-            <div key={b.sector} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
+            <div key={b.sector} className="border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-[var(--text)]">{b.sector}</span>
                 <span className="text-[var(--muted)]">{list.loading ? "…" : `${b.konform} von ${b.total} konform`}</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--track)]">
-                <div className="h-full rounded-full bg-[var(--emerald)]" style={{ width: `${b.total ? (b.konform / b.total) * 100 : 0}%` }} />
+              <div className="h-1.5 w-full overflow-hidden bg-[var(--track)]">
+                <div className="h-full bg-[var(--emerald)]" style={{ width: `${b.total ? (b.konform / b.total) * 100 : 0}%` }} />
               </div>
             </div>
           ))}
@@ -920,83 +921,102 @@ export default function TazkiyahPrototype() {
   return (
     <div className="app-root min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-        /* Tazkiyah Design B „Hell und ruhig“ (entschieden 05.10.2026) — einziges Theme, kein Dark Mode */
+        /* Tazkiyah Design B2 „Das Muster, hell“ (16.10.2026) — einziges Theme, kein Dark Mode.
+           Grundfarben laut Vorgabe; mit * markierte Werte sind abgeleitet (Flächen für Status, Hover). */
         :root {
           color-scheme: light;
-          --bg: #F5F2E9;
-          --bg-deep: #EFEADD;
-          --surface: #FFFFFF;
-          --track: #EFEADD;
-          --border: #E2DBC9;
-          --text: #1B241F;
-          --text-soft: #3A433D;
-          --muted: #4F5751;
-          --faint: #656B66;      /* Vorgabe #6B716C, minimal dunkler für 4,5 : 1 auf --bg */
-          --gold: #B08A3E;
-          --gold-soft: #836527;  /* Vorgabe #8A6A2C, minimal dunkler für 4,5 : 1 auf --bg */
-          --emerald: #2E7A55;
-          --emerald-soft: #1D5E41;
-          --red: #C0533F;
-          --red-soft: #9A3426;
-          --amber: #B07A1F;
-          --amber-soft: #7A5410;
-          --primary: #1F5A43;
-          --primary-hover: #123B2B;
-          --on-primary: #FFFFFF;
-          --footer: #13231C;
-          --footer-text: #CFD6CF;
-          --footer-link: #E2C27A;
-          /* Feste Werte aus der Gestaltungsvorgabe, damit keine Farbe außerhalb der Variablen steht */
-          --line: #ECE6D6;          /* Trennlinien in Karten */
-          --control-border: #D6CEB9; /* Ränder von Feldern, Chips, Zweitknöpfen */
-          --field: #FBFAF6;          /* Hintergrund von Eingabefeldern */
-          --header-border: #DDD6C4;
-          --ok-bg: #E3F0E8;   --ok-text: #1D5E41;
-          --bad-bg: #F6E3DF;  --bad-text: #9A3426;  --bad-border: #E8C3BA; --bad-strong: #7A2A1F;
-          --none-bg: #ECECE8; --none-text: #555A55; --none-strong: #3A3F3B;
+          /* Vorgabe B2 */
+          --paper: #F6F1E4;          /* Papier */
+          --surface: #FBF8F0;        /* Fläche */
+          --green-deep: #14352A;     /* Dunkelgrün: Knöpfe, Bänder, Fußzeile, Überschriften */
+          --primary: #1F5A43;        /* Link-Grün */
+          --gold-line: #C9A45C;      /* Gold-Linie (Muster, Rahmen) */
+          --gold: #B08A3E;           /* Gold (Linien, Fries; nicht als Textfarbe, nur 2,8 : 1) */
+          --gold-soft: #7A5B1F;      /* Gold-Text */
+          --gold-light: #E7CF95;     /* Hellgold auf Grün */
+          --text: #1A2621;
+          --text-soft: #3B4842;      /* Text gedämpft */
+          --muted: #56625C;          /* grau */
+          --border: #D9CDB0;         /* Linien */
+          --control-border: #B9AC8C; /* Eingabe-Rand */
+          --red-soft: #8E2F22;       /* Rot (nicht konform) */
+
+          /* Abgeleitet bzw. bisherige Namen, auf B2 umgestellt */
+          --bg: var(--paper);
+          --bg-deep: #EFE7D3;        /* * abgesetzte Flächen, Hover */
+          --track: #EFE7D3;          /* * */
+          --heading: var(--green-deep);
+          --faint: var(--muted);
+          --line: var(--border);
+          --header-border: var(--border);
+          --field: var(--surface);
+          --emerald: var(--primary);
+          --emerald-soft: var(--primary);
+          --red: var(--red-soft);
+          --amber: var(--gold);
+          --amber-soft: var(--gold-soft);
+          --primary-hover: #123828;
+          --on-primary: var(--paper);
+          --on-green: var(--paper);
+          --on-green-soft: #DCE5DF;  /* Text auf Grün, gedämpft (10,4 : 1) */
+          --footer: var(--green-deep);
+          --footer-text: #DCE5DF;
+          --footer-link: var(--gold-light);
+          --ok-bg: #E5ECE3;   --ok-text: var(--primary);                                   /* * */
+          --bad-bg: #F3E2DC;  --bad-text: var(--red-soft); --bad-border: #DDB7AC; --bad-strong: #6E2419; /* * */
+          --none-bg: #ECE5D3; --none-text: var(--text-soft); --none-strong: var(--text);  /* * */
           --on-primary-soft: #F2F5F1; --on-primary-muted: #C9D9CF;
-          --tile: #E6EFE9;    --tile-gold: #F4ECD9;
-          --note-bg: #FBF5E6; --note-border: #EADBB5;
-          --logo-dot: #D9B45F;
-          /* TradingView-Widgets (Kurs-Chart auf der Detailseite). Werden beim Laden ausgelesen. */
+          --tile: #E5ECE3;    --tile-gold: #F1E7CF;   /* * */
+          --note-bg: var(--surface); --note-border: var(--gold-line);
+          --logo-dot: var(--gold-light);
+          /* TradingView-Widgets. Werden beim Laden ausgelesen. */
           --tv-line: var(--primary);
           --tv-area-top: rgba(31, 90, 67, 0.16);
           --tv-area-bottom: rgba(31, 90, 67, 0.01);
-          --tv-grid: rgba(27, 36, 31, 0.06);
+          --tv-grid: rgba(26, 38, 33, 0.06);
           --tv-scale-text: var(--muted);
           --tv-text: var(--text);
           --tv-bg: var(--surface);
-          --tv-up: var(--emerald);
-          --tv-down: var(--red);
+          --tv-up: var(--primary);
+          --tv-down: var(--red-soft);
         }
 
-        /* Inhaltsbreite: höchstens 1160 px, mittig, 40 px Innenabstand (Handy 20 px).
+        /* Inhaltsbreite: höchstens 1200 px, mittig, 32 px Innenabstand (Handy 20 px).
            In der Komponenten-Ebene, damit Utilities wie max-w-2xl (Formulare) sie übersteuern. */
         @layer components {
-          .page { width: 100%; max-width: 1160px; margin-inline: auto; padding-inline: 40px; box-sizing: border-box; }
+          .page { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 32px; box-sizing: border-box; }
           @media (max-width: 640px) { .page { padding-inline: 20px; } }
 
-          /* Grundbausteine */
-          .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 26px; border-radius: 10px; background: var(--primary); color: var(--on-primary); font-weight: 600; font-size: 16px; line-height: 1.2; }
-          .btn-primary:hover { background: var(--primary-hover); }
-          .btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 26px; border-radius: 10px; background: var(--surface); color: var(--text); border: 1px solid var(--control-border); font-weight: 600; font-size: 16px; line-height: 1.2; }
-          .btn-secondary:hover { border-color: var(--primary); }
-          .field { min-height: 50px; padding: 0 14px; border-radius: 10px; background: var(--field); border: 1px solid var(--control-border); color: var(--text); font-size: 16px; }
-          .field:focus { border-color: var(--primary); }
-          .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--surface); border: 1px solid var(--control-border); color: var(--text); font-size: 15px; font-weight: 500; }
-          .chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-          .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-          .icon-tile { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: var(--tile); color: var(--primary); }
-          .icon-tile-gold { background: var(--tile-gold); color: var(--gold-soft); }
+          /* Grundbausteine B2: eckig, ohne Schatten, Ordnung über Linien und Rahmen */
+          .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 28px; border-radius: 0; background: var(--green-deep); color: var(--paper); border: 1px solid var(--green-deep); font-weight: 600; font-size: 17px; line-height: 1.2; }
+          .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+          .btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 14px 27px; border-radius: 0; background: transparent; color: var(--green-deep); border: 1px solid var(--green-deep); font-weight: 600; font-size: 17px; line-height: 1.2; }
+          .btn-secondary:hover { background: var(--bg-deep); }
+          .btn-gold-edge { border-bottom: 3px solid var(--gold-line); }
+          .field { min-height: 50px; padding: 0 16px; border-radius: 0; background: var(--field); border: 1px solid var(--control-border); color: var(--text); font-size: 17px; font-family: 'Source Sans 3', system-ui, sans-serif; }
+          .field:focus { border-color: var(--green-deep); }
+          .field::placeholder { color: var(--muted); }
+          .field-label { display: block; font-size: 15px; font-weight: 600; color: var(--text); }
+          .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 16px; border-radius: 0; background: transparent; border: 1px solid var(--control-border); color: var(--text); font-size: 15px; font-weight: 500; }
+          .chip[aria-pressed="true"] { background: var(--green-deep); border-color: var(--green-deep); color: var(--paper); }
+          .card { background: var(--surface); border: 1px solid var(--border); border-radius: 0; padding: 24px; }
+          /* Manuskript-Rahmen: außen Gold, innen helle Linie */
+          .manuscript { border: 1px solid var(--gold); padding: 6px; background: transparent; }
+          .manuscript > .manuscript-inner { border: 1px solid var(--border); padding: 32px 30px; height: 100%; box-sizing: border-box; }
+          @media (max-width: 640px) { .manuscript > .manuscript-inner { padding: 24px 18px; } }
+          /* Kleine Zeile über Überschriften */
+          .kicker { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-soft); font-weight: 500; }
           .sr-only-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
         }
 
         /* Sichtbarer Fokus für alles Klickbare */
         :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        /* Auf grünen Flächen: Fokus in Hellgold */
+        .on-green :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline-color: var(--gold-light); }
 
-        .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
+        .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
         .font-body { font-family: 'Source Sans 3', system-ui, sans-serif; }
         .app-root { font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
       `}</style>
@@ -1054,9 +1074,16 @@ export default function TazkiyahPrototype() {
         )}
 
         {/* Fußzeile über die volle Breite */}
-        <footer className="mt-20 bg-[var(--footer)] py-8">
+        <Frieze className="mt-20" />
+        <footer className="on-green bg-[var(--footer)] py-8 text-[var(--footer-text)]">
           <div className="page">
-            <BasisLine variant="footer" />
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 text-[14px]">
+              <span>Keine Anlageberatung, keine Fatwa.</span>
+              <span>Impressum und Datenschutzerklärung folgen.</span>
+            </div>
+            <div className="mt-4 border-t border-[var(--footer-text)]/20 pt-4">
+              <BasisLine variant="footer" />
+            </div>
             <nav aria-label="Fußzeile" className="mt-3 flex flex-wrap gap-x-6 text-sm">
               <a href={routes.methodik()} className={FOOTER_LINK}>
                 Methodik

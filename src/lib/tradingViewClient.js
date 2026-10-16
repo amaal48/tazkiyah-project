@@ -40,11 +40,11 @@ export function tradingViewColors() {
     line: cssVar("--tv-line", "#1F5A43"),
     areaTop: cssVar("--tv-area-top", "rgba(31, 90, 67, 0.16)"),
     areaBottom: cssVar("--tv-area-bottom", "rgba(31, 90, 67, 0.01)"),
-    grid: cssVar("--tv-grid", "rgba(27, 36, 31, 0.06)"),
-    scaleText: cssVar("--tv-scale-text", "#4F5751"),
-    text: cssVar("--tv-text", "#1B241F"),
-    background: cssVar("--tv-bg", "#FFFFFF"),
-    up: cssVar("--tv-up", "#2E7A55"),
-    down: cssVar("--tv-down", "#C0533F"),
+    grid: cssVar("--tv-grid", "rgba(26, 38, 33, 0.06)"),
+    scaleText: cssVar("--tv-scale-text", "#56625C"),
+    text: cssVar("--tv-text", "#1A2621"),
+    background: cssVar("--tv-bg", "#FBF8F0"),
+    up: cssVar("--tv-up", "#1F5A43"),
+    down: cssVar("--tv-down", "#8E2F22"),
   };
 }

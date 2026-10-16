@@ -76,7 +76,7 @@ export default function ContactPage({ onBack, onOpenPrivacy, prefillTopic = null
         <span className="text-[var(--text)]">Kontakt</span>
       </header>
       <main className="page pb-24">
-        <h1 className="font-display text-2xl text-[var(--text)]">Kontakt</h1>
+        <h1 className="font-display text-[34px] text-[var(--heading)]">Kontakt</h1>
         <div className="mt-3 max-w-[62ch] space-y-2 leading-relaxed text-[var(--text-soft)]">
           <p>Wir antworten in der Regel innerhalb weniger Tage.</p>
           <p>Wir geben keine Anlageberatung und keine religiösen Rechtsgutachten (Fatwas).</p>

@@ -5,10 +5,11 @@
 
 import { STATUS_TEXT } from "./format.js";
 
+// Design B2: kein gefülltes Etikett, sondern Farbe und Linie (eckig)
 const STYLES = {
-  konform: "bg-[var(--ok-bg)] text-[var(--ok-text)]",
-  nicht_konform: "bg-[var(--bad-bg)] text-[var(--bad-text)]",
-  nicht_geprueft: "bg-[var(--none-bg)] text-[var(--none-text)]",
+  konform: "border border-[var(--ok-text)] text-[var(--ok-text)]",
+  nicht_konform: "border border-[var(--bad-text)] text-[var(--bad-text)]",
+  nicht_geprueft: "border border-[var(--control-border)] text-[var(--none-text)]",
 };
 
 /** Kleines Strich-Symbol je Status (✓, ✕, –), auch für Legende und Prüfungszeilen. */
@@ -27,11 +28,11 @@ export function StatusIcon({ status, size = 14, strokeWidth = 2.3 }) {
 
 export default function StatusBadge({ status, size = "sm", inverse = false, className = "" }) {
   const key = STYLES[status] ? status : "nicht_geprueft";
-  // inverse: weiße Pille auf dunkelgrüner Fläche (Ergebnisfeld „konform“)
-  const colors = inverse ? "bg-[var(--surface)] text-[var(--ok-text)]" : STYLES[key];
+  // inverse: auf dunkelgrüner Fläche (Ergebnisfeld „konform“), Hellgold mit Linie
+  const colors = inverse ? "border border-[var(--gold-light)] text-[var(--gold-light)]" : STYLES[key];
   const pad = size === "lg" ? "px-[18px] py-[10px] text-[16px]" : "px-3 py-1.5 text-[14px]";
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-semibold leading-none ${pad} ${colors} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap font-semibold leading-none ${pad} ${colors} ${className}`}>
       <StatusIcon status={key} size={size === "lg" ? 16 : 14} />
       {STATUS_TEXT[key]}
     </span>

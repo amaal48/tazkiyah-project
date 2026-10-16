@@ -43,7 +43,7 @@ export default function AktienPage() {
   return (
     <div className="font-body page pb-8 pt-14 text-left">
       <header className="max-w-[68ch]">
-        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
           Aktien
         </h1>
         <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
@@ -88,7 +88,7 @@ export default function AktienPage() {
       {!list.loading && !list.error && filtered.length === 0 && <div className="card text-center text-[var(--muted)]">Keine Treffer.</div>}
 
       {shown.length > 0 && (
-        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className="overflow-x-auto border border-[var(--border)] bg-[var(--surface)]">
           <table className="w-full min-w-[760px] text-[15px]">
             <thead>
               <tr className="border-b border-[var(--border)] text-left text-sm text-[var(--muted)]">

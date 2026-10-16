@@ -63,7 +63,7 @@ function Card({ row }) {
 function InfoBox({ title, children }) {
   return (
     <section className="card h-full">
-      <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "22px" }}>
+      <h2 className="font-display" style={{ ...H2_STYLE, fontSize: "28px" }}>
         {title}
       </h2>
       <div className="mt-3 text-[16px] leading-relaxed text-[var(--text-soft)]">{children}</div>
@@ -104,7 +104,7 @@ export default function Tazkiyah30Page() {
   return (
     <div className="font-body page pb-8 pt-14 text-left">
       <header className="max-w-[68ch]">
-        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(32px, 4.5vw, 44px)", lineHeight: 1.15 }}>
+        <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
           Die Tazkiyah 30
         </h1>
         <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">{HERO_TEXT}</p>
@@ -112,7 +112,7 @@ export default function Tazkiyah30Page() {
       </header>
 
       {!list.loading && !list.error && done.length < total && (
-        <p className="mt-6 inline-flex rounded-full bg-[var(--tile)] px-4 py-2 text-[15px] font-semibold text-[var(--primary)]">
+        <p className="mt-6 inline-flex border-l-[3px] border-[var(--gold-line)] bg-[var(--surface)] px-4 py-2 text-[15px] font-semibold text-[var(--green-deep)]">
           {done.length} von {total} geprüft
         </p>
       )}
@@ -162,7 +162,7 @@ export default function Tazkiyah30Page() {
       <div className="space-y-12">
         {bySector.map((g) => (
           <section key={g.name} aria-labelledby={`branche-${g.name}`}>
-            <h2 id={`branche-${g.name}`} className="font-display" style={{ ...H2_STYLE, fontSize: "24px" }}>
+            <h2 id={`branche-${g.name}`} className="font-display" style={{ ...H2_STYLE, fontSize: "30px" }}>
               {g.name}
             </h2>
             <ul className="mt-4 grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))" }}>
