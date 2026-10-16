@@ -1,10 +1,22 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 15.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
+
+### Neue Ausrichtung (16.10.)
+
+**Entscheidung 16.10.2026:** Tazkiyah wird vom Prüfwerkzeug zum **Begleiter für Einsteiger**. Drei Säulen: **Lernen → Selbst prüfen → Dranbleiben.** Die Tazkiyah 30 sind ein Bereich unter mehreren, nicht mehr der Aufmacher. Keine Wörter wie „kaufen“, „Top“, keine Kursziele, keine Preise oder Abos auf der Seite.
+
+- **Hauptmenü (Desktop und Handy), alle Punkte gleich gewichtet:** Lernen · Methodik · Tazkiyah 30 · Aktien · Berichte · Kalender. „Lernen“ führt zur Akademie mit dem Lernpfad (`#/lernen`). Das Aufklappmenü bei „Berichte“ (einziger Unterpunkt „PDF-Berichte“, dieselbe Seite) ist entfernt. Watchlist und Kontakt bleiben in der Fußzeile.
+- **Neue Startseite:** Aufmacher „Halal investieren auf Deutsch“ / „Investieren verstehen. Schritt für Schritt.“ mit den Knöpfen „Mit den Grundlagen starten“ (→ `#/lernen`) und „Worauf du achten solltest“ (→ `#/methodik-2`), rechts die Karte „Aktueller Wochenbericht“ (neuester Eintrag in `weekly_reports` mit Inhalt; leere Einträge zählen nicht; sonst „Die erste Ausgabe folgt in Kürze.“). Darunter drei gleich große Blöcke Lernen / Selbst prüfen / Dranbleiben, unten der rechtliche Hinweis. Entfernt: Tazkiyah 30 als Aufmacher, Legende „Konform / Nicht konform“ (bleibt auf der Seite der Tazkiyah 30), Kachelliste „Was es bei Tazkiyah gibt“.
+- **Methodik 2 zum Vergleich:** neue Seite `#/methodik-2` (`src/components/Methodik2Page.jsx`), Text wörtlich nach Vorgabe (vier Fragen als nummerierte Blöcke, „Wichtig“ als Hinweiskasten, Link „Ausführlich: Methodik im Detail“, rechtlicher Hinweis). Nicht im Hauptmenü. Die bestehende Methodik-Seite ist inhaltlich unverändert und hat oben einen temporären Hinweis „Entwurf: vereinfachte Fassung ansehen“ (im Code als TEMPORÄR markiert; entfernen, sobald entschieden ist, welche Fassung bleibt).
+- **Lernpfad-Gerüst:** Akademie unter `#/lernen` mit Übersicht von 11 Lektionen als Karten (Nummer, Titel, ein Satz, Status „folgt“; Daten in `src/data/lernpfad.js`, Anzeige `src/components/LernpfadOverview.jsx`). Inhalte schreibt die Nutzerin später, die Karten sind bis dahin keine Links. Die bisherigen Akademie-Inhalte (Einstieg, Broker-Vergleich, Glossar, Methodik, Vertiefen) stehen unverändert darunter als „Weitere Fragen“, das Feld „Frage nicht gefunden?“ bleibt.
+- **Wochenbericht breit:** Der Wochenbericht behandelt das Marktgeschehen allgemein; die Tazkiyah 30 erscheinen darin nur mit Fakten (z. B. Statusänderungen mit Datum und Grund), ohne Wertung oder Empfehlung.
+- **Monetarisierung später über einmalige Kurse.** Kein Abo auf der Seite, keine Preise.
+- Umsetzung auf Branch `neue-ausrichtung` (von `tazkiyah-30`), noch nicht committet.
 
 ### Neue Ausrichtung (15.10.2026)
 

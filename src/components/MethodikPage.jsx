@@ -325,6 +325,14 @@ export default function MethodikPage({ onBack, anchor }) {
 
       <div className="page pb-28">
         <section className="pb-12 pt-4">
+          {/* TEMPORÄR (16.10.2026): Hinweis auf den Entwurf der vereinfachten Methodik (#/methodik-2), zum Vergleich.
+              Entfernen, sobald entschieden ist, welche Fassung bleibt. */}
+          <p className="mb-5 text-[15px] text-[var(--muted)]">
+            Entwurf:{" "}
+            <a href={routes.methodik2()} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+              vereinfachte Fassung ansehen
+            </a>
+          </p>
           <h1 className="font-display" style={H1_STYLE}>So prüft Tazkiyah</h1>
           <p className="pt-4 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
             Tazkiyah prüft die Tazkiyah 30 in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der

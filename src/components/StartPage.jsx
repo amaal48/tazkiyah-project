@@ -1,160 +1,192 @@
 // src/components/StartPage.jsx
 //
-// Startseite (#/), Design B: Kopfbereich mit Stand der Tazkiyah 30 (ohne einzelne Aktie hervorzuheben,
-// keine Rangfolge), Legende der Status, die Bereiche. Die Grundlage (AAOIFI) steht in der Fußzeile.
+// Startseite (#/), Neue Ausrichtung 16.10.2026: Tazkiyah als Begleiter für Einsteiger mit drei Säulen
+// Lernen → Selbst prüfen → Dranbleiben. Aufmacher mit Karte „Aktueller Wochenbericht“, darunter drei
+// gleich große Blöcke, unten der rechtliche Hinweis. Die Tazkiyah 30 sind ein Bereich unter mehreren;
+// ihre Legende (konform / nicht konform) steht nur noch auf der Seite der Tazkiyah 30.
 
+import { useEffect, useState } from "react";
 import { routes } from "../lib/hashRoute.js";
-import { useScreeningList } from "../lib/screeningData.js";
-import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
-import StatusLegend from "./screening/StatusLegend.jsx";
+import { supabase } from "../lib/supabaseClient";
+import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
 import { H1_STYLE, H2_STYLE } from "./screening/format.js";
 
 // Einheitliche Linien-Icons (24 × 24, Strich in currentColor)
 const ICONS = {
-  screener: (
-    <>
-      <circle cx="10.5" cy="10.5" r="6" />
-      <path d="M15 15l5 5" />
-    </>
-  ),
-  aktien: (
-    <>
-      <path d="M4 19h16" />
-      <path d="M5 15l4-4 3 3 6-7" />
-    </>
-  ),
-  kalender: (
-    <>
-      <rect x="4" y="5" width="16" height="15" rx="2" />
-      <path d="M8 3v4M16 3v4M4 10h16" />
-    </>
-  ),
-  berichte: (
-    <>
-      <path d="M7 3h7l4 4v14H7z" />
-      <path d="M14 3v4h4M10 12h5M10 16h5" />
-    </>
-  ),
-  watchlist: <path d="M7 3h10v18l-5-4-5 4z" />,
-  akademie: (
+  lernen: (
     <>
       <path d="M3 9l9-5 9 5-9 5z" />
       <path d="M7 11.5V16c0 1.5 2.5 3 5 3s5-1.5 5-3v-4.5" />
     </>
   ),
-  methodik: (
+  pruefen: (
     <>
-      <path d="M5 6h14M5 12h14M5 18h9" />
+      <circle cx="10.5" cy="10.5" r="6" />
+      <path d="M15 15l5 5" />
+    </>
+  ),
+  dranbleiben: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M4 10h16" />
     </>
   ),
 };
 
-// Titel wie in der Navigation
-const AREAS = [
-  { key: "screener", title: "Die Tazkiyah 30", text: "30 Aktien, sorgfältig geprüft und mit Quelle belegt.", href: routes.tazkiyah30() },
-  { key: "aktien", title: "Aktien", text: "Kurs, Chart und Unternehmensprofil für alle Aktien, ohne Halal-Status.", href: routes.aktien() },
-  { key: "kalender", title: "Kalender", text: "Termine für Quartalszahlen und Hauptversammlungen.", page: "calendar" },
-  { key: "berichte", title: "Berichte", text: "Wöchentliche Berichte zum Marktgeschehen.", page: "reports" },
-  { key: "watchlist", title: "Watchlist", text: "Titel merken und im Blick behalten.", page: "watchlist" },
-  { key: "akademie", title: "Akademie", text: "Grundlagen zum Investieren nach islamischen Grundsätzen.", page: "faq" },
-  { key: "methodik", title: "Methodik", text: "Wie wir prüfen, mit Quelle zu jeder Regel.", href: routes.methodik() },
+// Links je Block: href = Seite mit Adresse, page = Seite über den page-Zustand (onGo)
+const PILLARS = [
+  {
+    key: "lernen",
+    title: "Lernen",
+    text: "Die Grundlagen, kurz erklärt – von der ersten Aktie bis zur Reinigung.",
+    links: [{ label: "Zum Lernpfad", href: routes.lernen() }],
+  },
+  {
+    key: "pruefen",
+    title: "Selbst prüfen",
+    text: "Wie du erkennst, ob eine Aktie zu deinen Werten passt. Mit der Methodik, 30 durchgerechneten Beispielen und der Aktiensuche.",
+    links: [
+      { label: "Methodik", href: routes.methodik() },
+      { label: "Tazkiyah 30", href: routes.tazkiyah30() },
+      { label: "Aktien", href: routes.aktien() },
+    ],
+  },
+  {
+    key: "dranbleiben",
+    title: "Dranbleiben",
+    text: "Wochenbericht und Kalender: was an den Märkten passiert und welche Termine anstehen.",
+    links: [
+      { label: "Berichte", page: "reports" },
+      { label: "Kalender", page: "calendar" },
+    ],
+  },
 ];
 
-// Bereiche mit Gold-Kachel (Methodik), sonst Grün
-const GOLD_TILE = new Set(["methodik"]);
+const linkClass =
+  "inline-flex min-h-[44px] items-center text-[16px] font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
 
-function AreaCard({ area, onGo }) {
-  const body = (
-    <>
-      <span className={"icon-tile " + (GOLD_TILE.has(area.key) ? "icon-tile-gold" : "")}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {ICONS[area.key]}
-        </svg>
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{area.title}</span>
-        <span className="mt-1 block text-[16px] leading-relaxed text-[var(--muted)]">{area.text}</span>
-      </span>
-    </>
-  );
-  const cls = "card group flex h-full w-full items-start gap-4 text-left transition-colors hover:border-[var(--primary)]";
-  return area.href ? (
-    <a href={area.href} className={cls}>
-      {body}
+function PillarLink({ link, onGo }) {
+  return link.href ? (
+    <a href={link.href} className={linkClass}>
+      {link.label} →
     </a>
   ) : (
-    <button type="button" onClick={() => onGo(area.page)} className={cls}>
-      {body}
+    <button type="button" onClick={() => onGo(link.page)} className={linkClass}>
+      {link.label} →
     </button>
   );
 }
 
-/** Stand der Tazkiyah 30 als Zahlen, ohne einzelne Aktie hervorzuheben. */
-function Tazkiyah30Card() {
-  const { rows, loading, error } = useScreeningList();
-  const done = rows.filter((r) => r.hasFinalResult);
-  const konform = done.filter((r) => r.status === "konform").length;
+function PillarCard({ pillar, onGo }) {
   return (
-    <a href={routes.tazkiyah30()} className="card group block space-y-4 text-left transition-colors hover:border-[var(--primary)]">
-      <p className="text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">Die Tazkiyah 30</p>
-      <p className="text-[16px] leading-relaxed text-[var(--muted)]">
-        Eine bewusst kleine Liste von {TAZKIYAH30_SIZE} Aktien, die wir nach jedem Quartalsbericht neu prüfen.
-      </p>
-      {!loading && !error && (
-        <p className="border-t border-[var(--line)] pt-4 text-[16px] text-[var(--text-soft)]">
-          {done.length} von {TAZKIYAH30_SIZE} geprüft · {konform} konform · {done.length - konform} nicht konform
-        </p>
+    <section className="card flex h-full flex-col" aria-labelledby={`saeule-${pillar.key}`}>
+      <span className="icon-tile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {ICONS[pillar.key]}
+        </svg>
+      </span>
+      <h2 id={`saeule-${pillar.key}`} className="font-display mt-4" style={{ ...H2_STYLE, fontSize: "24px" }}>
+        {pillar.title}
+      </h2>
+      <p className="mt-2 flex-1 text-[16px] leading-relaxed text-[var(--muted)]">{pillar.text}</p>
+      <ul className="mt-4 flex flex-wrap gap-x-5 border-t border-[var(--line)] pt-2">
+        {pillar.links.map((l) => (
+          <li key={l.label}>
+            <PillarLink link={l} onGo={onGo} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Neuester Wochenbericht mit Inhalt (leere Einträge zählen nicht). null = keiner, undefined = lädt. */
+function useLatestReport() {
+  const [report, setReport] = useState(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("weekly_reports")
+      .select("week_label,report_date,tldr")
+      .order("report_date", { ascending: false })
+      .limit(5)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        const first = !error && (data || []).find((r) => String(r.tldr || "").trim());
+        setReport(first || null);
+      })
+      .catch(() => !cancelled && setReport(null));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return report;
+}
+
+function WeeklyReportCard({ onGo }) {
+  const report = useLatestReport();
+  return (
+    <section className="card space-y-3 text-left" aria-labelledby="wochenbericht">
+      <h2 id="wochenbericht" className="text-[18px] font-semibold text-[var(--text)]">
+        Aktueller Wochenbericht
+      </h2>
+      {report === undefined ? (
+        <p className="text-[16px] text-[var(--muted)]">Lade …</p>
+      ) : report === null ? (
+        <p className="text-[16px] leading-relaxed text-[var(--muted)]">Die erste Ausgabe folgt in Kürze.</p>
+      ) : (
+        <>
+          <p className="font-display text-[20px] text-[var(--text)]">{report.week_label}</p>
+          <p className="font-[IBM_Plex_Mono] text-[14px] text-[var(--muted)]">
+            {new Date(report.report_date).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+          </p>
+          <p className="line-clamp-4 text-[16px] leading-relaxed text-[var(--text-soft)]">{report.tldr}</p>
+          <button type="button" onClick={() => onGo("reports")} className={linkClass}>
+            Zum Bericht →
+          </button>
+        </>
       )}
-      <p className="text-[16px] font-semibold text-[var(--primary)]">Zur Liste →</p>
-    </a>
+    </section>
   );
 }
 
 export default function StartPage({ onGo }) {
   return (
     <div className="font-body page pb-8 pt-20">
-      {/* 1. Kopfbereich */}
-      <section className="grid items-center gap-10 min-[1000px]:grid-cols-[1.2fr_1fr] min-[1000px]:gap-14">
+      {/* a) Aufmacher */}
+      <section className="grid items-center gap-10 min-[1000px]:grid-cols-[1.4fr_1fr] min-[1000px]:gap-14">
         <div>
-          <p className="text-[15px] font-semibold text-[var(--gold-soft)]">Investieren nach islamischen Grundsätzen</p>
+          <p className="text-[15px] font-semibold text-[var(--gold-soft)]">Halal investieren auf Deutsch</p>
           <h1 className="font-display mt-3" style={{ ...H1_STYLE, fontSize: "clamp(34px, 5vw, 52px)", lineHeight: 1.1 }}>
-            Die Tazkiyah 30: Aktien, geprüft nach AAOIFI-Standards.
+            Investieren verstehen. Schritt für Schritt.
           </h1>
           <p className="mt-5 max-w-[62ch] text-[19px] leading-relaxed text-[var(--muted)]">
-            Tazkiyah zeigt für 30 Aktien, die bei deutschen Brokern handelbar sind, ob sie die Prüfungen nach den AAOIFI-Standards
-            bestehen. Zu jeder Aktie und jeder Regel nennen wir die Quelle.
+            Was ist Investieren, wie geht das in Deutschland und worauf solltest du als Muslim achten? Verständlich erklärt, sorgfältig
+            belegt, unabhängig.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href={routes.tazkiyah30()} className="btn-primary">
-              Zu den Tazkiyah 30
+            <a href={routes.lernen()} className="btn-primary">
+              Mit den Grundlagen starten
             </a>
-            <a href={routes.methodik()} className="btn-secondary">
-              So prüfen wir
+            <a href={routes.methodik2()} className="btn-secondary">
+              Worauf du achten solltest
             </a>
           </div>
         </div>
-        <Tazkiyah30Card />
+        <WeeklyReportCard onGo={onGo} />
       </section>
 
-      {/* 2. Legende */}
-      <section className="mt-[80px]" aria-label="Die möglichen Ergebnisse">
-        <StatusLegend />
-      </section>
-
-      {/* 3. Bereiche */}
-      <section className="mt-[80px]" aria-labelledby="bereiche">
-        <h2 id="bereiche" className="font-display" style={{ ...H2_STYLE, fontSize: "34px" }}>
-          Was es bei Tazkiyah gibt
-        </h2>
-        <p className="mt-2 text-[var(--muted)]">Alle Bereiche auf einen Blick.</p>
-        <ul className="mt-8 grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-          {AREAS.map((a) => (
-            <li key={a.key}>
-              <AreaCard area={a} onGo={onGo} />
-            </li>
+      {/* b) Drei Säulen, gleich groß */}
+      <section className="mt-[80px]" aria-label="Lernen, selbst prüfen, dranbleiben">
+        <div className="grid gap-4 min-[900px]:grid-cols-3">
+          {PILLARS.map((p) => (
+            <PillarCard key={p.key} pillar={p} onGo={onGo} />
           ))}
-        </ul>
+        </div>
       </section>
+
+      {/* d) Rechtlicher Hinweis */}
+      <LegalNoticeFull className="mt-[80px]" />
     </div>
   );
 }

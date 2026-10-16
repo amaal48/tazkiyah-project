@@ -13,6 +13,12 @@ test("Tazkiyah 30 und Aktiensuche; alte Screener-Adresse führt auf die Tazkiyah
   assert.deepEqual(parseHash(routes.aktien()), { name: "aktien" });
 });
 
+test("Lernpfad und vereinfachte Methodik haben eigene Adressen", () => {
+  assert.deepEqual(parseHash(routes.lernen()), { name: "lernen" });
+  assert.deepEqual(parseHash(routes.methodik2()), { name: "methodik2" });
+  assert.deepEqual(parseHash(routes.methodik()), { name: "methodik" });
+});
+
 test("Detailseite und Sprungmarken wie bisher", () => {
   assert.deepEqual(parseHash("#/aktie/brk-b"), { name: "stock", ticker: "BRK-B" });
   assert.equal(parseHash("#rechtlicher-hinweis"), null);
