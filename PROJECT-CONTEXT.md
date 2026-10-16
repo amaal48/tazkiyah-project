@@ -19,6 +19,29 @@ Stand: 15.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - **Entfällt:** alle weiteren A2/B3-Pakete, großer Lauf, restliche ca. 430 Aktien, Free/Pro. APH/ZBH (B3, Zoya-Grund) für die 30 nicht mehr nötig. Paket 2 (45 Aktien, 15.10.2026) ist geprüft und eingetragen, wird aber nicht fortgesetzt; aus Paket 2 gehören nur MU, QCOM, ANET, SNPS, FTNT, WDAY, BSX, EW, SHW, ITW zu den 30.
 - **Bis zum Launch:** (1) Tiingo Commercial buchen + Adapter, (2) Zinserträge nachtragen (`interestIncomeNotes`, braucht die 10-Q; Analyse vom 15.10.2026: FMP Free liefert Kurse nur für eine Beispielliste von Symbolen, Zinserträge fehlen in den SEC-Daten bei TXN, LLY u. a.), (3) Paket AMD/META/PLTR/ADBE, (4) Seite „Tazkiyah 30“ und Aktiensuche bauen, (5) bisherigen Screener auf die 30 begrenzen. **Code erst nach Freigabe durch die Nutzerin.**
 
+### Positionierung & Wettbewerb (16.10.2026)
+
+**Kernsatz:** „Halal investieren auf Deutsch, für deutsche Anleger: verständlich erklärt, sorgfältig belegt, unabhängig.“
+
+**Wettbewerb in Deutschland**
+- **Mizaan Invest** (mizaaninvest.com): Bildung nach AAOIFI, Kurse auf Warteliste, Gründer mit Gesicht und Abschlüssen. Keine Aktienliste, kein Kalender, keine Berichte.
+- **Amanah** (amanah-invest.de): Ratgeber, Rechner, Kriterien-Checks, Gratis-Guide.
+
+**Wettbewerb global:** Musaffa, Zoya, Mizaan-App, amana. Automatisierte Massenprüfung, Apps, Broker-Anbindung, Abos; nicht auf Deutschland zugeschnitten.
+
+**Folgerung:** Mit Bildung allein fällt Tazkiyah nicht auf. Mit Gesichtern und Abschlüssen konkurrieren wir bewusst nicht (Tazkiyah bleibt anonym).
+
+**Unsere Lücke (Leitlinie für alle Entscheidungen zu Inhalten und Funktionen)**
+1. **Konkrete, belegte Prüfungen:** Tazkiyah 30 mit Fundstellen, Datum und Änderungsprotokoll. Andere bringen bei, wie man prüft; Tazkiyah zeigt, was bei echten Aktien herauskommt.
+2. **Werkzeug statt nur Wissen:** Aktiensuche mit Unternehmensprofil, Terminen (HV, Quartalszahlen) und amtlichen Berichten auf Deutsch.
+3. **Regelmäßigkeit:** Wochenbericht und Kalender als Grund, jede Woche wiederzukommen.
+4. **Akademie:** kurz, kostenlos, immer an echten Fällen aus der Liste (z. B. „Warum Salesforce an C1 scheitert“, „Was in der Satzung von NVIDIA steht“). Lernen am Beispiel, kein Kurs-Curriculum.
+5. **Vertrauen ohne Gesicht:** Quellen bei jeder Aussage, öffentliche Methodik, Änderungsprotokoll; später Bestätigung der Auslegungen durch eine gelehrte Person.
+
+**Bewusst nicht:** Massenprüfung, Erweiterung der 30 gegen Bezahlung, App, Broker-Anbindung, Abo, Kaufempfehlungen/Rankings/Kursziele, Fatwa, Gesicht.
+
+**Folge für die Umsetzung:** Vorrang haben das Änderungsprotokoll (öffentlich, mit Datum und Begründung) und Fundstellen je Aussage auf der Detailseite der 30. Akademie-Artikel verlinken auf die jeweilige Aktie der Liste.
+
 **Umsetzung „Die Tazkiyah 30 + Aktiensuche“ (Branch `tazkiyah-30`, 15.10.2026, nicht auf `main`; Freigabe der Nutzerin für die Umsetzung, Merge erst nach Prüfung der Vercel-Vorschau)**
 - **SQL `supabase_tazkiyah30.sql` (noch nicht ausgeführt, die Nutzerin führt es aus):** Tabelle `tazkiyah30` (ticker PK mit Verweis auf `securities.ticker`, sort_order, gruppe `beliebt`/`datenlage`, kurzbegruendung leer, aufgenommen_am), RLS, öffentlich nur lesen, mit den 30 Titeln befüllt (gruppe ist ein **Vorschlag**: beliebt = NVDA, MU, AMD, CRM, META, PLTR, ADBE, LLY, JNJ, PFE). Öffentlich nur noch die 30: View `screening_current` mit Join auf `tazkiyah30`; RLS von `screening_runs`, `screening_status_changes` und `user_notifications` auf `is_tazkiyah30(security_id)` beschränkt; ETFs damit nicht öffentlich. Cron und Wochenbericht (Service-Role) und `screening_current_internal` unverändert; `manual_reviews_due` liest jetzt die interne View. Zwei Kontrollabfragen am Ende (als anon: 30 Zeilen, nichts außerhalb der Liste). Getestet mit PGlite (`src/screening/tazkiyah30.test.js`). **Achtung:** `supabase_b1_b2_binaer.sql` und `supabase_schema_screening.sql` legen `screening_current` ohne Filter an; nach erneutem Ausführen `supabase_tazkiyah30.sql` wiederholen (Hinweis steht in beiden Dateien).
 - **Website:** Seite „Die Tazkiyah 30“ (`#/tazkiyah-30`, `#/screener` führt dorthin; ersetzt den Screener): Karten nach Branche, nur Endergebnisse (konform / nicht konform), Zähler „x von 30 geprüft“, Filter Status und Auswahl, Kästen „Warum nur 30?“, „Weitere Aktien“, „So lesen Sie die Liste“, rechtlicher Hinweis kurz + eingeklappt. Aktiensuche (`#/aktien`, Navigation „Aktien“): alle aktiven Titel ohne Status. Aktienseite ohne Halal-Status für alle Titel außerhalb der 30 (TradingView-Chart, -Finanzdaten und -Unternehmensprofil nach Zustimmung, Platzhalter Kalender/Berichte, „Prüfung wünschen“ → Kontaktformular vorausgefüllt); Titel der 30 ohne Endergebnis zeigen dieselbe Seite mit „Prüfung noch nicht abgeschlossen“. Kopfzeile: Aktien, Tazkiyah 30, Berichte, Kalender, Akademie; Methodik, Watchlist und Kontakt in der Fußzeile. Status sonst nur für die 30 (Watchlist, Sektoren, Vergleich, Startseite). Zusätzlicher Filter im Browser auf die Liste, solange die SQL-Datei nicht ausgeführt ist (Rückfall-Liste `src/data/tazkiyah30.js`, muss mit der SQL-Datei übereinstimmen, Test prüft das).
