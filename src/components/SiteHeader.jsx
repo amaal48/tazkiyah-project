@@ -110,7 +110,7 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
     methodik: ["methodik", "methodik2", "criterion"],
     tazkiyah30: ["tazkiyah30", "detail", "sectors"],
     aktien: ["aktien"],
-    berichte: ["reports"],
+    berichte: ["reports", "blog", "blogpost"],
     kalender: ["calendar"],
   };
   // „Lernen“ führt zur Akademie mit dem Lernpfad (#/lernen)

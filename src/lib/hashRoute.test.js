@@ -19,6 +19,15 @@ test("Lernpfad und vereinfachte Methodik haben eigene Adressen", () => {
   assert.deepEqual(parseHash(routes.methodik()), { name: "methodik" });
 });
 
+test("Berichte: Wochenbericht (auch einzelne Ausgabe), Blog und Beitrag", () => {
+  assert.deepEqual(parseHash("#/berichte"), { name: "wochenbericht", date: null });
+  assert.deepEqual(parseHash(routes.wochenbericht()), { name: "wochenbericht", date: null });
+  assert.deepEqual(parseHash(routes.wochenbericht("2026-10-19")), { name: "wochenbericht", date: "2026-10-19" });
+  assert.deepEqual(parseHash("#/berichte/wochenbericht/quatsch"), { name: "wochenbericht", date: null });
+  assert.deepEqual(parseHash(routes.blog()), { name: "blog" });
+  assert.deepEqual(parseHash(routes.blogPost("gibt-es-eine-ki-blase")), { name: "blogpost", slug: "gibt-es-eine-ki-blase" });
+});
+
 test("Detailseite und Sprungmarken wie bisher", () => {
   assert.deepEqual(parseHash("#/aktie/brk-b"), { name: "stock", ticker: "BRK-B" });
   assert.equal(parseHash("#rechtlicher-hinweis"), null);

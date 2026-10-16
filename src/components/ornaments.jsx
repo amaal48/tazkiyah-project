@@ -125,3 +125,24 @@ export function StarNumber({ n, size = 72, stroke = "var(--gold-light)", color =
     </svg>
   );
 }
+
+/** Trennlinie mit kleinem Stern in der Mitte (z. B. unter dem Kopf eines Blogbeitrags). */
+export function StarRule({ className = "" }) {
+  return (
+    <svg aria-hidden="true" focusable="false" width="140" height="24" viewBox="0 0 140 24" className={"block " + className}>
+      <g fill="none" style={{ stroke: "var(--gold)" }} strokeWidth="1.2">
+        <path d="M0 12 H52 M88 12 H140" />
+        <path d="M70 2 L74 9 L82 12 L74 15 L70 22 L66 15 L58 12 L66 9 Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** Stern-Umriss ohne Nummer (Schmuckzeichen auf grünen Flächen). */
+export function StarOutline({ size = 40, stroke = "var(--gold-light)", className = "" }) {
+  return (
+    <svg aria-hidden="true" focusable="false" width={size} height={size} viewBox="0 0 64 64" className={"flex-none " + className}>
+      <path d={STAR_PATH} fill="none" style={{ stroke }} strokeWidth="1.6" />
+    </svg>
+  );
+}

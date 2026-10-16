@@ -16,6 +16,8 @@ import { addDays } from "../calendar/secCalendar.js";
 import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
 import { ArchFrame, GreenBand, ManuscriptFrame, StarNumber } from "./ornaments.jsx";
+import { POSTS } from "../lib/blogPosts.js";
+import { topicLabel } from "../lib/blog.js";
 
 const linkClass = "font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
 const goldLink = "inline-flex min-h-[44px] items-center font-semibold text-[var(--gold-light)] underline underline-offset-4 decoration-[var(--gold-light)]/50 hover:decoration-[var(--gold-light)]";
@@ -55,7 +57,7 @@ const WAYS = [
     title: "Dranbleiben",
     text: "Wochenbericht und Kalender: was an den Märkten passiert und welche Termine anstehen.",
     links: [
-      { label: "Berichte", page: "reports" },
+      { label: "Berichte", href: routes.wochenbericht() },
       { label: "Kalender", page: "calendar" },
     ],
   },
@@ -89,7 +91,7 @@ function fmtLong(iso) {
 }
 
 /** Karte im Spitzbogen. */
-function WeeklyReportCard({ onGo }) {
+function WeeklyReportCard() {
   const report = useLatestReport();
   return (
     <section className="border-t-[3px] border-[var(--gold-line)] bg-[var(--paper)] px-[26px] py-7 text-[var(--text)]" aria-labelledby="wochenbericht">
@@ -109,11 +111,40 @@ function WeeklyReportCard({ onGo }) {
             {report.week_label}
           </h2>
           <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-[var(--text-soft)]">{report.tldr}</p>
-          <button type="button" onClick={() => onGo("reports")} className={"mt-3.5 inline-flex min-h-[44px] items-center " + linkClass}>
+          <a href={routes.wochenbericht(String(report.report_date).slice(0, 10))} className={"mt-3.5 inline-flex min-h-[44px] items-center " + linkClass}>
             Zum Bericht
-          </button>
+          </a>
         </>
       )}
+    </section>
+  );
+}
+
+/** Schmale Leiste mit den letzten Blogbeiträgen; ohne Beiträge ausgeblendet. */
+function BlogStrip() {
+  const latest = POSTS.slice(0, 3);
+  if (latest.length === 0) return null;
+  return (
+    <section className="page pb-16" aria-labelledby="aus-dem-blog">
+      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-[var(--green-deep)] pb-3">
+        <h2 id="aus-dem-blog" className="font-display text-[var(--heading)]" style={{ margin: 0, fontSize: "32px", fontWeight: 500 }}>
+          Aus dem Blog
+        </h2>
+        <a href={routes.blog()} className={"inline-flex min-h-[44px] items-center " + linkClass}>
+          Zum Blog
+        </a>
+      </div>
+      <ul className="grid gap-x-8" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
+        {latest.map((p) => (
+          <li key={p.slug} className="border-b border-[var(--line)]">
+            <a href={routes.blogPost(p.slug)} className="group block py-4 text-[var(--text)]">
+              {p.thema && <span className="kicker">{topicLabel(p.thema)}</span>}
+              <span className="font-display mt-1 block text-[24px] font-semibold leading-tight text-[var(--heading)] group-hover:text-[var(--primary)]">{p.titel}</span>
+              <span className="mt-1 block text-[14px] text-[var(--muted)]">ca. {p.lesezeit} Min. Lesezeit</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -250,12 +281,15 @@ export default function StartPage({ onGo }) {
           <div className="w-full min-w-0 flex-[2_1_340px]">
             <ArchFrame minHeight={520} paddingTop={200} className="mx-auto max-w-[460px]">
               <div className="px-9 pb-9 max-[640px]:px-6 max-[640px]:pb-6">
-                <WeeklyReportCard onGo={onGo} />
+                <WeeklyReportCard />
               </div>
             </ArchFrame>
           </div>
         </section>
       </div>
+
+      {/* Aus dem Blog (nur mit Beiträgen) */}
+      <BlogStrip />
 
       {/* Drei Wege */}
       <GreenBand as="section" aria-labelledby="drei-wege">

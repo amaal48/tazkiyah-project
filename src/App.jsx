@@ -12,6 +12,9 @@ import { Toast } from "./components/Toast";
 import MethodikPage from "./components/MethodikPage.jsx";
 import Methodik2Page from "./components/Methodik2Page.jsx";
 import LernpfadOverview from "./components/LernpfadOverview.jsx";
+import WochenberichtPage from "./components/berichte/WochenberichtPage.jsx";
+import BlogPage from "./components/berichte/BlogPage.jsx";
+import BlogArticle from "./components/berichte/BlogArticle.jsx";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
@@ -99,271 +102,6 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
             />
           ))}
         </div>
-      </main>
-    </div>
-  );
-}
-
-/* ---------- Berichte-Seite ---------- */
-
-// DEMO-INHALTE: Diese vier Berichte sind von Hand geschrieben, um die
-// Struktur/UI zu zeigen — noch KEINE echte automatische Generierung.
-// Sobald das automatisiert läuft (siehe Roadmap: wöchentlicher Bericht),
-// ersetzt eine echte Datenquelle (Supabase-Tabelle "weekly_reports") dieses
-// Array. Die 6-Monats-Aufbewahrungslogik unten funktioniert schon jetzt
-// unabhängig davon, ob die Daten hier oder aus einer echten Quelle kommen.
-//
-// Struktur je Bericht: tldr (Kurzfassung), makroPolitik (Fließtext),
-// indices (3 Kapitalmarkt-Referenzwerte: DAX, MSCI World, Sharia-Welt-Proxy),
-// aktienFokus (Fließtext), ausblick (Fließtext), sourceNote (Quellenzeile).
-// Der "Was bedeutet grenzwertig?"-Erklärkasten ist bewusst NICHT Teil der
-// einzelnen Berichte, sondern wird unten als feste, immer gleiche Box
-// gerendert — er ist Bildungsinhalt, kein wöchentlich wechselnder Fakt.
-const mockReports = [
-  {
-    date: "18. September 2026",
-    isoDate: "2026-09-18",
-    title: "Wochenbericht: 14.–18. September 2026",
-    tldr: "Eine öffentliche Warnung aus der KI-Branche vor zu schnellem Entwicklungstempo löste einen spürbaren Ausverkauf bei Halbleiter- und KI-nahen Aktien aus. Mitten in diese Nervosität hinein hob die US-Notenbank Fed ihren Leitzins erstmals seit Juli 2023 wieder an — um 25 Basispunkte auf 3,75–4,00 %. Die Reaktion der Märkte fiel gemischt aus: erste Erleichterung, aber mit klaren Grenzen.",
-    makroPolitik:
-      "Auslöser der Woche war ein öffentlich gewordener Aufruf von Anthropic-Chef Dario Amodei, das Tempo der KI-Fähigkeitsentwicklung zu drosseln — eine Position, die auch andere prominente Stimmen aus der Branche aufgriffen. Die Folge: Der Philadelphia Semiconductor Index rutschte an einem einzelnen Handelstag um fast 6 % ab und bewegte sich auf Monatssicht in einen technischen Bärenmarkt. Mitten in diese Marktnervosität fiel am 16. September die mit Spannung erwartete Fed-Zinsentscheidung: Die US-Notenbank hob ihr Leitzinsband einstimmig um 25 Basispunkte auf 3,75–4,00 % an — die erste Zinserhöhung seit Juli 2023. Der aktualisierte \u201eDot Plot\u201c signalisierte zudem, dass ein Großteil der Notenbanker im weiteren Jahresverlauf mit mindestens einer weiteren Anhebung rechnet. Hintergrund der restriktiveren Haltung: Die US-Verbraucherpreise waren im August um 3,4 % gestiegen. Zusätzlich belasteten neue deutsche Erzeugerpreisdaten die Stimmung: Sie lagen im August um 4,6 % über Vorjahresniveau, vor allem getrieben von Energiepreisen.",
-    indices: [
-      { name: "DAX", value: "≈ 25.400", change: "≈ −2 % ggü. Vorwoche", direction: "down", note: "Näherungswert aus einer Kursmomentaufnahme, kein exakter Wochenschluss." },
-      { name: "MSCI World", value: "≈ 4.987", change: "leicht negativ (18.09.)", direction: "down", note: "Stand einer Kursabfrage vom 18. September." },
-      { name: "Sharia-Welt (Proxy)", value: "—", change: "überdurchschnittlich belastet", direction: "down", note: "iShares MSCI World Islamic ETF — Daten folgen mit Produktivanbindung." },
-    ],
-    aktienFokus:
-      "Im Zentrum der Woche standen Nvidia, Broadcom und AMD: Nvidia gab an mehreren Handelstagen in Folge nach, unter anderem am Montag um rund 3 %. Analysten von Lynx Equities Strategies und Bernstein bewerteten den Ausverkauf als überzogen: Anzeichen für eine tatsächlich sinkende Hardware-Nachfrage in der Lieferkette seien nicht erkennbar.",
-    ausblick:
-      "Am 20. September stehen mit den Landtagswahlen in Berlin und Mecklenburg-Vorpommern zwei weitere politische Stimmungstests an. Zudem veröffentlicht das ifo-Institut am 24. September sein Geschäftsklima für September, und Moody's nimmt am 18. September ein Rating-Review für Deutschland und Griechenland vor.",
-    sourceNote: "Quellen: finanznachrichten.de · sharedeals.de · LBBW Research · tradingkey.com · ms-aktuell · wallstreet-online · Yahoo Finance",
-  },
-  {
-    date: "11. September 2026",
-    isoDate: "2026-09-11",
-    title: "Wochenbericht: 7.–11. September 2026",
-    tldr: "Die Europäische Zentralbank hob ihren Einlagensatz um 25 Basispunkte auf 2,50 % an — Reaktion auf eine im August auf 3,3 % gestiegene Euroraum-Inflation. Am Ende der Woche bestätigten auch die US-Verbraucherpreise für August mit 3,4 % im Jahresvergleich anhaltenden Preisdruck.",
-    makroPolitik:
-      "Die EZB hob am 10. September ihren Einlagensatz um 25 Basispunkte auf 2,50 % an. Grund war der anhaltende Inflationsdruck im Euroraum: Die Verbraucherpreise waren im August laut Eurostat-Schnellschätzung auf 3,3 % gestiegen, nach 2,9 % im Juli — deutlich über dem EZB-Ziel von 2,0 %. Haupttreiber blieb die Energie, die im Jahresvergleich um mehr als 14 % teurer wurde. Nur einen Tag später, am 11. September, bestätigten die US-Verbraucherpreise für August mit einem Anstieg von 0,4 % gegenüber dem Vormonat und 3,4 % im Jahresvergleich das Bild hartnäckiger Inflation. Am Wochenanfang hatte zudem die Landtagswahl in Sachsen-Anhalt stattgefunden, die bundespolitisch als Stimmungstest beobachtet wurde. Gegen Ende der Woche mehrten sich erste kritische Stimmen aus der KI-Branche selbst zum Entwicklungstempo neuer Modelle — ein Thema, das die Märkte in der Folgewoche deutlich stärker beschäftigen sollte.",
-    indices: [
-      { name: "DAX", value: "—", change: "leicht belastet", direction: "flat", note: "Kein verlässlicher Wochenschlusswert für diesen Zeitraum verfügbar." },
-      { name: "MSCI World", value: "—", change: "spürbar, moderat", direction: "flat", note: "Zinsentscheidungen sorgten für Bewegung ohne größere Ausschläge." },
-      { name: "Sharia-Welt (Proxy)", value: "—", change: "n/a", direction: "flat", note: "iShares MSCI World Islamic ETF — Daten folgen mit Produktivanbindung." },
-    ],
-    aktienFokus:
-      "Gegen Ende der Woche kündigte sich bereits eine Diskussion an, die in der Folgewoche zum bestimmenden Thema wurde: Aus der KI-Branche selbst kamen Stimmen, die vor einem zu hohen Entwicklungstempo warnten — mit spürbaren Folgen für Halbleiter- und KI-nahe Aktien ab der darauffolgenden Woche.",
-    ausblick:
-      "Die kommende Woche bringt mit der Fed-Zinsentscheidung am 16. September das geldpolitische Hauptereignis des Monats — begleitet von neuen Leitzinsprojektionen des FOMC.",
-    sourceNote: "Quellen: Raisin (EZB-Zinsprognose) · ms-aktuell · LBBW Research",
-  },
-  {
-    date: "04. September 2026",
-    isoDate: "2026-09-04",
-    title: "Wochenbericht: 31. Aug.–4. Sep. 2026",
-    tldr: "Nach dem Rekordhoch der Vorwoche zeigte sich der DAX zum Monatswechsel konsolidierend. Der Monat August schloss für den deutschen Leitindex bei 26.258,11 Punkten. International richtete sich der Blick auf den US-Arbeitsmarktbericht zum Wochenschluss.",
-    makroPolitik:
-      "Der DAX beendete den Handelsmonat August 2026 bei 26.258,11 Punkten — ein Stand unterhalb des Allzeithochs vom 28. August, was auf gewisse Gewinnmitnahmen nach dem Rekordlauf hindeutet. Wirtschaftspolitisch stand die Woche im Zeichen der Vorbereitung auf zwei zentrale Termine: den US-Arbeitsmarktbericht für August (veröffentlicht am 4. September) sowie die bevorstehende EZB-Sitzung Mitte September. In Deutschland rückte zudem die Landtagswahl in Sachsen-Anhalt am 6. September in den Blick der politischen Berichterstattung, da sie als Stimmungstest vor der Bundespolitik galt.",
-    indices: [
-      { name: "DAX", value: "26.258,11", change: "Monatsschluss August", direction: "flat", note: "Konsolidierung nach dem Allzeithoch der Vorwoche." },
-      { name: "MSCI World", value: "—", change: "seitwärts", direction: "flat", note: "Kein verlässlicher Wochenschlusswert für diesen Zeitraum verfügbar." },
-      { name: "Sharia-Welt (Proxy)", value: "—", change: "n/a", direction: "flat", note: "iShares MSCI World Islamic ETF — Daten folgen mit Produktivanbindung." },
-    ],
-    aktienFokus:
-      "Für diese Woche liegt keine belastbare Quellenlage zu einzelnen Kursbewegungen vor. Dieser Abschnitt wird in der Produktivversion automatisiert aus den Kursbewegungen der auf Tazkiyah gescreenten Titel gespeist.",
-    ausblick:
-      "Die kommende Woche bringt gleich mehrere Schwergewichte: die EZB-Zinsentscheidung am 10. September inklusive neuer Stabsprojektionen sowie die US-Inflationsdaten für August am 11. September.",
-    sourceNote: "Quellen: Statista (DAX-Monatsentwicklung) · LBBW Research",
-  },
-  {
-    date: "28. August 2026",
-    isoDate: "2026-08-28",
-    title: "Wochenbericht: 24.–28. August 2026",
-    tldr: "Die Finanzmärkte richteten sich ganz auf das jährliche Notenbanker-Symposium in Jackson Hole aus, bei dem der neue Fed-Vorsitzende Kevin Warsh am Freitag seine Antrittsrede hielt. Der DAX nutzte die insgesamt eher vorsichtig-positive Aufnahme für einen Sprung auf ein neues Allzeithoch.",
-    makroPolitik:
-      "Im Zentrum der Woche stand das Jackson-Hole-Symposium der Federal Reserve Bank of Kansas City vom 27. bis 29. August, unter dem Titel \u201eFinancial Innovation: Implications for Payments and Policy\u201c. Besondere Aufmerksamkeit galt dem Freitag, da Kevin Warsh dort erstmals in seiner neuen Rolle als Fed-Vorsitzender auftrat — in einem Umfeld aus einer über dem Notenbankziel liegenden Inflation und einem sich abkühlenden Arbeitsmarkt. Vorab hatte der US-Kerninflationsindikator PCE für Juli mit 3,7 % im Jahresvergleich die Erwartungen leicht übertroffen, was die Erwartungen an Warshs Tonfall zusätzlich schärfte.",
-    indices: [
-      { name: "DAX", value: "26.569,99", change: "Allzeithoch (Schluss)", direction: "up", note: "Intraday sogar 26.618,74 Punkte — neuer Rekord am Freitag, 28.08." },
-      { name: "MSCI World", value: "—", change: "freundlich", direction: "up", note: "Kein verlässlicher Wochenschlusswert für diesen Zeitraum verfügbar." },
-      { name: "Sharia-Welt (Proxy)", value: "—", change: "technologiegetrieben", direction: "flat", note: "iShares MSCI World Islamic ETF — Daten folgen mit Produktivanbindung." },
-    ],
-    aktienFokus:
-      "Für diese Woche liegt keine belastbare Quellenlage zu einzelnen Kursbewegungen vor, die über allgemeine Marktberichterstattung hinausgeht. Dieser Abschnitt wird in der Produktivversion automatisiert aus den Kursbewegungen der auf Tazkiyah gescreenten Titel gespeist.",
-    ausblick:
-      "Im Fokus steht der US-Arbeitsmarktbericht für August, der am 4. September veröffentlicht wird und wichtige Hinweise auf das weitere Tempo der US-Geldpolitik liefern dürfte.",
-    sourceNote: "Quellen: Federal Reserve Bank of Kansas City · Wikipedia (DAX) · LBBW Research",
-  },
-];
-
-const indexDirectionClasses = {
-  up: "text-[var(--emerald-soft)]",
-  down: "text-[var(--red-soft)]",
-  flat: "text-[var(--amber-soft)]",
-};
-
-// Berichte bleiben 6 Monate abrufbar, danach werden sie hier ausgeblendet.
-// Bei einer echten, automatisiert befüllten Datenquelle würde diese Filterung
-// serverseitig (z.B. in der Datenbank-Abfrage) passieren, nicht im Frontend —
-// hier reicht das für den aktuellen Demo-Stand.
-const REPORT_RETENTION_DAYS = 182;
-
-function ReportsPage({ onBack }) {
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [liveReports, setLiveReports] = useState(null); // null = noch am Laden
-  const [usingFallback, setUsingFallback] = useState(false);
-
-  useEffect(() => {
-    supabase
-      .from("weekly_reports")
-      .select("*")
-      .order("report_date", { ascending: false })
-      .then(({ data, error }) => {
-        if (error || !data || data.length === 0) {
-          // Noch kein automatisch generierter Bericht vorhanden (z.B. weil
-          // der Cron-Job noch nicht gelaufen ist) -> Demo-Inhalte zeigen,
-          // klar gekennzeichnet, statt einer leeren Seite.
-          setLiveReports(mockReports);
-          setUsingFallback(true);
-          return;
-        }
-        setLiveReports(
-          data.map((r) => ({
-            title: r.week_label,
-            date: new Date(r.report_date).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }),
-            isoDate: r.report_date,
-            tldr: r.tldr,
-            makroPolitik: r.makro_politik,
-            indices: r.indices || [],
-            aktienFokus: r.aktien_fokus,
-            ausblick: r.ausblick,
-            sourceNote: r.source_note,
-          }))
-        );
-        setUsingFallback(false);
-      });
-  }, []);
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - REPORT_RETENTION_DAYS);
-  const visibleReports = (liveReports || []).filter((r) => new Date(r.isoDate) >= cutoff);
-
-  if (selectedReport) {
-    const r = selectedReport;
-    return (
-      <div className="font-body">
-        <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-          <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
-          <span>/</span>
-          <button type="button" onClick={() => setSelectedReport(null)} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Berichte</button>
-          <span>/</span>
-          <span className="text-[var(--text)]">{r.title}</span>
-        </header>
-        <main className="page pb-24">
-          <button
-            onClick={() => setSelectedReport(null)}
-            className="mb-4 text-sm text-[var(--faint)] hover:text-[var(--primary)]"
-          >
-            ← Alle Berichte
-          </button>
-          <h1 className="font-display text-[34px] text-[var(--heading)]">{r.title}</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">{r.date} · Automatisch erstellt</p>
-
-          <section className="mt-8 border-l-[3px] border-[var(--gold)] bg-[var(--surface)] px-5 py-4">
-            <p className="mb-2 font-display text-[20px] text-[var(--gold-soft)]">Das Wichtigste in Kürze</p>
-            <p className="text-sm leading-relaxed text-[var(--text-soft)]">{r.tldr}</p>
-          </section>
-
-          <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
-              Makro &amp; Politik der Woche
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.makroPolitik}</p>
-          </section>
-
-          <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
-              Index-Entwicklung
-            </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {r.indices.map((idx) => (
-                <div key={idx.name} className="border border-[var(--border)] bg-[var(--surface)] px-4 py-4">
-                  <p className="text-sm text-[var(--muted)]">{idx.name}</p>
-                  <p className="mt-2 font-[IBM_Plex_Mono] text-lg text-[var(--text)]">{idx.value}</p>
-                  <p className={"mt-1 font-[IBM_Plex_Mono] text-sm " + indexDirectionClasses[idx.direction]}>
-                    {idx.change}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--faint)]">{idx.note}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
-              Aktien &amp; ETFs im Fokus
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.aktienFokus}</p>
-          </section>
-
-          <section className="mt-8 border border-[var(--amber)]/40 bg-[var(--amber)]/10 px-5 py-4">
-            <p className="mb-2 font-display text-[20px] text-[var(--amber-soft)]">Kurz erklärt: Was bedeutet „grenzwertig"?</p>
-            <p className="text-sm leading-relaxed text-[var(--text-soft)]">
-              Ein Titel gilt bei Tazkiyah als grenzwertig, wenn er die grundsätzliche Geschäftstätigkeits-Prüfung besteht,
-              aber bei einer Finanzkennzahl — etwa Verschuldung oder Cash-Quote — nahe an der 30-%-Schwelle liegt.
-              Sobald das automatische Warnsystem für Statusänderungen live ist, werden solche Fälle hier künftig konkret benannt.
-            </p>
-          </section>
-
-          <section className="mt-8">
-            <h2 className="font-display border-b border-[var(--border)] pb-2.5 text-[24px] text-[var(--heading)]">
-              Ausblick auf die kommende Woche
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-[var(--text-soft)]">{r.ausblick}</p>
-          </section>
-
-          <p className="mt-8 text-sm text-[var(--faint)]">
-            {r.sourceNote || "Demo-Inhalt zu Illustrationszwecken"} · Keine Anlageberatung · Berichte bleiben 6 Monate abrufbar.
-          </p>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="font-body">
-      <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
-        <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
-        <span>/</span>
-        <span className="text-[var(--text)]">Berichte</span>
-      </header>
-      <main className="page pb-24">
-        <h1 className="font-display text-[34px] text-[var(--heading)]">Wöchentliche Berichte</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Automatisch erstellt, jeden Montag aktualisiert · Berichte bleiben 6 Monate abrufbar.
-        </p>
-        {usingFallback && (
-          <p className="mt-2 text-sm text-[var(--faint)]">
-            Noch kein automatisch generierter Bericht vorhanden — die folgenden Berichte sind Demo-Inhalte.
-          </p>
-        )}
-        {liveReports === null ? (
-          <p className="mt-8 text-sm text-[var(--muted)]">Lade Berichte …</p>
-        ) : (
-          <div className="mt-6 grid gap-3">
-            {visibleReports.map((r) => (
-              <button
-                key={r.title}
-                onClick={() => setSelectedReport(r)}
-                className="flex w-full items-center justify-between border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-deep)]"
-              >
-                <div className="pr-6">
-                  <p className="text-sm text-[var(--text)]">{r.title}</p>
-                  <p className="mt-1 line-clamp-1 text-sm text-[var(--muted)]">{r.tldr}</p>
-                </div>
-                <span className="shrink-0 text-sm text-[var(--faint)]">Lesen →</span>
-              </button>
-            ))}
-          </div>
-        )}
       </main>
     </div>
   );
@@ -820,12 +558,14 @@ const FOOTER_LINK =
   "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt"];
+const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt", "reports", "blog", "blogpost"];
 
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [criterionId, setCriterionId] = useState(null);
+  const [reportDate, setReportDate] = useState(null);
+  const [blogSlug, setBlogSlug] = useState(null);
   const [contactPrefill, setContactPrefill] = useState({ topic: null, ticker: null });
   const [session, setSession] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
@@ -875,6 +615,15 @@ export default function TazkiyahPrototype() {
     } else if (route.name === "methodik2") {
       setPage("methodik2");
       setActiveAnchor(null);
+    } else if (route.name === "wochenbericht") {
+      // Berichte: Wochenbericht (page "reports"), optional eine Ausgabe
+      setReportDate(route.date);
+      setPage("reports");
+      setActiveAnchor(null);
+    } else if (route.name === "blog" || route.name === "blogpost") {
+      setBlogSlug(route.slug || null);
+      setPage(route.name);
+      setActiveAnchor(null);
     } else if (route.name === "kontakt") {
       setContactPrefill({ topic: route.topic || null, ticker: route.ticker || null });
       setPage("kontakt");
@@ -897,6 +646,9 @@ export default function TazkiyahPrototype() {
       if (page === "methodik") setActiveAnchor(anchor || null);
       else methodikAnchorRef.current = anchor || null;
       navigate(routes.methodik());
+    } else if (targetPage === "reports" || targetPage === "blog") {
+      navigate(targetPage === "reports" ? routes.wochenbericht() : routes.blog());
+      if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (targetPage === "faq" || targetPage === "methodik2") {
       navigate(targetPage === "faq" ? routes.lernen() : routes.methodik2());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -921,7 +673,7 @@ export default function TazkiyahPrototype() {
   return (
     <div className="app-root min-h-screen w-full bg-[var(--bg)] text-[var(--text)] antialiased">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
         /* Tazkiyah Design B2 „Das Muster, hell“ (16.10.2026) — einziges Theme, kein Dark Mode.
            Grundfarben laut Vorgabe; mit * markierte Werte sind abgeleitet (Flächen für Status, Hover). */
@@ -1055,7 +807,9 @@ export default function TazkiyahPrototype() {
           />
         )}
         {page === "calendar" && <CalendarPage />}
-        {page === "reports" && <ReportsPage onBack={() => goTo("home")} />}
+        {page === "reports" && <WochenberichtPage date={reportDate} />}
+        {page === "blog" && <BlogPage />}
+        {page === "blogpost" && blogSlug && <BlogArticle slug={blogSlug} />}
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
         {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "methodik2" && <Methodik2Page />}
