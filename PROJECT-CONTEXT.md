@@ -16,7 +16,15 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - **Lernpfad-Gerüst:** Akademie unter `#/lernen` mit Übersicht von 11 Lektionen als Karten (Nummer, Titel, ein Satz, Status „folgt“; Daten in `src/data/lernpfad.js`, Anzeige `src/components/LernpfadOverview.jsx`). Inhalte schreibt die Nutzerin später, die Karten sind bis dahin keine Links. Die bisherigen Akademie-Inhalte (Einstieg, Broker-Vergleich, Glossar, Methodik, Vertiefen) stehen unverändert darunter als „Weitere Fragen“, das Feld „Frage nicht gefunden?“ bleibt.
 - **Wochenbericht breit:** Der Wochenbericht behandelt das Marktgeschehen allgemein; die Tazkiyah 30 erscheinen darin nur mit Fakten (z. B. Statusänderungen mit Datum und Grund), ohne Wertung oder Empfehlung.
 - **Monetarisierung später über einmalige Kurse.** Kein Abo auf der Seite, keine Preise.
-- Umsetzung auf Branch `neue-ausrichtung` (von `tazkiyah-30`), noch nicht committet.
+- Umsetzung auf Branch `neue-ausrichtung` (von `tazkiyah-30`), gepusht, nicht gemergt.
+- **Offen (16.10.2026):**
+  1. Rechtlicher Hinweis: `LegalNotice.jsx` ist für die Tazkiyah 30 formuliert („Die Tazkiyah 30 zeigen …“) und steht jetzt auch auf Startseite und Methodik 2. Allgemeiner Text kommt von der Nutzerin, vor dem Launch mit zur Anwaltsprüfung.
+  2. Methodik 2 enthält wörtlich „Mit einer Aktie kaufst du …“ (erklärend, keine Aufforderung). Prüfen, ob umformulieren.
+  3. Watchlist ist nur noch über die Fußzeile erreichbar (Kachelliste der alten Startseite entfernt).
+  4. Akademie „Weitere Fragen“ enthält alte Platzhalter: Broker-Vergleich mit „Broker A/B/C“, Texte teils noch aus der Screener-Zeit. Bei den Lernpfad-Inhalten mit überarbeiten.
+  5. Seite Berichte zeigt ohne echten Bericht Demo-Berichte, die Startseite dagegen „Die erste Ausgabe folgt in Kürze.“ Entscheiden, ob die Demo-Berichte entfallen. Der Demo-Bericht erklärt außerdem noch „grenzwertig“ (gibt es nicht mehr).
+  6. Lektionen sind ohne Inhalt keine Links; sobald Texte da sind, je Lektion eine eigene Adresse (z. B. `#/lernen/1`) und Status „folgt“ entfernen.
+  7. Entwurfs-Hinweis auf der Methodik-Seite (TEMPORÄR) entfernen, sobald entschieden ist, welche Fassung bleibt.
 
 ### Neue Ausrichtung (15.10.2026)
 
