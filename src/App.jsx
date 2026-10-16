@@ -15,6 +15,9 @@ import LernpfadOverview from "./components/LernpfadOverview.jsx";
 import WochenberichtPage from "./components/berichte/WochenberichtPage.jsx";
 import BlogPage from "./components/berichte/BlogPage.jsx";
 import BlogArticle from "./components/berichte/BlogArticle.jsx";
+import RedaktionPage from "./components/redaktion/RedaktionPage.jsx";
+import RedaktionVorschau from "./components/redaktion/RedaktionVorschau.jsx";
+import { fetchIsAdmin } from "./lib/weeklyReportsData.js";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
@@ -558,13 +561,15 @@ const FOOTER_LINK =
   "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt", "reports", "blog", "blogpost"];
+const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt", "reports", "blog", "blogpost", "redaktion", "redaktionVorschau"];
 
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
   const [selectedTicker, setSelectedTicker] = useState(null);
   const [criterionId, setCriterionId] = useState(null);
-  const [reportDate, setReportDate] = useState(null);
+  const [reportSlugState, setReportSlugState] = useState(null);
+  const [redaktionId, setRedaktionId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [blogSlug, setBlogSlug] = useState(null);
   const [contactPrefill, setContactPrefill] = useState({ topic: null, ticker: null });
   const [session, setSession] = useState(null);
@@ -585,6 +590,16 @@ export default function TazkiyahPrototype() {
   }, []);
 
   const userId = session?.user?.id ?? null;
+
+  // Admin-Konto? (zeigt „Redaktion“ im Kontomenü; der Zugriff selbst wird in der Datenbank geprüft)
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) setIsAdmin(false);
+    else fetchIsAdmin().then((ok) => !cancelled && setIsAdmin(ok));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
   const [activeAnchor, setActiveAnchor] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
@@ -617,9 +632,16 @@ export default function TazkiyahPrototype() {
       setActiveAnchor(null);
     } else if (route.name === "wochenbericht") {
       // Berichte: Wochenbericht (page "reports"), optional eine Ausgabe
-      setReportDate(route.date);
+      setReportSlugState(route.slug);
       setPage("reports");
       setActiveAnchor(null);
+    } else if (route.name === "redaktion") {
+      // Redaktion (intern, nur Admin): Liste, „neu“ oder eine Ausgabe
+      setRedaktionId(route.id);
+      setPage("redaktion");
+      setActiveAnchor(null);
+    } else if (route.name === "redaktionVorschau") {
+      setPage("redaktionVorschau");
     } else if (route.name === "blog" || route.name === "blogpost") {
       setBlogSlug(route.slug || null);
       setPage(route.name);
@@ -646,6 +668,8 @@ export default function TazkiyahPrototype() {
       if (page === "methodik") setActiveAnchor(anchor || null);
       else methodikAnchorRef.current = anchor || null;
       navigate(routes.methodik());
+    } else if (targetPage === "redaktion") {
+      navigate(routes.redaktion());
     } else if (targetPage === "reports" || targetPage === "blog") {
       navigate(targetPage === "reports" ? routes.wochenbericht() : routes.blog());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -723,6 +747,7 @@ export default function TazkiyahPrototype() {
           --tile: #E5ECE3;    --tile-gold: #F1E7CF;   /* * */
           --note-bg: var(--surface); --note-border: var(--gold-line);
           --logo-dot: var(--gold-light);
+          --gap-bg: #F3E3B5; --gap-text: #5C4413; /* Lücken [eckige Klammern] auf der Prüfseite (Vorlage) */
           /* TradingView-Widgets. Werden beim Laden ausgelesen. */
           --tv-line: var(--primary);
           --tv-area-top: rgba(31, 90, 67, 0.16);
@@ -773,14 +798,17 @@ export default function TazkiyahPrototype() {
         .app-root { font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
       `}</style>
 
+      {page !== "redaktionVorschau" && (
       <SiteHeader
         page={page}
+        isAdmin={isAdmin}
         activeFilter={activeFilter}
         onGo={goTo}
         session={session}
         onOpenAuth={() => setShowAuth(true)}
         onSignOut={() => supabase.auth.signOut()}
       />
+      )}
 
       {showAuth && <AuthPanel onClose={() => setShowAuth(false)} />}
       {showResetPassword && <ResetPasswordPanel onDone={() => setShowResetPassword(false)} />}
@@ -807,7 +835,9 @@ export default function TazkiyahPrototype() {
           />
         )}
         {page === "calendar" && <CalendarPage />}
-        {page === "reports" && <WochenberichtPage date={reportDate} />}
+        {page === "reports" && <WochenberichtPage slug={reportSlugState} />}
+        {page === "redaktion" && <RedaktionPage id={redaktionId} session={session} onOpenAuth={() => setShowAuth(true)} />}
+        {page === "redaktionVorschau" && <RedaktionVorschau />}
         {page === "blog" && <BlogPage />}
         {page === "blogpost" && blogSlug && <BlogArticle slug={blogSlug} />}
         {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
@@ -827,7 +857,9 @@ export default function TazkiyahPrototype() {
           />
         )}
 
-        {/* Fußzeile über die volle Breite */}
+        {/* Fußzeile über die volle Breite (nicht in der Handy-Vorschau der Redaktion) */}
+        {page !== "redaktionVorschau" && (
+        <>
         <Frieze className="mt-20" />
         <footer className="on-green bg-[var(--footer)] py-8 text-[var(--footer-text)]">
           <div className="page">
@@ -851,6 +883,8 @@ export default function TazkiyahPrototype() {
             </nav>
           </div>
         </footer>
+        </>
+        )}
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />

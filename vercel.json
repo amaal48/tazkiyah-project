@@ -11,6 +11,10 @@
     {
       "path": "/api/update-calendar",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/publish-weekly-report",
+      "schedule": "0 * * * 1"
     }
   ],
   "functions": {

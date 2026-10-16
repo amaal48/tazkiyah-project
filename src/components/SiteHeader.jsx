@@ -71,7 +71,7 @@ function SubItems({ group, onPick, activeFilter }) {
   );
 }
 
-export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAuth, onSignOut }) {
+export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAuth, onSignOut, isAdmin = false }) {
   const [openGroup, setOpenGroup] = useState(null); // Aufklappmenü am Hauptpunkt (Desktop)
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -129,6 +129,7 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
     ["Einstellungen", "settings"],
     ["Sicherheit", "security"],
     ["Datenschutz", "privacy"],
+    ...(isAdmin ? [["Redaktion", "redaktion"]] : []),
   ];
 
   const navLink = (it) =>

@@ -6,6 +6,45 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
 
+### Wochenbericht (16.10.)
+
+**Grundsatz:** Ohne Freigabe der Nutzerin erscheint nie etwas. Keine Anbindung an eine KI-API, kein automatischer Generator (der alte Generator `api/generate-weekly-report.js` ist entfernt). Branch `wochenbericht` (von `main`), gepusht, nicht gemergt.
+
+**Ablauf**
+1. **Samstag:** Eine geplante Aufgabe in Claude schreibt den Entwurf in Notion (Aufbau, Ton und Länge wie `wochenbericht-vorlage-kw42.md`, offene Stellen als [eckige Klammern]).
+2. **Einfügen:** Prüfseite `#/redaktion/wochenbericht` → „Neuer Entwurf“ → kompletten Entwurf einfügen → „Aufteilen und prüfen“. Aufteilung (`src/lib/weeklyDraft.js`): `# Titel`; Zeile darunter → KW und Zeitraum (sonst aus der KW berechnet, mit Hinweis); „## Das Wichtigste in drei Sätzen“; alle weiteren `##`-Abschnitte → Fließtext; „> **Einordnung für muslimische Anleger**“ (auch als `##`-Abschnitt oder `:::einordnung`) → Einordnung; „## Quellen“ (nummeriert, Links erkannt); „## Mail-Kurzfassung“ (eine Zeile „Betreff: …“ ist der Betreff). Alles vor dem Titel (Hinweiskasten, Regeln, offene Stellen) und der Standard-Hinweis werden nicht übernommen, aber angezeigt. Was nicht erkannt wird, bleibt im Fließtext. Vor dem Speichern ist alles korrigierbar. Mit der echten Vorlage KW 42 getestet (8 Abschnitte, 11 Quellen, 12 Lücken, keine Warnung).
+3. **Prüfen** (`#/redaktion/wochenbericht/<id>`, Design nach `tazkiyah-design-b2-pruefseite.html`): Tabs Bearbeiten | Vorschau Website (Desktop und Handy, Handy als 390 px breites iframe) | Vorschau Mail. Rechts: „Erscheint Montag, TT.MM., 12:00“, „Lücken im Text“ (alle [eckigen Klammern] außer Markdown-Links, Klick springt zur Stelle und markiert sie), Checkliste mit den 11 Punkten aus `wochenbericht-checkliste.md` (je Ausgabe gespeichert), Änderungsprotokoll.
+4. **Freigabe:** „Freigeben für Montag 12:00“ erst aktiv bei 0 Lücken, allen 11 Haken und ohne ungespeicherte Änderungen. Jede Änderung nach der Freigabe (auch an der Checkliste) setzt automatisch zurück auf Entwurf.
+5. **Montag 12:00 (Europe/Berlin):** Der Cron `api/publish-weekly-report.js` (montags stündlich, `0 * * * 1`, mit `CRON_SECRET`) setzt freigegebene Ausgaben mit `erscheint_am <= jetzt` auf „veroeffentlicht“ und schickt eine Mail „Wochenbericht KW xx ist online“ mit Link an `REPORT_NOTIFY_EMAIL` (bei Fehler eine Mail mit der Fehlermeldung). Sommer-/Winterzeit steckt in `erscheint_am` (timestamptz, Montag nach dem Berichtszeitraum, 12:00 Berlin), nicht in einer festen UTC-Stunde. Manuell: `?dryRun=1`.
+6. **Danach:** „Korrektur speichern“ (öffentlich „Korrigiert am …“) oder „Zurückziehen“ (Grund ist Pflicht, danach nicht mehr öffentlich).
+
+**Regeln für jede Ausgabe** (aus der Vorlage): Titel → drei Sätze → Fließtext mit Zwischenüberschriften → Einordnung → nummerierte Quellen → Hinweis. Nur Rückblick auf die vergangene Woche (Mo–Fr), kein Ausblick. Fließtext, keine Stichpunkte; Zahlen mit Einheit, Währung, Zeitraum. Primärquellen bevorzugen, Nachrichten nur umformuliert und verlinkt. Keine Kauf-/Verkaufsformulierungen, Kursziele, Rankings, Prognosen, kein „Top“. Tazkiyah 30 nur mit Fakten, Satz zur Neuprüfung. Unsicheres als [Platzhalter]. Unterzeichnet „Die Redaktion“. Der Hinweis („keine Anlageberatung … keine Fatwa“) steht fest unter jeder Ausgabe (`REPORT_NOTICE` in `src/lib/weeklyReport.js`).
+
+**Tabellen** (`supabase_wochenbericht.sql`, von der Nutzerin auszuführen):
+- `weekly_reports`: id, jahr, kw (eindeutig je Jahr und KW), zeitraum_von, zeitraum_bis, titel, drei_saetze, body_md, einordnung, quellen (jsonb: nr, titel, url), mail_kurzfassung, checkliste (jsonb „1“–„11“), status (`entwurf` | `freigegeben` | `veroeffentlicht` | `zurueckgezogen`), erscheint_am, erstellt_am, geaendert_am, freigegeben_am, veroeffentlicht_am, korrigiert_am, zurueckgezogen_am, zurueckgezogen_grund. Die bisherige Tabelle (altes Format) wird beim Ausführen in `weekly_reports_alt` umbenannt, nicht gelöscht.
+- `weekly_report_versions`: jede Speicherung als ganzer Inhalt (wann, wer, Status) = Änderungsprotokoll.
+- `admins` (user_id) + Funktion `is_admin()`. Eigenes Konto per SQL eintragen (Zeile in der Datei, E-Mail-Adresse einsetzen).
+- RLS: öffentlich nur `status = 'veroeffentlicht'`; Entwürfe, Versionen nur `is_admin()`; `admins` für niemanden lesbar. Trigger erzwingen: Freigabe nur ohne Lücken und mit 11 Haken; Änderung nach Freigabe → Entwurf; „veroeffentlicht“ nur durch Cron/Service-Role (oder SQL Editor); Korrektur setzt korrigiert_am; Zurückziehen nur mit Grund; veröffentlichte Ausgaben nicht zurück in den Entwurf. Getestet mit PGlite (`src/lib/wochenberichtSql.test.js`).
+
+**Öffentlich:** `#/berichte/wochenbericht` (aktuelle Ausgabe + frühere mit Jahresfilter, Abo-Feld nur Optik), je Ausgabe `#/berichte/wochenbericht/2026-kw42` (`WochenberichtArticle.jsx`: Markdown, Einordnung, Quellen, Hinweis, „Korrigiert am …“). Startseite: neueste veröffentlichte Ausgabe im Aufmacher, sonst „Die erste Ausgabe erscheint in Kürze.“ Keine Aufbewahrungsfrist mehr (früher 6 Monate), alle veröffentlichten Ausgaben bleiben abrufbar.
+
+**Newsletter:** vorbereitet (`buildNewsletterMail`), Schalter `NEWSLETTER_ENABLED` (Standard aus). Solange aus: keine Mails an Abonnenten, keine E-Mail-Adressen speichern (Domain, Double-Opt-in, Datenschutzerklärung fehlen).
+
+**Offen (16.10.2026):**
+1. `supabase_wochenbericht.sql` im SQL Editor ausführen, danach eigenes Konto als Admin eintragen (Schritt 5 der Datei) und die Kontrollabfrage prüfen.
+2. In Vercel `REPORT_NOTIFY_EMAIL` setzen (tazkiyahinvest@gmail.com; nicht im Code, weil das Repository öffentlich ist), Redeploy.
+3. Tests in der Vercel-Vorschau mit dem Admin-Konto: Vorlage KW 42 über „Entwurf einfügen“ einspielen und Aufteilung prüfen; Freigabe gesperrt bei Lücken; Änderung nach Freigabe setzt zurück; ohne Anmeldung keine Entwürfe sichtbar; Cron mit Erscheinungszeit in der Vergangenheit (Zeile am Ende der SQL-Datei, Aufruf mit `CRON_SECRET`). **Achtung:** Vorschau und Website nutzen dieselbe Datenbank; eine Test-Veröffentlichung ist sofort öffentlich, danach „Zurückziehen“.
+4. Cron `0 * * * 1` (montags stündlich): Lehnt Vercel ihn im Tarif ab (Hobby: höchstens einmal täglich), auf zwei Montagstermine umstellen (10:00 und 11:00 UTC; deckt Sommer- und Winterzeit, da `erscheint_am` entscheidet).
+5. Resend-Absender `onboarding@resend.dev` stellt nur an die Adresse des Resend-Kontos zu. Ist das nicht tazkiyahinvest@gmail.com, kommt die Mail „ist online“ erst nach Bestätigung der eigenen Domain an.
+6. Handy-Vorschau der Prüfseite ist eine Annäherung (iframe 390 px); Punkt 11 der Checkliste am echten Handy prüfen.
+7. „Stand: [Datum, Uhrzeit]“ aus der Vorlage entfällt; die Website zeigt „Veröffentlicht am …“ und ggf. „Korrigiert am …“.
+8. `weekly_reports_alt` (alte Tabelle) nach Prüfung selbst löschen.
+9. Menüpunkt „Blog“ der Prüfseiten-Vorlage nicht umgesetzt (Blogbeiträge sind Markdown-Dateien im Repository).
+10. Newsletter: erst nach eigener Domain, Double-Opt-in und Datenschutzerklärung; dann Empfängertabelle, Abmeldelink und Versand hinter `NEWSLETTER_ENABLED` bauen.
+11. Die geplante Aufgabe in Claude (Entwurf samstags nach Notion) richtet die Nutzerin selbst ein; Aufbau nach `wochenbericht-vorlage-kw42.md`.
+
+**Umgebungsvariablen (Vercel):** vorhanden `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `RESEND_API_KEY`; neu `REPORT_NOTIFY_EMAIL` (Empfänger „ist online“; ohne sie geht die Mail an `QUESTIONS_NOTIFY_EMAIL`), optional `SITE_URL`, optional `NEWSLETTER_ENABLED`. Absender bleibt `onboarding@resend.dev`: Damit kann Resend nur an die Adresse des Resend-Kontos senden, bis die eigene Domain bestätigt ist.
+
 ### Neue Ausrichtung (16.10.)
 
 **Entscheidung 16.10.2026:** Tazkiyah wird vom Prüfwerkzeug zum **Begleiter für Einsteiger**. Drei Säulen: **Lernen → Selbst prüfen → Dranbleiben.** Die Tazkiyah 30 sind ein Bereich unter mehreren, nicht mehr der Aufmacher. Keine Wörter wie „kaufen“, „Top“, keine Kursziele, keine Preise oder Abos auf der Seite.
@@ -31,7 +70,7 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 **Bereich „Berichte“ in Design B2 (Branch `berichte`, am 16.10.2026 auf `main` gemergt, Merge-Commit `9898757`)** nach den Vorlagen `tazkiyah-design-b2-wochenbericht.html`, `…-blog.html`, `…-blogartikel.html`:
 - **Adressen:** Menüpunkt „Berichte“ → `#/berichte/wochenbericht` (auch `#/berichte`), eine Ausgabe `#/berichte/wochenbericht/<Datum>`, Blog `#/berichte/blog`, Beitrag `#/berichte/blog/<slug>`. Oben auf beiden Seiten der Umschalter „Wochenbericht | Blog“ (`src/components/berichte/BerichteHeader.jsx`).
-- **Wochenbericht** (`WochenberichtPage.jsx`, Daten `src/lib/reports.js` + `reportsData.js`, Tabelle `weekly_reports`): aktuelle Ausgabe im Manuskript-Rahmen (KW nach ISO 8601, Datum, Lesezeit aus der Wortzahl, „Das Wichtigste in drei Sätzen“ = `tldr`, Inhaltsverzeichnis), daneben das Abo-Feld, darunter „Frühere Ausgaben“ mit Jahresfilter (erscheint ab zwei Jahren) und „Alle Ausgaben anzeigen“ (ab 8). Eine Ausgabe als eigene Seite mit „Vorherige/Nächste Ausgabe“. Leere Einträge (ohne `tldr`) zählen nicht, Aufbewahrung weiter 6 Monate. Ohne Ausgabe: „Die erste Ausgabe erscheint in Kürze.“ Die Demo-Berichte sind entfernt.
+- **Wochenbericht** (`WochenberichtPage.jsx`; seit dem Branch `wochenbericht` neues Datenmodell, siehe „Wochenbericht (16.10.)“): aktuelle Ausgabe im Manuskript-Rahmen (KW nach ISO 8601, Datum, Lesezeit aus der Wortzahl, „Das Wichtigste in drei Sätzen“ = `tldr`, Inhaltsverzeichnis), daneben das Abo-Feld, darunter „Frühere Ausgaben“ mit Jahresfilter (erscheint ab zwei Jahren) und „Alle Ausgaben anzeigen“ (ab 8). Eine Ausgabe als eigene Seite mit „Vorherige/Nächste Ausgabe“. Leere Einträge (ohne `tldr`) zählen nicht, Aufbewahrung weiter 6 Monate. Ohne Ausgabe: „Die erste Ausgabe erscheint in Kürze.“ Die Demo-Berichte sind entfernt.
 - **Abschnitte** richten sich nach den heutigen Spalten: Die Woche an den Märkten (`indices`), Makro und Politik (`makro_politik`), Aktien im Fokus (`aktien_fokus`), Nächste Woche (`ausblick`); nur Abschnitte mit Inhalt erscheinen. Das Inhaltsverzeichnis der Vorlage (sechs Teile, u. a. „Thema der Woche“, „Kurz notiert“, „Aus der Tazkiyah 30“, „Nachgereicht“) und ein eigenes „Thema der Woche“ brauchen neue Spalten, sobald der Generator neu gebaut wird (bis dahin ist der Titel `week_label`).
 - **Abo-Feld nur Optik:** Feld und Knopf sind deaktiviert („Abo folgt in Kürze“), es wird nichts gespeichert oder gesendet. Erst nach eigener Domain, Double-Opt-in und Datenschutzerklärung anschließen.
 - **Blog** (`BlogPage.jsx`): Themenfilter (Alle, Märkte & Wirtschaft, Islamisches Finanzwesen, Erklärt), neuester Beitrag groß, darunter weitere. Ohne Beiträge ein Leer-Zustand mit Links zu Lernpfad und Wochenbericht.
