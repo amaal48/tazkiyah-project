@@ -12,6 +12,11 @@
 //   #/methodik         Methodik-Übersicht
 //   #/methodik-2       Methodik, vereinfachte Fassung (Entwurf zum Vergleich, 16.10.2026)
 //   #/lernen           Akademie mit Lernpfad (Navigation „Lernen“)
+//   #/berichte         Berichte, führt zum Wochenbericht
+//   #/berichte/wochenbericht             aktuelle Ausgabe und frühere Ausgaben
+//   #/berichte/wochenbericht/2026-10-19  eine Ausgabe (Datum des Berichts)
+//   #/berichte/blog                      Blog (Übersicht)
+//   #/berichte/blog/gibt-es-eine-ki-blase  ein Beitrag (Dateiname in content/blog/)
 //   #/kontakt          Kontaktformular, optional vorausgefüllt: #/kontakt?thema=fehler&aktie=AAPL
 
 import { useEffect, useState } from "react";
@@ -38,6 +43,11 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "methodik") return { name: "methodik" };
   if (parts[0] === "methodik-2") return { name: "methodik2" };
   if (parts[0] === "lernen") return { name: "lernen" };
+  if (parts[0] === "berichte") {
+    if (parts[1] === "blog") return parts[2] ? { name: "blogpost", slug: parts[2].toLowerCase() } : { name: "blog" };
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(parts[2] || "") ? parts[2] : null;
+    return { name: "wochenbericht", date };
+  }
   if (parts[0] === "screener" || parts[0] === "tazkiyah-30") return { name: "tazkiyah30" };
   if (parts[0] === "aktien") return { name: "aktien" };
   if (parts[0] === "kontakt") {
@@ -58,6 +68,9 @@ export const routes = {
   methodik: () => "#/methodik",
   methodik2: () => "#/methodik-2",
   lernen: () => "#/lernen",
+  wochenbericht: (date) => (date ? `#/berichte/wochenbericht/${date}` : "#/berichte/wochenbericht"),
+  blog: () => "#/berichte/blog",
+  blogPost: (slug) => `#/berichte/blog/${encodeURIComponent(slug)}`,
   /** Kontaktformular; topic: Thema im Formular (z. B. "pruefung", "fehler"), ticker: Aktie für den Text */
   kontakt: ({ topic, ticker } = {}) => {
     const q = new URLSearchParams();
