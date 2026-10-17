@@ -29,6 +29,7 @@ import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
 import ContactPage from "./components/ContactPage.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
+import { SidebarDesktop } from "./components/Sidebar.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import { Frieze } from "./components/ornaments.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
@@ -585,6 +586,23 @@ function SectorsPage({ onBack }) {
 
 /* ---------- Root ---------- */
 
+// Seitenleiste eingeklappt? Nur eine Bequemlichkeit je Browser; ohne Speicher (privates Fenster) ausgeklappt.
+const SIDEBAR_STORAGE_KEY = "tazkiyah-seitenleiste-eingeklappt";
+function readSidebarCollapsed() {
+  try {
+    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeSidebarCollapsed(collapsed) {
+  try {
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "1" : "0");
+  } catch {
+    // Speicher nicht verfügbar: Zustand gilt nur bis zum Neuladen
+  }
+}
+
 const FOOTER_LINK =
   "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
 
@@ -594,6 +612,13 @@ const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik",
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
   const [selectedTicker, setSelectedTicker] = useState(null);
+  const [aktienQuery, setAktienQuery] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
+  const toggleSidebar = () =>
+    setSidebarCollapsed((v) => {
+      writeSidebarCollapsed(!v);
+      return !v;
+    });
   const [criterionId, setCriterionId] = useState(null);
   const [reportSlugState, setReportSlugState] = useState(null);
   const [redaktionId, setRedaktionId] = useState(null);
@@ -630,7 +655,7 @@ export default function TazkiyahPrototype() {
   }, [userId]);
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
   const [activeAnchor, setActiveAnchor] = useState(null);
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [, setActiveFilter] = useState(null); // Filter für die Seite der Tazkiyah 30 (aus der früheren Kopfleiste)
 
 
   // Seiten mit Hash-Adresse: Hauptseite, Detailseite, Erklärseite, Methodik, Kontakt.
@@ -651,6 +676,7 @@ export default function TazkiyahPrototype() {
       // Archiv (17.10.2026): #/tazkiyah-30 und #/screener führen auf die Aktiensuche (ersetzt den Verlaufseintrag)
       window.location.replace(routes.aktien());
     } else if (route.name === "tazkiyah30" || route.name === "aktien") {
+      if (route.name === "aktien") setAktienQuery(route.query || null);
       setPage(route.name);
       setActiveAnchor(null);
     } else if (route.name === "lernen") {
@@ -701,6 +727,9 @@ export default function TazkiyahPrototype() {
       navigate(routes.methodik());
     } else if (targetPage === "redaktion") {
       navigate(routes.redaktion());
+    } else if (targetPage === "kontakt") {
+      navigate(routes.kontakt());
+      if (page === "kontakt") window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (targetPage === "reports" || targetPage === "blog") {
       navigate(targetPage === "reports" ? routes.wochenbericht() : routes.blog());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -836,7 +865,7 @@ export default function TazkiyahPrototype() {
       <SiteHeader
         page={page}
         isAdmin={isAdmin}
-        activeFilter={activeFilter}
+        watchCount={wl.watchlist.length}
         onGo={goTo}
         session={session}
         onOpenAuth={() => setShowAuth(true)}
@@ -847,10 +876,23 @@ export default function TazkiyahPrototype() {
       {showAuth && <AuthPanel onClose={() => setShowAuth(false)} />}
       {showResetPassword && <ResetPasswordPanel onDone={() => setShowResetPassword(false)} />}
 
-      <div>
+      {/* Seitenleiste links (ab 1024 px), daneben Inhalt und Fußzeile */}
+      <div className="lg:flex">
+        {page !== "redaktionVorschau" && (
+          <SidebarDesktop
+            page={page}
+            onGo={goTo}
+            session={session}
+            isAdmin={isAdmin}
+            watchCount={wl.watchlist.length}
+            collapsed={sidebarCollapsed}
+            onToggleCollapsed={toggleSidebar}
+          />
+        )}
+      <div className="min-w-0 flex-1">
         {page === "home" && <StartPage onGo={goTo} />}
         {page === "tazkiyah30" && FEATURE_TAZKIYAH30 && <Tazkiyah30Page />}
-        {page === "aktien" && <AktienPage />}
+        {page === "aktien" && <AktienPage initialQuery={aktienQuery} />}
         {page === "portfolio" && <PortfolioPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "detail" && selectedTicker && (
           <StockDetailPage
@@ -919,6 +961,7 @@ export default function TazkiyahPrototype() {
         </footer>
         </>
         )}
+      </div>
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />

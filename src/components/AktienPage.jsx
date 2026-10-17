@@ -18,7 +18,8 @@ const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text
 // Sitzungsweiter Zustand der Suche
 let saved = { query: "", sector: "" };
 
-export default function AktienPage() {
+/** initialQuery: Suchbegriff aus der Adresse (#/aktien?suche=…, Suchfeld der Kopfleiste) */
+export default function AktienPage({ initialQuery = null }) {
   const list = useScreeningList();
   const cal = useCalendarList();
   const [f, setF] = useState(saved);
@@ -31,6 +32,9 @@ export default function AktienPage() {
     });
 
   useEffect(() => setVisible(PAGE), [f]);
+  useEffect(() => {
+    if (initialQuery) update({ query: initialQuery, sector: "" });
+  }, [initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sectors = useMemo(() => [...new Set(list.rows.map((r) => r.sector).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de")), [list.rows]);
 

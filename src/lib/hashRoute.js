@@ -6,7 +6,7 @@
 //
 //   #/                 Startseite (Überblick)
 //   #/tazkiyah-30      Die Tazkiyah 30 (Liste mit Halal-Status; #/screener führt ebenfalls dorthin)
-//   #/aktien           Aktiensuche (alle Titel, ohne Status)
+//   #/aktien           Aktiensuche (alle Titel, ohne Status); #/aktien?suche=nvda mit Suchbegriff (Suchfeld der Kopfleiste)
 //   #/aktie/AAPL       Detailseite (Tazkiyah 30) bzw. Aktienseite ohne Status (alle übrigen)
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
@@ -57,7 +57,10 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
     return { name: "wochenbericht", slug };
   }
   if (parts[0] === "screener" || parts[0] === "tazkiyah-30") return { name: "tazkiyah30" };
-  if (parts[0] === "aktien") return { name: "aktien" };
+  if (parts[0] === "aktien") {
+    const q = new URLSearchParams(query).get("suche");
+    return q ? { name: "aktien", query: q } : { name: "aktien" };
+  }
   if (parts[0] === "kontakt") {
     const q = new URLSearchParams(query);
     return { name: "kontakt", topic: q.get("thema") || null, ticker: (q.get("aktie") || "").toUpperCase() || null };
@@ -70,7 +73,7 @@ export const routes = {
   tazkiyah30: () => "#/tazkiyah-30",
   // Alte Adresse, führt auf die Tazkiyah 30
   screener: () => "#/tazkiyah-30",
-  aktien: () => "#/aktien",
+  aktien: (query) => (query ? `#/aktien?suche=${encodeURIComponent(query)}` : "#/aktien"),
   stock: (ticker) => `#/aktie/${encodeURIComponent(ticker)}`,
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",

@@ -54,3 +54,9 @@ test("Vorbelegung des Formulars nutzt nur vorhandene Themen", () => {
   assert.equal(contactPrefill("fehler", null).topic, "fehler");
   assert.equal(contactPrefill("unbekannt", "X").topic, "allgemein");
 });
+
+test("Aktiensuche mit Suchbegriff (Suchfeld der Kopfleiste)", () => {
+  assert.equal(routes.aktien("Novo Nordisk"), "#/aktien?suche=Novo%20Nordisk");
+  assert.deepEqual(parseHash(routes.aktien("Novo Nordisk")), { name: "aktien", query: "Novo Nordisk" });
+  assert.deepEqual(parseHash("#/aktien?suche="), { name: "aktien" });
+});

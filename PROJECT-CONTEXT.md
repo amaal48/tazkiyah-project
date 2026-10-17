@@ -6,6 +6,21 @@ Stand: 17.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
 
+### Navigation / Seitenleiste (17.10.2026)
+
+Branch `seitenleiste` (von `archiv-tazkiyah30`), gepusht, **nicht gemergt**. Ersetzt die Menülinks der Kopfleiste und das bisherige Handy-Menü.
+
+- **Desktop (ab 1024 px):** feste Seitenleiste links (`src/components/Sidebar.jsx`, `SidebarDesktop`, `<nav aria-label="Hauptnavigation">`), 248 px breit. Punkte: Start · Aktiensuche · (Die Tazkiyah 30, nur mit `VITE_FEATURE_TAZKIYAH30 = true`) · Berichte (aufklappbar: Wochenbericht, Blog) · Kalender · Akademie · Methodik · Kontakt. Angemeldet unter „Für dich“ zusätzlich Watchlist (mit Anzahl) · Konto (→ Profil); für Admins auch Redaktion.
+- **„folgt bald“:** Blog und Kalender sind sichtbar, aber nicht klickbar (`SOON_KEYS` in `Sidebar.jsx`; zum Freischalten den Schlüssel entfernen). Beide Seiten gibt es schon: Der Kalender zeigt SEC-Termine, der Blog ist leer. Über die Adresse, den Umschalter „Wochenbericht | Blog“ auf der Seite Berichte und die Startseite (Weg „Dranbleiben“, „Zum Kalender“) sind sie weiter erreichbar.
+- **Einklappen:** Knopf unten in der Leiste („Einklappen“, `aria-expanded`, `aria-controls`), eingeklappt 68 px nur mit Zeichen. Die Bezeichnungen bleiben für Screenreader lesbar und stehen als Tooltip am Zeichen. Der Zustand steht im localStorage unter `tazkiyah-seitenleiste-eingeklappt` („1“/„0“). Lesen und Schreiben laufen in try/catch; ohne Speicher (privates Fenster) startet die Leiste ausgeklappt.
+- **Kopfleiste** (`SiteHeader.jsx`), 64 px hoch: Logo, Suchfeld „Aktie suchen“ (ab 640 px; springt zu `#/aktien?suche=…`, die Aktiensuche übernimmt den Begriff), Anmelden bzw. Kontomenü (E-Mail-Adresse, unter 768 px „Konto“). Darunter der Fries.
+- **Handy/Tablet (unter 1024 px):** Menüknopf links in der Kopfleiste öffnet dieselben Punkte als Menü von links (`NavDrawer`, `role="dialog"`, mit Suchfeld oben). Es schließt bei Klick auf einen Link, auf den Hintergrund, mit Esc, mit dem Knopf „Menü schließen“ und bei jedem Seitenwechsel. Der Fokus bleibt im Menü und springt beim Schließen auf den Menüknopf zurück; die Seite dahinter scrollt nicht mit.
+- **Aktiv:** Der aktive Punkt ist dunkelgrün hinterlegt, mit Goldstrich links und `aria-current="page"`. Bei aufgeklappten Berichten trägt der Unterpunkt die volle Markierung, „Berichte“ nur den Goldstrich. Die Gruppe klappt auf, sobald man in Berichten ist.
+- **Design B2:** Fläche `--surface`, Trennlinie `--border` statt Schatten, eckig, Zeichen als Linien ohne Kreise; Überschriften Cormorant Garamond, Text Source Sans 3. Sichtbarer Fokus über die globale Regel (`:focus-visible`, 2 px Link-Grün).
+- **Unverändert:** Fußzeile (Methodik, Watchlist, Kontakt), Kontomenü-Einträge, Seiten und Adressen.
+- Geprüft (lokal, 17.10.2026): Desktop 1280 px aus- und eingeklappt, Zustand nach Neuladen, Suche „micro“ → 5 Treffer; Handy 375 px und Tablet 768 px ohne seitliches Scrollen, Menü schließt mit Esc, Link, Hintergrund und Seitenwechsel; Berichte aufklappbar (`aria-expanded`). Angemeldete Ansicht (Watchlist, Konto) nur im Code geprüft.
+- **Offen:** Blog und Kalender freischalten, sobald fertig (`SOON_KEYS`). Klären, ob der Umschalter auf der Seite Berichte den Blog bis dahin auch als „folgt bald“ zeigen soll.
+
 ### Archiv Tazkiyah 30 (17.10.2026)
 
 **Entscheidung 17.10.2026:** Die Tazkiyah 30 werden zum Launch **archiviert, nicht gelöscht**. Tazkiyah gibt zum Launch **keine eigene Sharia-Einschätzung zu einzelnen Aktien** ab. Aktiensuche und Aktienseiten für alle Aktien des Universums bleiben öffentlich, ohne Halal-Status. Branch `archiv-tazkiyah30` (von `main`, das `tazkiyah-30` vollständig enthält), gepusht, **nicht gemergt**.
