@@ -14,11 +14,16 @@
 // einen Halal-Status. Die Datenbank liefert seit supabase_tazkiyah30.sql nichts anderes mehr; hier wird
 // zusätzlich gefiltert (für die Zeit vor dem Ausführen der SQL-Datei). Alle übrigen Titel haben
 // status: null und inTazkiyah30: false.
+//
+// Archiv (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus, siehe src/lib/features.js): screening_current,
+// tazkiyah30 und screening_status_changes werden gar nicht abgefragt (öffentlicher Zugriff wird mit
+// supabase_archiv_tazkiyah30.sql entzogen). Alle Titel kommen aus securities, ohne Status.
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { ALL_STOCKS } from "../data/stocks";
 import { FINAL_STATUSES, TAZKIYAH30_FALLBACK } from "../data/tazkiyah30.js";
+import { FEATURE_TAZKIYAH30 } from "./features.js";
 
 const PAGE_SIZE = 1000; // Supabase-Grenze je Abfrage
 
@@ -66,6 +71,7 @@ let t30Promise = null;
 
 /** Die Tazkiyah 30, einmal pro Sitzung geladen. */
 export function loadTazkiyah30() {
+  if (!FEATURE_TAZKIYAH30) return Promise.resolve([]);
   if (!t30Promise) t30Promise = fetchTazkiyah30();
   return t30Promise;
 }
@@ -86,10 +92,10 @@ async function fetchList() {
   // Inaktive Titel (delistet o. Ä.) nicht anzeigen
   securities = securities.filter((s) => s.active !== false);
 
-  const [current, t30] = await Promise.all([
-    fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker")),
-    loadTazkiyah30(),
-  ]);
+  // Archiv: keine Status-Abfrage, keine Liste der 30
+  const [current, t30] = FEATURE_TAZKIYAH30
+    ? await Promise.all([fetchAll(() => supabase.from("screening_current").select(LIST_COLUMNS).order("ticker")), loadTazkiyah30()])
+    : [[], []];
   const t30ByTicker = new Map(t30.map((t) => [t.ticker, t]));
 
   const byId = new Map(current.map((r) => [r.security_id, r]));
@@ -155,6 +161,7 @@ const detailCache = new Map();
 
 /** Letztes Ergebnis eines Titels mit allen Prüfungen (ohne inputs). null = kein Ergebnis oder nicht in den Tazkiyah 30. */
 export function loadScreeningDetail(ticker) {
+  if (!FEATURE_TAZKIYAH30) return Promise.resolve(null);
   if (!detailCache.has(ticker)) {
     const p = loadTazkiyah30()
       .then((t30) => {
@@ -180,7 +187,7 @@ export function loadScreeningDetail(ticker) {
 
 /** Statuswechsel eines Titels, neueste zuerst. */
 export async function loadStatusHistory(securityId) {
-  if (!securityId) return [];
+  if (!securityId || !FEATURE_TAZKIYAH30) return [];
   const { data, error } = await supabase
     .from("screening_status_changes")
     .select("from_status,to_status,changed_at")

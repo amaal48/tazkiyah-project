@@ -6,6 +6,8 @@
 // in Manuskript-Rahmen, darunter der rechtliche Hinweis. Platzhalter der Vorlage sind durch echte Daten
 // ersetzt (Wochenbericht: neueste veröffentlichte Ausgabe aus weekly_reports, Endergebnisse der Tazkiyah 30, Termine aus company_calendar)
 // oder durch „folgt“. Die Legende (konform / nicht konform) steht nur auf der Seite der Tazkiyah 30.
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): Kasten „Die Tazkiyah 30“ und der Link
+// darauf ausgeblendet, „Diese Woche“ steht allein.
 
 import { useMemo } from "react";
 import { routes } from "../lib/hashRoute.js";
@@ -15,6 +17,7 @@ import { useScreeningList } from "../lib/screeningData.js";
 import { todayIso, upcomingEvents, useCalendarList } from "../lib/calendarData.js";
 import { addDays } from "../calendar/secCalendar.js";
 import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
 import { ArchFrame, GreenBand, ManuscriptFrame, StarNumber } from "./ornaments.jsx";
 import { POSTS } from "../lib/blogPosts.js";
@@ -46,10 +49,13 @@ const WAYS = [
   {
     n: 2,
     title: "Selbst prüfen",
-    text: "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit Methodik, 30 Beispielen und der Aktiensuche.",
+    // Archiv Tazkiyah 30 (17.10.2026): ohne „30 Beispiele“ und ohne Link auf die Tazkiyah 30
+    text: FEATURE_TAZKIYAH30
+      ? "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit Methodik, 30 Beispielen und der Aktiensuche."
+      : "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit der Methodik und der Aktiensuche.",
     links: [
       { label: "Methodik", href: routes.methodik() },
-      { label: "Tazkiyah 30", href: routes.tazkiyah30() },
+      ...(FEATURE_TAZKIYAH30 ? [{ label: "Tazkiyah 30", href: routes.tazkiyah30() }] : []),
       { label: "Aktien", href: routes.aktien() },
     ],
   },
@@ -184,7 +190,7 @@ function dayShort(iso) {
   return `${wd} ${d.getUTCDate()}.`;
 }
 
-/** Termine der nächsten 7 Tage: Tazkiyah 30 zuerst, aufgefüllt mit weiteren Aktien, nach Datum. */
+/** Termine der nächsten 7 Tage: Tazkiyah 30 zuerst (im Archiv ohne Vorrang), aufgefüllt mit weiteren Aktien, nach Datum. */
 function ThisWeekBox({ onGo }) {
   const cal = useCalendarList();
   const list = useScreeningList();
@@ -302,7 +308,7 @@ export default function StartPage({ onGo }) {
       {/* Tazkiyah 30 und Diese Woche */}
       <div className="page pb-8 pt-[72px] max-[640px]:pt-12">
         <div className="flex flex-wrap gap-8">
-          <Tazkiyah30Box />
+          {FEATURE_TAZKIYAH30 && <Tazkiyah30Box />}
           <ThisWeekBox onGo={onGo} />
         </div>
         <LegalNoticeFull className="mt-12" />

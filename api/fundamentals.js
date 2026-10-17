@@ -43,6 +43,12 @@ function isExcludedIndustry(industry) {
 }
 
 export default async function handler(req, res) {
+  // Archiv Tazkiyah 30 (17.10.2026): öffentlich keine Einstufung („KONFORM“ / „NICHT KONFORM“). Die Website
+  // ruft diesen alten Endpunkt nicht mehr auf; er antwortet nur, wenn VITE_FEATURE_TAZKIYAH30 = "true" ist.
+  if (String(process.env.VITE_FEATURE_TAZKIYAH30 || "").trim() !== "true") {
+    return res.status(404).json({ error: "Nicht verfügbar" });
+  }
+
   const { symbol } = req.query;
 
   if (!symbol) {

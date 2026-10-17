@@ -4,9 +4,12 @@
 // gleich gewichtet: Lernen, Methodik, Tazkiyah 30, Aktien, Berichte, Kalender. Ab 900 px: Logo, Hauptpunkte mit
 // Aufklappmenüs für die Unterpunkte, Anmelden bzw. Kontomenü. Darunter: Menüknopf, der ein
 // Panel mit allen Punkten öffnet. Escape und Klick außerhalb schließen offene Menüs.
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): Punkt „Tazkiyah 30“ ausgeblendet (Desktop
+// und Handy); Aktienseiten zählen dann zu „Aktien“.
 
 import { useEffect, useRef, useState } from "react";
 import { Frieze, StarMark } from "./ornaments.jsx";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 /** Logo: achtzackiger Stern (Dunkelgrün, Punkt in Hellgold), daneben der Name (Design B2). */
 function Logo({ onGo }) {
@@ -108,8 +111,8 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
   const ACTIVE_PAGES = {
     lernen: ["faq"],
     methodik: ["methodik", "methodik2", "criterion"],
-    tazkiyah30: ["tazkiyah30", "detail", "sectors"],
-    aktien: ["aktien"],
+    tazkiyah30: FEATURE_TAZKIYAH30 ? ["tazkiyah30", "detail", "sectors"] : [],
+    aktien: FEATURE_TAZKIYAH30 ? ["aktien"] : ["aktien", "detail"],
     berichte: ["reports", "blog", "blogpost"],
     kalender: ["calendar"],
   };
@@ -117,7 +120,7 @@ export default function SiteHeader({ page, activeFilter, onGo, session, onOpenAu
   const items = [
     { key: "lernen", label: "Lernen", page: "faq" },
     { key: "methodik", label: "Methodik", page: "methodik" },
-    { key: "tazkiyah30", label: "Tazkiyah 30", page: "tazkiyah30" },
+    ...(FEATURE_TAZKIYAH30 ? [{ key: "tazkiyah30", label: "Tazkiyah 30", page: "tazkiyah30" }] : []),
     { key: "aktien", label: "Aktien", page: "aktien" },
     { key: "berichte", label: "Berichte", page: "reports" },
     { key: "kalender", label: "Kalender", page: "calendar" },

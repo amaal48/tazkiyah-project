@@ -6,6 +6,7 @@
 import { routes } from "../../lib/hashRoute.js";
 import StatusBadge from "./StatusBadge.jsx";
 import { cardReason } from "./format.js";
+import { FEATURE_TAZKIYAH30 } from "../../lib/features.js";
 
 const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 
@@ -14,6 +15,8 @@ const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
  * Endergebnis (Neue Ausrichtung 15.10.2026); sonst ein Satz ohne Status.
  */
 function rowText(row) {
+  // Archiv Tazkiyah 30 (17.10.2026): kein Status, keine Markierung der 30
+  if (!FEATURE_TAZKIYAH30) return "Kurs, Termine und Berichte auf der Aktienseite.";
   if (row.hasFinalResult) return cardReason(row);
   if (row.inTazkiyah30) return "Gehört zu den Tazkiyah 30, die Prüfung ist noch nicht abgeschlossen.";
   return "Keine Sharia-Prüfung: nicht in den Tazkiyah 30.";
@@ -28,7 +31,7 @@ export function ScreeningRow({ row, actions }) {
           <span className="block text-[18px] font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{row.name}</span>
           <span className="mt-0.5 block font-[IBM_Plex_Mono] text-[13px] text-[var(--muted)]">{meta}</span>
         </span>
-        {row.hasFinalResult && <StatusBadge status={row.status} />}
+        {FEATURE_TAZKIYAH30 && row.hasFinalResult && <StatusBadge status={row.status} />}
         <span className="min-w-0 basis-full text-[16px] sm:basis-auto sm:flex-[2_1_18rem] leading-relaxed text-[var(--muted)]">{rowText(row)}</span>
         <span aria-hidden="true" className="text-[20px] text-[var(--gold-soft)]">
           →

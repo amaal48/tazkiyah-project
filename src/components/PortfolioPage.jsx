@@ -5,6 +5,7 @@
 
 import { useEffect } from "react";
 import { H1_STYLE, H2_STYLE } from "./screening/format.js";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 export default function PortfolioPage({ onBack, anchor }) {
   useEffect(() => {
@@ -25,7 +26,10 @@ export default function PortfolioPage({ onBack, anchor }) {
         Portfolio
       </h1>
       <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-        Folgt in Kürze: Hier legst du dein eigenes Portfolio an und siehst den Status je Position.
+        {/* Archiv Tazkiyah 30 (17.10.2026): ohne Status. Die Seite ist derzeit nicht verlinkt. */}
+        {FEATURE_TAZKIYAH30
+          ? "Folgt in Kürze: Hier legst du dein eigenes Portfolio an und siehst den Status je Position."
+          : "Folgt in Kürze: Hier legst du dein eigenes Portfolio an."}
       </p>
 
       <section id="rechner" className="mt-12 scroll-mt-24">
@@ -33,7 +37,7 @@ export default function PortfolioPage({ onBack, anchor }) {
           Reinheits-Rechner für Dividenden
         </h2>
         <p className="mt-3 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-          Auch bei konformen Aktien enthalten die Einnahmen oft einen kleinen Anteil aus unzulässigen Quellen (z. B. Zinserträge). Dieser
+          Auch bei {FEATURE_TAZKIYAH30 ? "konformen Aktien" : "Aktien, die die Kriterien erfüllen,"} enthalten die Einnahmen oft einen kleinen Anteil aus unzulässigen Quellen (z. B. Zinserträge). Dieser
           Anteil wird gespendet. Folgt: Die Reinigungsbeträge setzen die Prüfung der Umsatzsegmente voraus.
         </p>
       </section>

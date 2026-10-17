@@ -1,14 +1,58 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 17.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
 
+### Archiv Tazkiyah 30 (17.10.2026)
+
+**Entscheidung 17.10.2026:** Die Tazkiyah 30 werden zum Launch **archiviert, nicht gelöscht**. Tazkiyah gibt zum Launch **keine eigene Sharia-Einschätzung zu einzelnen Aktien** ab. Aktiensuche und Aktienseiten für alle Aktien des Universums bleiben öffentlich, ohne Halal-Status. Branch `archiv-tazkiyah30` (von `main`, das `tazkiyah-30` vollständig enthält), gepusht, **nicht gemergt**.
+
+**Schalter:** `VITE_FEATURE_TAZKIYAH30` (`src/lib/features.js`). Standard: aus. Nur der Wert `true` schaltet ein. Wirkt nach dem nächsten Deployment, gilt für Website und `api/fundamentals.js`.
+
+**Bei ausgeschaltetem Schalter ausgeblendet:**
+- Seite „Tazkiyah 30“: `#/tazkiyah-30` und `#/screener` leiten auf `#/aktien` um. Menüpunkt in Kopfleiste und Handy-Menü entfernt, ebenso der Kasten „Die Tazkiyah 30“ und der Link auf der Startseite (Weg „Selbst prüfen“ ohne „30 Beispiele“).
+- Halal-Status überall: Aktienseiten zeigen für alle Titel (auch die 30) nur die Seite ohne Status (`StockInfoPage`). Ergebnis, Prüfungen und Verlauf werden nicht geladen. Die Detailseite mit Status (`ScreeningDetailWithStatus` in `ScreeningDetail.jsx`) bleibt im Code. Keine Markierung „Tazkiyah 30“ in Aktiensuche, Kalender und Watchlist; Filter „Nur Tazkiyah 30“ im Kalender ausgeblendet; Sektor-Übersicht nicht erreichbar.
+- Knopf „Prüfung wünschen“ und Link „Zu den Tazkiyah 30“ auf der Aktienseite. Der Hinweis lautet jetzt: „Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann, erklären wir in der Akademie.“ (Link „Akademie“ → `#/lernen`; gleicher Satz in der Aktiensuche und auf der Methodik-Seite).
+- Abfragen: Die Website fragt `screening_current`, `tazkiyah30` und `screening_status_changes` nicht mehr ab (`src/lib/screeningData.js`). Liste und Aktienseiten kommen aus `securities` und `company_calendar`. Im Browser geprüft: Es werden nur `securities`, `company_calendar` und `weekly_reports` abgefragt.
+- Alter Endpunkt `api/fundamentals.js` (öffentlich, lieferte „KONFORM“/„NICHT KONFORM“ für jedes Symbol, von der Website nicht genutzt): antwortet mit 404.
+
+**Bereinigte Texte (Fundstellen der Prüfung vom 17.10.2026; bei eingeschaltetem Schalter erscheinen die bisherigen Fassungen):**
+- Methodik `#/methodik`: Einleitung ohne „Tazkiyah prüft die Tazkiyah 30“, Kasten „Wir prüfen nur die Tazkiyah 30“ durch den Hinweis ersetzt, Statuslegende entfernt. Den Absatz „Das Ergebnis ist einer von drei Status …“ und den Watchlist-Hinweis ersetzt ein neutraler Absatz. Bei Grenzwerten, ETFs, Produkten und „Daten und ihre Grenzen“ steht „erfüllt die Kriterien nicht“ bzw. „bleibt offen“ statt „nicht konform“/„nicht geprüft“.
+- Methodik- und Erklärseiten-Texte aus der Prüflogik (`parameters.js`, `explanations.js`, `industryRules.js`, 17 Sätze, u. a. A2, B3, G1–G4, Leasing, Segmente): Die Prüflogik bleibt unverändert. Die Anzeige ersetzt die Sätze wortgenau über `src/lib/neutralWording.js`. Test `neutralWording.test.js` prüft alle Texte und schlägt bei neuen Status-Wörtern an.
+- Akademie `#/lernen`: Glossar ohne „Konform“, „Nicht konform“, „Nicht geprüft“. „Halal“, „Portfolio“, „Verschuldungsquote“, „Anleihe“, „Blue Chip“ und „Sukuk“ neutral formuliert. Häufige Fragen (Tech-Aktien, „bisher konforme Aktie“, Anleihen), Einstieg Schritt 2, 3 und 5, Broker-Vergleich („Kontoführung ohne Zinsen“), Reiter Methodik und Vertiefen ebenfalls neutral.
+- Watchlist: Hinweis ohne Halal-Status; Karten ohne Status („Kurs, Termine und Berichte auf der Aktienseite.“).
+- Rechtlicher Hinweis (Startseite, Methodik 2): `LEGAL_NOTICE_TEXT_ARCHIV` in `src/components/screening/legalNoticeText.js`, ohne „Die Tazkiyah 30 zeigen …“ und ohne „Einstufung ‚konform‘“, aus dem bisherigen Wortlaut abgeleitet. **Vor dem Launch mit zur Anwaltsprüfung.**
+- Portfolio-Seite (nicht verlinkt): ohne „Status je Position“.
+- Wochenbericht: Punkt 3 der Checkliste lautet jetzt „Keine Sharia-Einschätzung zu einzelnen Aktien (kein ‚konform‘, kein Abschnitt zu den Tazkiyah 30)“. Die Vorlage KW 42 hat noch einen Abschnitt „## Aus den Tazkiyah 30“; der darf nicht erscheinen.
+- Meta-Tags (`index.html`): nur „Tazkiyah“, nichts zu ändern. Öffentliche API-Antworten: `api/fundamentals.js` (siehe oben) und die Datenbank (siehe SQL). Alle übrigen Endpunkte sind durch `CRON_SECRET` geschützt oder liefern keinen Status.
+- Geprüft (lokal, 17.10.2026, Schalter aus): ohne Treffer für „konform“, „nicht geprüft“, „Halal-Status“, „Tazkiyah 30“, „Prüfung wünschen“: Startseite, Aktiensuche, NVDA, AAPL, JNJ, Methodik, Methodik 2, Akademie mit allen Reitern und aufgeklappten Fragen, Erklärseiten A2/B1/B3/G1/G2, Wochenbericht, Blog, Kontakt, Watchlist, Kalender. Eingeschaltet (`true`) erscheinen Seite, Menüpunkt und Status wieder.
+- Bewusst unverändert: interne Redaktion, Code-Kommentare, `src/data/tazkiyah30.js`, `Tazkiyah30Page.jsx` und alle Komponenten und Daten der 30. Die Vorbelegung `#/kontakt?thema=pruefung` funktioniert noch, ist aber nirgends mehr verlinkt.
+
+**SQL `supabase_archiv_tazkiyah30.sql` (die Nutzerin führt sie aus, ERST NACH dem Merge auf `main` und dem Production-Deployment; der bisherige Stand liest `screening_current` für die Aktiensuche und zeigt sonst „Die Aktien konnten nicht geladen werden“):**
+- Entzieht `anon` und `authenticated` jedes Recht auf `screening_current` und `tazkiyah30`. Zusätzlich auf `screening_runs` (Spalten `status`/`public_result`; `screening_current` ist security_invoker und liest diese Tabelle) und `screening_status_changes` sowie das Leserecht auf `user_notifications`, weil der Status sonst über die Daten-API lesbar bliebe.
+- Keine neue öffentliche View nötig: Aktiensuche und Aktienseiten brauchen nur `securities` (Name, Ticker, Art, US-Börse, aktiv) und `company_calendar`. ISIN und Handelsplätze werden öffentlich nicht angezeigt.
+- Unverändert: Cron/Service-Role (auch Lesen von `tazkiyah30` für den Kalender-Cron), `screening_current_internal`, `manual_reviews_due`, Trigger, `is_tazkiyah30()`, alle Policies. Gelöscht wird nichts.
+- Kontrollabfrage am Ende von Abschnitt 1: alle `anon_…`/`auth_…` = false, `service_…` und `…_bleibt_oeffentlich` = true. Abschnitt 2 „Rückgängig machen“ ist auskommentiert (läuft beim Ausführen der Datei nicht mit). Getestet mit PGlite (`src/screening/archivTazkiyah30.test.js`, auch der Abschnitt „Rückgängig machen“).
+
+**Wieder einschalten:**
+1. In Vercel `VITE_FEATURE_TAZKIYAH30` = `true` setzen (Production bzw. Preview), Redeploy.
+2. Im SQL Editor Abschnitt 2 von `supabase_archiv_tazkiyah30.sql` ausführen (Zeilen ohne „-- “), danach die Kontrollabfrage aus Abschnitt 1 erneut ausführen (dann alle `anon_…`/`auth_…` = true).
+3. Rechtlichen Hinweis (`LEGAL_NOTICE_TEXT_TAZKIYAH30`) und Methodik-Texte prüfen; sie erscheinen automatisch wieder in der bisherigen Fassung.
+
+**Offen (17.10.2026):**
+1. Vorschau prüfen, dann Merge auf `main` (auf Anweisung), dann `supabase_archiv_tazkiyah30.sql` ausführen.
+2. In Vercel nichts setzen, solange die 30 archiviert bleiben (fehlende Variable = aus).
+3. Rechtlicher Hinweis (Archiv-Fassung) und Hinweissatz auf der Aktienseite mit zur Anwaltsprüfung.
+4. Abschnitt „Positionierung & Wettbewerb“ (16.10.) setzt auf die Tazkiyah 30 als Lücke („Konkrete, belegte Prüfungen“); mit dem Archiv neu einordnen.
+5. Akademie verspricht „wie man selbst prüft“; die Lektionen 7 und 8 des Lernpfads (Kriterien, Selbst prüfen) haben noch keinen Inhalt.
+6. Wochenbericht-Vorlage: Abschnitt „Aus den Tazkiyah 30“ und den Satz zur Neuprüfung aus der geplanten Aufgabe (Entwurf samstags) streichen.
+
 ### Wochenbericht (16.10.)
 
-**Grundsatz:** Ohne Freigabe der Nutzerin erscheint nie etwas. Keine Anbindung an eine KI-API, kein automatischer Generator (der alte Generator `api/generate-weekly-report.js` ist entfernt). Branch `wochenbericht` (von `main`), gepusht, nicht gemergt.
+**Grundsatz:** Ohne Freigabe der Nutzerin erscheint nie etwas. Keine Anbindung an eine KI-API, kein automatischer Generator (der alte Generator `api/generate-weekly-report.js` ist entfernt). Branch `wochenbericht` (von `main`), am 16.10.2026 auf `main` gemergt (Merge-Commit `96df55d`).
 
 **Ablauf**
 1. **Samstag:** Eine geplante Aufgabe in Claude schreibt den Entwurf in Notion (Aufbau, Ton und Länge wie `wochenbericht-vorlage-kw42.md`, offene Stellen als [eckige Klammern]).
