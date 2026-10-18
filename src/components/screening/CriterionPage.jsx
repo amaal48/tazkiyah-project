@@ -9,6 +9,7 @@ import { DEFAULT_PARAMETERS } from "../../screening/parameters.js";
 import { routes } from "../../lib/hashRoute.js";
 import { IndustryGroups, PARAMETER_TITLES } from "../MethodikPage.jsx";
 import { H1_STYLE, H2_STYLE } from "./format.js";
+import { neutralize as n } from "../../lib/neutralWording.js";
 
 // Parameter, die eine Datengrenze beschreiben (Näherung statt Wortlaut)
 const DATA_LIMIT_PARAMS = new Set(["marketCapFromPrice", "leaseQuarterEstimate", "realAssetsValuation"]);
@@ -74,7 +75,7 @@ export default function CriterionPage({ id, onBack }) {
           Methodik
         </a>
         <span aria-hidden="true">/</span>
-        <span className="text-[var(--text)]">{e.name}</span>
+        <span className="text-[var(--text)]">{n(e.name)}</span>
       </header>
 
       <main className="page pb-24">
@@ -83,14 +84,14 @@ export default function CriterionPage({ id, onBack }) {
           {stage ? `Stufe ${stage.id} · ${stage.title}` : "Prüfung"} · {id}
         </p>
         <h1 className="font-display mt-2" style={H1_STYLE}>
-          {e.name}
+          {n(e.name)}
         </h1>
 
         {/* 2. In einfachen Worten */}
         <Section title="In einfachen Worten">
           <div className="space-y-3">
             {e.simple.map((t, i) => (
-              <p key={i}>{fillParams(t, params)}</p>
+              <p key={i}>{n(fillParams(t, params))}</p>
             ))}
           </div>
         </Section>
@@ -117,7 +118,7 @@ export default function CriterionPage({ id, onBack }) {
               {refs.map((k) => (
                 <div key={k}>
                   <dt className="text-[var(--text)]">{PARAMETER_TITLES[k] || k}</dt>
-                  <dd className="mt-1">{DEFAULT_PARAMETERS[k].method}</dd>
+                  <dd className="mt-1">{n(DEFAULT_PARAMETERS[k].method)}</dd>
                 </div>
               ))}
             </dl>
@@ -139,7 +140,7 @@ export default function CriterionPage({ id, onBack }) {
                       {DATA_LIMIT_PARAMS.has(k) && <Tag tone="neutral">Datengrenze</Tag>}
                       {d.pendingConfirmation && <Tag tone="neutral">Vorschlag, noch nicht bestätigt</Tag>}
                     </p>
-                    <p className="mt-1 text-sm">{d.method}</p>
+                    <p className="mt-1 text-sm">{n(d.method)}</p>
                   </li>
                 );
               })}
@@ -157,9 +158,9 @@ export default function CriterionPage({ id, onBack }) {
                   <dl key={k} className="grid gap-2 text-sm sm:grid-cols-[8rem_1fr]">
                     <dt className="text-[var(--text)] sm:col-span-2">{PARAMETER_TITLES[k] || k}</dt>
                     <dt className="text-[var(--muted)]">Begründung</dt>
-                    <dd>{d.rationale}</dd>
+                    <dd>{n(d.rationale)}</dd>
                     <dt className="text-[var(--muted)]">Alternative</dt>
-                    <dd>{d.alternative}</dd>
+                    <dd>{n(d.alternative)}</dd>
                     <dt className="text-[var(--muted)]">Quelle</dt>
                     <dd>{d.source}</dd>
                   </dl>
@@ -178,10 +179,10 @@ export default function CriterionPage({ id, onBack }) {
             <div className="mt-4">
               <p className="text-sm text-[var(--muted)] font-medium">Weitere Prüfungen der Stufe {stage.id}</p>
               <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
-                {neighbours.map((n) => (
-                  <li key={n}>
-                    <a href={routes.criterion(n)} className="text-[var(--text-soft)] hover:text-[var(--text)] hover:underline">
-                      <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{n}</span> {EXPLANATIONS[n]?.name}
+                {neighbours.map((nb) => (
+                  <li key={nb}>
+                    <a href={routes.criterion(nb)} className="text-[var(--text-soft)] hover:text-[var(--text)] hover:underline">
+                      <span className="font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{nb}</span> {n(EXPLANATIONS[nb]?.name)}
                     </a>
                   </li>
                 ))}

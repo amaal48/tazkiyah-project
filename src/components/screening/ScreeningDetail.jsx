@@ -9,11 +9,15 @@
 // Seit 15.10.2026 (Die Tazkiyah 30): Diese Seite mit Status gibt es nur für Titel der Tazkiyah 30 mit
 // Endergebnis. Alle übrigen Titel, und Titel der 30 mit noch offener Prüfung, zeigen die Aktienseite
 // ohne Halal-Status (StockInfoPage). Unten steht der rechtliche Hinweis (LegalNotice).
+//
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): Für ALLE Titel nur die Aktienseite ohne
+// Status (ArchivedStockPage); Ergebnis, Prüfungen und Verlauf werden nicht geladen.
 
 import { useEffect, useState } from "react";
 import { ETF_STAGE, EXPLANATIONS, FLAG_TEXTS, RESULT_LABELS, STAGES } from "../../screening/explanations.js";
 import { loadScreeningDetail, loadStatusHistory, useScreeningList } from "../../lib/screeningData.js";
 import { navigate, routes } from "../../lib/hashRoute.js";
+import { FEATURE_TAZKIYAH30 } from "../../lib/features.js";
 import StockInfoPage from "../StockInfoPage.jsx";
 import CompanyCalendar from "../CompanyCalendar.jsx";
 import { LegalNoticeFull, LegalNoticeShort } from "./LegalNotice.jsx";
@@ -309,7 +313,38 @@ function groupCriteria(criteria, isEtf) {
   return groups.filter((g) => g.items.length);
 }
 
-export default function ScreeningDetail({ ticker, onBack, watchlist, onToggleWatchlist }) {
+export default function ScreeningDetail(props) {
+  return FEATURE_TAZKIYAH30 ? <ScreeningDetailWithStatus {...props} /> : <ArchivedStockPage {...props} />;
+}
+
+/** Archiv: Aktienseite ohne Status für jeden Titel des Universums. */
+function ArchivedStockPage({ ticker, watchlist, onToggleWatchlist }) {
+  const list = useScreeningList();
+  const row = list.byTicker.get(ticker) || null;
+  if (list.loading) return <p className="font-body page py-10 text-left text-[var(--muted)]">Lade …</p>;
+  if (!row && !list.error) {
+    return (
+      <div className="font-body page py-10 text-left">
+        <p className="text-[var(--text)]">Zu „{ticker}“ gibt es keinen Titel in unserer Liste.</p>
+        <a href={routes.aktien()} className="mt-3 inline-block text-[var(--primary)] underline underline-offset-2">
+          Zur Aktiensuche
+        </a>
+      </div>
+    );
+  }
+  return (
+    <StockInfoPage
+      ticker={ticker}
+      row={row}
+      onBack={() => navigate(routes.aktien())}
+      backLabel="← Zur Aktiensuche"
+      watchlist={watchlist}
+      onToggleWatchlist={onToggleWatchlist}
+    />
+  );
+}
+
+function ScreeningDetailWithStatus({ ticker, onBack, watchlist, onToggleWatchlist }) {
   const list = useScreeningList();
   const row = list.byTicker.get(ticker) || null;
   const [detail, setDetail] = useState({ loading: true, error: null, data: null });

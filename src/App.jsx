@@ -9,15 +9,21 @@ import { SettingsPage } from "./components/SettingsPage";
 import { PrivacyPage } from "./components/PrivacyPage";
 import { useWatchlist } from "./hooks/useWatchlist";
 import { Toast } from "./components/Toast";
+import AskQuestionBox from "./components/AskQuestionBox.jsx";
 import MethodikPage from "./components/MethodikPage.jsx";
 import Methodik2Page from "./components/Methodik2Page.jsx";
-import LernpfadOverview from "./components/LernpfadOverview.jsx";
+import AkademieOverview from "./components/akademie/AkademieOverview.jsx";
+import LessonPage from "./components/akademie/LessonPage.jsx";
+import { isOpenable } from "./lib/lessonFiles.js";
+import { lessonBySlug } from "./data/lernpfad.js";
 import WochenberichtPage from "./components/berichte/WochenberichtPage.jsx";
 import BlogPage from "./components/berichte/BlogPage.jsx";
 import BlogArticle from "./components/berichte/BlogArticle.jsx";
 import RedaktionPage from "./components/redaktion/RedaktionPage.jsx";
 import RedaktionVorschau from "./components/redaktion/RedaktionVorschau.jsx";
 import { fetchIsAdmin } from "./lib/weeklyReportsData.js";
+import { FEATURE_TAZKIYAH30 } from "./lib/features.js";
+import { GLOSSAR as glossarAZ, glossarId } from "./data/glossar.js";
 import { navigate, pushHashSilently, routes, useHashRoute } from "./lib/hashRoute";
 import { useScreeningList } from "./lib/screeningData";
 import { ScreeningRow } from "./components/screening/ScreeningList.jsx";
@@ -28,6 +34,7 @@ import StartPage from "./components/StartPage.jsx";
 import PortfolioPage from "./components/PortfolioPage.jsx";
 import ContactPage from "./components/ContactPage.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
+import { SidebarDesktop } from "./components/Sidebar.jsx";
 import BasisLine from "./components/screening/BasisLine.jsx";
 import { Frieze } from "./components/ornaments.jsx";
 import ScreeningDetail from "./components/screening/ScreeningDetail.jsx";
@@ -47,6 +54,9 @@ import CriterionPage from "./components/screening/CriterionPage.jsx";
 const sampleStocks = ALL_STOCKS;
 
 const SECTORS = [...new Set(sampleStocks.map((s) => s.sector))].sort();
+
+// Archiv Tazkiyah 30 (17.10.2026, src/lib/features.js): bei ausgeschaltetem Schalter die Fassung ohne Status
+const t30 = (withList, archived) => (FEATURE_TAZKIYAH30 ? withList : archived);
 
 /* ---------- Aktien-Detailseite ---------- */
 
@@ -83,10 +93,13 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
         <p className="mt-1 text-sm text-[var(--muted)]">
           {items.length === 0
             ? "Noch keine Aktien gemerkt."
-            : "Einen Halal-Status gibt es nur für Titel aus den Tazkiyah 30. Ändert er sich, steht es hier."}
+            : t30(
+                "Einen Halal-Status gibt es nur für Titel aus den Tazkiyah 30. Ändert er sich, steht es hier.",
+                "Deine gemerkten Aktien mit Kurs, Terminen und Berichten. Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab."
+              )}
         </p>
 
-        {!list.loading && attention.length > 0 && (
+        {FEATURE_TAZKIYAH30 && !list.loading && attention.length > 0 && (
           <p className="mt-4 border border-[var(--border)] px-4 py-3 text-sm text-[var(--text-soft)]">
             {attention.length} {attention.length === 1 ? "Titel aus den Tazkiyah 30 ist" : "Titel aus den Tazkiyah 30 sind"} nicht konform.
           </p>
@@ -114,7 +127,7 @@ function WatchlistPage({ watchlist, onBack, onToggleWatchlist }) {
 
 const topFragen = [
   {
-    q: "Sind alle Technologie-Aktien automatisch konform?",
+    q: t30("Sind alle Technologie-Aktien automatisch konform?", "Erfüllen alle Technologie-Aktien automatisch die Kriterien?"),
     a: "Nein. Auch bei Tech-Unternehmen wird jede Aktie einzeln geprüft, unabhängig von der Branche. Neben der Tätigkeit zählen Kennzahlen wie die zinstragenden Schulden und das zinstragende Geld im Verhältnis zur Marktkapitalisierung. Ein Unternehmen mit unproblematischer Branche kann daran scheitern, zum Beispiel weil es stark fremdfinanziert ist.",
   },
   {
@@ -122,8 +135,11 @@ const topFragen = [
     a: "Ein ETF hält oft hunderte Einzeltitel, deren Zusammensetzung sich laufend ändert. Für eine saubere Prüfung müsste theoretisch jede enthaltene Position einzeln gescreent werden. Speziell dafür gibt es sogenannte Islamic ETFs, bei denen das Screening bereits im Fondsmanagement eingebaut ist.",
   },
   {
-    q: "Was passiert, wenn eine bisher konforme Aktie plötzlich nicht mehr konform ist?",
-    a: "Unternehmen verändern sich — neue Schulden, ein neues Geschäftsfeld, eine Übernahme. Screening ist deshalb kein einmaliger Check, sondern sollte regelmäßig wiederholt werden. Die Watchlist-Funktion ist genau dafür gedacht: Statusänderungen sichtbar zu machen, statt sie zu verpassen.",
+    q: t30("Was passiert, wenn eine bisher konforme Aktie plötzlich nicht mehr konform ist?", "Was passiert, wenn eine Aktie die Kriterien plötzlich nicht mehr erfüllt?"),
+    a: t30(
+      "Unternehmen verändern sich — neue Schulden, ein neues Geschäftsfeld, eine Übernahme. Screening ist deshalb kein einmaliger Check, sondern sollte regelmäßig wiederholt werden. Die Watchlist-Funktion ist genau dafür gedacht: Statusänderungen sichtbar zu machen, statt sie zu verpassen.",
+      "Unternehmen verändern sich — neue Schulden, ein neues Geschäftsfeld, eine Übernahme. Eine Prüfung ist deshalb kein einmaliger Check, sondern sollte mit jedem neuen Abschluss wiederholt werden."
+    ),
   },
   {
     q: "Muss ich bei jeder Dividende Zakat UND Purification zahlen?",
@@ -135,7 +151,7 @@ const topFragen = [
   },
   {
     q: "Können klassische Anleihen (Bonds) halal sein?",
-    a: "Klassische, zinstragende Anleihen gelten als Riba-basiert und damit nicht konform. Die islamkonforme Alternative sind Sukuk — strukturiert über tatsächliche Vermögenswerte oder Beteiligungen statt über einen garantierten Zins.",
+    a: "Klassische, zinstragende Anleihen gelten als Riba-basiert und damit nicht " + t30("konform", "zulässig") + ". Die " + t30("islamkonforme", "islamische") + " Alternative sind Sukuk — strukturiert über tatsächliche Vermögenswerte oder Beteiligungen statt über einen garantierten Zins.",
   },
   {
     q: "Sind Kryptowährungen halal?",
@@ -151,69 +167,19 @@ const topFragen = [
   },
 ];
 
-const glossarAZ = [
-  { term: "AAOIFI", def: "Accounting and Auditing Organization for Islamic Financial Institutions — das Gremium, dessen Standards Tazkiyah für das Screening zugrunde legt." },
-  { term: "Aktie", def: "Ein Anteilsschein an einem Unternehmen. Hält man eine Aktie, ist man Miteigentümer und partizipiert an Gewinn und Verlust." },
-  { term: "Anleihe (Bond)", def: "Ein festverzinsliches Wertpapier — der Anleger leiht dem Emittenten Geld gegen einen garantierten Zins. Klassische Anleihen gelten als Riba-basiert und damit nicht konform." },
-  { term: "Benchmark", def: "Eine Vergleichsgröße, meist ein Index, an der die Wertentwicklung einer Anlage oder eines Portfolios gemessen wird." },
-  { term: "Bilanzsumme", def: "Die Summe aller Vermögenswerte eines Unternehmens laut Bilanz — Ausgangspunkt für viele Kennzahlen, u. a. die Verschuldungsquote." },
-  { term: "Blue Chip", def: "Eine große, etablierte, häufig gehandelte Aktie mit langer Historie — gilt meist als vergleichsweise stabil, ist aber nicht automatisch Sharia-konform." },
-  { term: "Cashflow (Free Cash Flow)", def: "Der Betrag, der einem Unternehmen nach Investitionen tatsächlich an liquiden Mitteln verbleibt — ein Indikator für finanzielle Substanz unabhängig vom bilanziellen Gewinn." },
-  { term: "DJIM (Dow Jones Islamic Market Index)", def: "Einer der bekanntesten globalen Islamic-Investing-Indizes, mit eigenen Screening-Kriterien, die sich in Details von AAOIFI unterscheiden können." },
-  { term: "Diversifikation", def: "Die Streuung von Investitionen über mehrere Werte, Branchen oder Regionen, um das Risiko einzelner Positionen abzufedern." },
-  { term: "Dividende", def: "Ein Teil des Unternehmensgewinns, der an die Aktionäre ausgeschüttet wird. Kann einen kleinen, unzulässigen Anteil enthalten — siehe Purification." },
-  { term: "Dividendenrendite", def: "Die jährliche Dividende im Verhältnis zum aktuellen Aktienkurs, meist in Prozent angegeben." },
-  { term: "EPS (Gewinn je Aktie)", def: "Earnings per Share — der Unternehmensgewinn geteilt durch die Anzahl ausstehender Aktien." },
-  { term: "ETF", def: "Ein Fonds, der einen Index oder Korb von Wertpapieren nachbildet und wie eine Aktie an der Börse gehandelt wird." },
-  { term: "Ex-Dividende-Tag", def: "Der Stichtag, ab dem eine Aktie ohne Anspruch auf die nächste Dividendenzahlung gehandelt wird." },
-  { term: "Fiqh al-Muamalat", def: "Der Teilbereich des islamischen Rechts, der wirtschaftliche und finanzielle Transaktionen regelt — die rechtliche Grundlage hinter den Sharia-Screening-Kriterien." },
-  { term: "Fiskaljahr", def: "Der Zwölf-Monats-Zeitraum, den ein Unternehmen für seine Finanzberichterstattung nutzt — muss nicht mit dem Kalenderjahr übereinstimmen." },
-  { term: "Fractional Shares (Teilaktien)", def: "Bruchteile einer Aktie — ermöglichen es, auch mit kleinem Budget in teure Einzeltitel zu investieren." },
-  { term: "Free Float", def: "Der Anteil der Aktien eines Unternehmens, der frei an der Börse gehandelt wird, ohne fest gebundene Großaktionäre." },
-  { term: "Gharar", def: "Übermäßige Unsicherheit oder Mehrdeutigkeit in einem Geschäft. Gilt neben Riba als zentrales Ausschlussprinzip im islamischen Finanzwesen." },
-  { term: "Growth Stock (Wachstumsaktie)", def: "Eine Aktie, deren Wert vor allem auf erwartetem zukünftigem Wachstum beruht, oft mit wenig oder keiner Dividende." },
-  { term: "Halal", def: "Wörtlich „erlaubt“. Im Anlagekontext der Begriff für Anlagen, die nach islamischen Grundsätzen zulässig sind. Tazkiyah vergibt ihn nicht als Bewertung, sondern zeigt, ob eine Aktie die Prüfungen nach den AAOIFI-Standards besteht (konform, nicht konform, nicht geprüft). Ob eine Anlage für dich zulässig ist, entscheidest du, gegebenenfalls mit Rat eines Gelehrten." },
-  { term: "Haram", def: "Wörtlich 'verboten'. Das Gegenstück zu Halal — bezeichnet Geschäftsfelder oder Praktiken, die nach islamischen Grundsätzen unzulässig sind." },
-  { term: "IPO (Börsengang)", def: "Initial Public Offering — der erste Verkauf von Unternehmensanteilen an die Öffentlichkeit über die Börse." },
-  { term: "ISIN", def: "International Securities Identification Number — eine weltweit eindeutige Kennung für ein Wertpapier, unabhängig vom Börsenplatz." },
-  { term: "Ijara", def: "Eine islamische Leasing-Struktur: Der Eigentümer vermietet einen Vermögenswert gegen feste Zahlungen, statt einen verzinsten Kredit zu vergeben." },
-  { term: "KGV (P/E-Ratio)", def: "Kurs-Gewinn-Verhältnis — der Aktienkurs geteilt durch den Gewinn je Aktie. Ein gängiges, aber grobes Bewertungsmaß." },
-  { term: "Klumpenrisiko", def: "Die Gefahr, dass ein Portfolio zu stark auf wenige Werte, Branchen oder Regionen konzentriert ist und dadurch überdurchschnittlich schwankt." },
-  { term: "Konform", def: "Alle Prüfungen nach den AAOIFI-Standards (SS 21, 27 und 35), die Tazkiyah durchführt, sind bestanden. Das ist keine Anlageempfehlung und kein Rechtsgutachten (Fatwa)." },
-  { term: "Liquidität", def: "Wie leicht sich ein Vermögenswert kurzfristig in Bargeld umwandeln lässt, ohne größere Wertverluste." },
-  { term: "Marktkapitalisierung", def: "Der Gesamtwert aller ausstehenden Aktien eines Unternehmens (Aktienkurs × Anzahl Aktien). Dient als Bezugsgröße für Verschuldungs- und Cash-Quote im Screening." },
-  { term: "Maysir", def: "Glücksspiel bzw. Spekulation ohne wirtschaftliche Substanz — neben Riba und Gharar ein weiteres zentrales Ausschlussprinzip im islamischen Finanzwesen." },
-  { term: "Mudarabah", def: "Ein islamisches Gewinnbeteiligungsmodell: Ein Kapitalgeber stellt Geld, ein Unternehmer die Arbeit — Gewinne werden nach vereinbartem Schlüssel geteilt, Verluste trägt primär der Kapitalgeber." },
-  { term: "Murabaha", def: "Ein Kostenaufschlag-Verkauf: Der Verkäufer nennt offen Einkaufspreis und Marge, statt Zinsen zu berechnen — eine gängige Struktur im islamischen Handelsfinanzwesen." },
-  { term: "Musharakah", def: "Eine Partnerschaft, bei der mehrere Parteien gemeinsam Kapital einbringen und Gewinn wie Verlust anteilig tragen — Grundlage vieler islamischer Beteiligungsmodelle." },
-  { term: "Nicht geprüft", def: "Keine Prüfung ist durchgefallen, aber mindestens eine steht noch aus oder ließ sich mit den vorhandenen Daten nicht abschließen. Auf der Detailseite steht, was fehlt." },
-  { term: "Nicht konform", def: "Mindestens eine Prüfung ist nicht bestanden, zum Beispiel weil die zinstragenden Schulden über dem Grenzwert liegen. Auf der Detailseite steht, welche." },
-  { term: "Nisab", def: "Der Vermögens-Schwellenwert, ab dem Zakat fällig wird. Liegt das Gesamtvermögen darunter, entfällt die Zakat-Pflicht für den Zeitraum." },
-  { term: "Portfolio", def: "Die Gesamtheit der Anlagen einer Person, bei Tazkiyah mit dem Status je Position." },
-  { term: "Purification (Dividenden-Reinigung)", def: "Das Abtrennen des unzulässigen Ertragsanteils (meist Zinserträge) einer ansonsten erlaubten Dividende — traditionell durch Spende dieses Anteils." },
-  { term: "Qard Hasan", def: "Ein zinsloses, wohltätiges Darlehen im islamischen Finanzwesen — der Kreditgeber erwartet ausschließlich die Rückzahlung des Nennbetrags." },
-  { term: "Rebalancing", def: "Das planmäßige Zurücksetzen eines Portfolios auf eine Ziel-Gewichtung, nachdem sich die Kurse einzelner Positionen unterschiedlich entwickelt haben." },
-  { term: "Riba", def: "Zins — im islamischen Finanzwesen grundsätzlich verboten, da ein garantierter Gewinn ohne unternehmerisches Risiko als ausbeuterisch gilt. Zentrales Ausschlusskriterium beim Screening." },
-  { term: "Sharia-Screening", def: "Die zweistufige Prüfung einer Aktie: zuerst das Geschäftsmodell (Branche), danach die Finanzkennzahlen (u. a. Verschuldung, Cash-Quote) gegen definierte Grenzwerte." },
-  { term: "Short Selling (Leerverkauf)", def: "Der Verkauf eines geliehenen Wertpapiers in der Erwartung fallender Kurse. Gilt wegen des Verkaufs nicht besessener Vermögenswerte bei den meisten Gelehrten als problematisch." },
-  { term: "Sparplan", def: "Eine regelmäßige, meist monatliche Investition eines festen Betrags — unabhängig vom aktuellen Kurs." },
-  { term: "Sukuk", def: "Die islamkonforme Alternative zur klassischen Anleihe — strukturiert über reale Vermögenswerte oder Beteiligungen statt über einen garantierten Zins." },
-  { term: "TER (Total Expense Ratio)", def: "Die jährliche Gesamtkostenquote eines Fonds oder ETFs, angegeben in Prozent des verwalteten Vermögens." },
-  { term: "Takaful", def: "Islamische Versicherung auf Basis gegenseitiger Beistandsleistung — als Alternative zu klassischen, zinsbasierten Versicherungsmodellen." },
-  { term: "Value Stock (Substanzaktie)", def: "Eine Aktie, die im Verhältnis zu ihren fundamentalen Kennzahlen (z. B. KGV) als unterbewertet gilt." },
-  { term: "Verschuldungsquote", def: "Das Verhältnis von Schulden zur Marktkapitalisierung. Bei Tazkiyah/AAOIFI-Orientierung gilt eine Aktie ab 30% in der Regel als nicht mehr konform." },
-  { term: "Volatilität", def: "Ein Maß für die Schwankungsbreite eines Kurses über einen bestimmten Zeitraum — höhere Volatilität bedeutet größere Kursausschläge in beide Richtungen." },
-  { term: "WKN", def: "Wertpapierkennnummer — eine in Deutschland gebräuchliche, sechsstellige Kennung für ein Wertpapier, neben der international gültigen ISIN." },
-  { term: "Waqf", def: "Eine islamische Stiftung — Vermögen wird dauerhaft für einen wohltätigen oder gemeinnützigen Zweck gebunden." },
-  { term: "Zakat", def: "Die jährliche Pflichtabgabe auf bestimmtes Vermögen oberhalb des Nisab. Unabhängig von der Dividenden-Purification und meist einmal jährlich auf das Gesamtvermögen berechnet." },
-];
 
 const einstiegsSteps = [
   { title: "1. Grundbegriffe verstehen", text: "Aktie, ETF, Dividende, Sparplan — bevor es um Halal-Kriterien geht, hilft ein Blick ins Glossar weiter unten. Niemand muss alles auf einmal verstehen." },
-  { title: "2. Broker auswählen", text: "Ein Depot ist Voraussetzung fürs Investieren. Tazkiyah empfiehlt keinen bestimmten Anbieter — der Vergleich unten zeigt nur Kriterien, keine Wertung. Achte besonders auf schariakonforme Kontoführung, falls dir das wichtig ist." },
-  { title: "3. Screening verstehen", text: "Für die Tazkiyah 30 steht der Status mit Begründung auf der Detailseite jeder Aktie. Bei „Nicht konform“ steht dort, welche Prüfung nicht bestanden ist. Zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite." },
+  { title: "2. Broker auswählen", text: "Ein Depot ist Voraussetzung fürs Investieren. Tazkiyah empfiehlt keinen bestimmten Anbieter — der Vergleich unten zeigt nur Kriterien, keine Wertung. Achte besonders auf " + t30("schariakonforme Kontoführung", "eine Kontoführung ohne Zinsen") + ", falls dir das wichtig ist." },
+  t30(
+    { title: "3. Screening verstehen", text: "Für die Tazkiyah 30 steht der Status mit Begründung auf der Detailseite jeder Aktie. Bei „Nicht konform“ steht dort, welche Prüfung nicht bestanden ist. Zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite." },
+    { title: "3. Prüfen verstehen", text: "Die Methodik erklärt die Kriterien nach AAOIFI Schritt für Schritt; zu jeder Regel führt die Quellenangabe auf eine eigene Erklärseite. Eine Sharia-Einschätzung zu einzelnen Aktien gibt Tazkiyah nicht ab." }
+  ),
   { title: "4. Klein anfangen", text: "Ein Sparplan mit kleinen, regelmäßigen Beträgen ist oft sinnvoller als eine einzelne große Investition — gerade am Anfang, wenn Marktschwankungen noch ungewohnt sind." },
-  { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um deine Titel im Blick zu behalten, und prüfe ihren Status regelmäßig. Unternehmen können sich verändern, deshalb wird der Status mit neuen Quartals- und Jahresabschlüssen neu berechnet." },
+  t30(
+    { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um deine Titel im Blick zu behalten, und prüfe ihren Status regelmäßig. Unternehmen können sich verändern, deshalb wird der Status mit neuen Quartals- und Jahresabschlüssen neu berechnet." },
+    { title: "5. Portfolio im Blick behalten", text: "Nutze die Watchlist, um deine Titel im Blick zu behalten. Unternehmen können sich verändern; mit jedem neuen Quartals- und Jahresabschluss lohnt sich ein neuer Blick." }
+  ),
   { title: "6. Dividenden bereinigen", text: "Sobald du Dividenden erhältst, hilf dir der Reinheits-Rechner dabei, den Spendenanteil zu schätzen — ein fester Bestandteil vieler Muslim-Investment-Routinen." },
 ];
 
@@ -236,28 +202,46 @@ const vertiefenItems = [
   },
   {
     title: "Risiken & Chancen",
-    text: "Konforme Aktien sind nicht automatisch risikoärmer: Die Ausschlusskriterien führen oft zu einer Konzentration auf bestimmte Sektoren (z. B. Technologie, Gesundheit), was Klumpenrisiken erzeugen kann. Gleichzeitig kann der niedrigere Verschuldungsgrad vieler konformer Unternehmen in Krisenzeiten für mehr finanzielle Stabilität sorgen. Beides gehört zur ehrlichen Einordnung.",
+    text: t30(
+      "Konforme Aktien sind nicht automatisch risikoärmer: Die Ausschlusskriterien führen oft zu einer Konzentration auf bestimmte Sektoren (z. B. Technologie, Gesundheit), was Klumpenrisiken erzeugen kann. Gleichzeitig kann der niedrigere Verschuldungsgrad vieler konformer Unternehmen in Krisenzeiten für mehr finanzielle Stabilität sorgen. Beides gehört zur ehrlichen Einordnung.",
+      "Aktien, die die Kriterien erfüllen, sind nicht automatisch risikoärmer: Die Ausschlusskriterien führen oft zu einer Konzentration auf bestimmte Sektoren (z. B. Technologie, Gesundheit), was Klumpenrisiken erzeugen kann. Gleichzeitig kann der niedrigere Verschuldungsgrad dieser Unternehmen in Krisenzeiten für mehr finanzielle Stabilität sorgen. Beides gehört zur ehrlichen Einordnung."
+    ),
   },
 ];
 
-const AKADEMIE_TABS = ["Einstieg", "Broker-Vergleich", "Glossar", "Methodik", "Vertiefen"];
+// „Broker-Vergleich“ ist seit 18.10.2026 ausgeblendet (Platzhalter „Broker A/B/C“); der Code bleibt.
+const AKADEMIE_TABS = ["Einstieg", "Broker-Vergleich", "Glossar", "Methodik", "Vertiefen"].filter((t) => t !== "Broker-Vergleich");
 
 
-// Akademie (#/lernen, Navigation „Lernen“): oben der Lernpfad (seit 16.10.2026), darunter die bisherigen
-// Inhalte unverändert als „Weitere Fragen“, am Ende „Frage nicht gefunden?“.
-function AkademiePage({ onBack }) {
+// Akademie (#/lernen): oben der Lernpfad (AkademieOverview, seit 18.10.2026 drei Stufen, 25 Lektionen), darunter
+// die bisherigen Inhalte als „Weitere Fragen“, am Ende „Frage nicht gefunden?“.
+// focus: { stufe, glossar } aus #/lernen?stufe=n bzw. #/lernen?glossar=Begriff („Im Glossar ansehen“).
+function AkademiePage({ onBack, focus = {} }) {
   const [tab, setTab] = useState("Einstieg");
   const [open, setOpen] = useState(0);
+
+  // „Im Glossar ansehen“: Reiter Glossar öffnen und zum Begriff springen
+  useEffect(() => {
+    if (!focus.glossar) return;
+    setTab("Glossar");
+    const entry = glossarAZ.find((g) => g.term.toLowerCase() === focus.glossar.toLowerCase());
+    if (!entry) return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(glossarId(entry.term));
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    });
+  }, [focus.glossar]);
 
   return (
     <div className="font-body">
       <header className="flex page items-center gap-3 py-6 text-sm text-[var(--muted)]">
         <button type="button" onClick={onBack} className="-my-3 inline-flex min-h-[44px] items-center hover:text-[var(--text)]">Tazkiyah</button>
         <span>/</span>
-        <span className="text-[var(--text)]">Lernen</span>
+        <span className="text-[var(--text)]">Akademie</span>
       </header>
       <main className="page pb-24">
-        <LernpfadOverview />
+        <AkademieOverview focusStufe={focus.stufe || null} />
 
         <h2 className="font-display mt-16 text-[40px] text-[var(--heading)]">Weitere Fragen</h2>
         <p className="mt-2 max-w-xl text-sm text-[var(--muted)]">
@@ -298,7 +282,7 @@ function AkademiePage({ onBack }) {
                   <th className="px-5 py-3">Broker</th>
                   <th className="px-5 py-3">Sparplanfähig</th>
                   <th className="px-5 py-3">Teilaktien</th>
-                  <th className="px-5 py-3">Schariakonforme Kontoführung</th>
+                  <th className="px-5 py-3">{t30("Schariakonforme Kontoführung", "Kontoführung ohne Zinsen")}</th>
                   <th className="px-5 py-3">Kosten</th>
                 </tr>
               </thead>
@@ -354,7 +338,7 @@ function AkademiePage({ onBack }) {
                     <p className="font-display mb-2 text-[26px] font-semibold leading-none text-[var(--gold-soft)]">{letter}</p>
                     <div className="space-y-3">
                       {items.map((item) => (
-                        <div key={item.term}>
+                        <div key={item.term} id={glossarId(item.term)} tabIndex={-1} className="scroll-mt-24">
                           <p className="text-sm text-[var(--text)]">{item.term}</p>
                           <p className="mt-0.5 text-sm leading-relaxed text-[var(--muted)]">{item.def}</p>
                         </div>
@@ -374,14 +358,17 @@ function AkademiePage({ onBack }) {
               Tätigkeit (ist das Hauptgeschäft erlaubt, und was sagt die Satzung zum Zweck?), Kennzahlen (zinstragende
               Schulden, zinstragende Einlagen und verbotene Einnahmen im Verhältnis zur Marktkapitalisierung bzw. zu den
               Einnahmen), Vermögen (Anteil realer Vermögenswerte) und Aktie und Produkt (Aktiengattung und ausgeschlossene
-              Produkte). Besteht eine Aktie alle Prüfungen, ist sie konform. Fällt eine durch, ist sie nicht konform. Steht
-              noch eine Prüfung aus, ist sie nicht geprüft. Zu jeder Prüfung nennen wir die Fundstelle im Standard und
-              erklären sie auf einer eigenen Seite.{" "}
+              Produkte).{" "}
+              {t30(
+                "Besteht eine Aktie alle Prüfungen, ist sie konform. Fällt eine durch, ist sie nicht konform. Steht noch eine Prüfung aus, ist sie nicht geprüft.",
+                "Eine Aktie erfüllt die Kriterien nur, wenn sie alle Prüfungen besteht; fehlt eine Angabe, bleibt die Prüfung offen. Eine Sharia-Einschätzung zu einzelnen Aktien gibt Tazkiyah nicht ab."
+              )}{" "}
+              Zu jeder Prüfung nennen wir die Fundstelle im Standard und erklären sie auf einer eigenen Seite.{" "}
               <a href={routes.methodik()} className="text-[var(--primary)] underline underline-offset-2">
                 Alle Regeln im Überblick
               </a>
             </p>
-            <p className="mt-3 text-sm text-[var(--faint)]">Automatisch berechnet · Keine Anlageberatung</p>
+            <p className="mt-3 text-sm text-[var(--faint)]">{t30("Automatisch berechnet · Keine Anlageberatung", "Keine Anlageberatung")}</p>
           </div>
         )}
 
@@ -416,104 +403,6 @@ function AkademiePage({ onBack }) {
 
         <AskQuestionBox />
       </main>
-    </div>
-  );
-}
-
-// Bewusst klein und unauffällig gehalten, keine "KI-Chat"-Sprache.
-// Fragen landen in Supabase (academy_questions). Besucher dürfen nur einreichen, nicht
-// lesen, deshalb kein .select() nach dem insert. Die Datenbank drosselt zusätzlich.
-const QUESTION_MIN = 5;
-const QUESTION_MAX = 500;
-const QUESTION_COOLDOWN_MS = 30_000;
-// Nur im Arbeitsspeicher: gilt für diese Sitzung, bis die Seite neu geladen wird.
-let lastQuestionSentAt = 0;
-
-function AskQuestionBox() {
-  const [question, setQuestion] = useState("");
-  const [status, setStatus] = useState("ready"); // ready | sending | sent | error
-  const [errorText, setErrorText] = useState("");
-  const [coolingDown, setCoolingDown] = useState(() => Date.now() - lastQuestionSentAt < QUESTION_COOLDOWN_MS);
-
-  useEffect(() => {
-    if (!coolingDown) return undefined;
-    const rest = QUESTION_COOLDOWN_MS - (Date.now() - lastQuestionSentAt);
-    const timer = setTimeout(() => setCoolingDown(false), Math.max(rest, 0));
-    return () => clearTimeout(timer);
-  }, [coolingDown]);
-
-  const trimmed = question.trim();
-  const canSend = trimmed.length >= QUESTION_MIN && status !== "sending" && !coolingDown;
-
-  async function send() {
-    if (!canSend) return;
-    setStatus("sending");
-    setErrorText("");
-    let error = null;
-    try {
-      ({ error } = await supabase.from("academy_questions").insert({ question: trimmed, page: "akademie" }));
-    } catch (e) {
-      error = e;
-    }
-    if (error) {
-      const throttled = /throttle/i.test(String(error.message || ""));
-      setErrorText(
-        throttled
-          ? "Gerade kommen sehr viele Fragen an. Bitte versuch es später noch einmal."
-          : "Deine Frage konnte nicht gesendet werden. Bitte versuch es später noch einmal."
-      );
-      setStatus("error"); // Text bleibt im Feld stehen
-      return;
-    }
-    lastQuestionSentAt = Date.now();
-    setCoolingDown(true);
-    setQuestion("");
-    setStatus("sent");
-  }
-
-  return (
-    <div className="mt-10 border-t border-[var(--border)] pt-6">
-      <label htmlFor="academy-question" className="text-sm text-[var(--faint)]">Frage nicht gefunden?</label>
-      <form
-        className="mt-2 flex max-w-md items-start gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-      >
-        <div className="min-w-0 flex-1">
-          <input
-            id="academy-question"
-            value={question}
-            onChange={(e) => {
-              setQuestion(e.target.value);
-              if (status === "sent" || status === "error") setStatus("ready");
-            }}
-            placeholder="Frag nach…"
-            minLength={QUESTION_MIN}
-            maxLength={QUESTION_MAX}
-            aria-describedby="academy-question-count academy-question-note"
-            className="field w-full"
-          />
-          <p id="academy-question-count" className="mt-1 text-right text-sm text-[var(--faint)]">
-            {question.length} / {QUESTION_MAX}
-          </p>
-        </div>
-        <button
-          type="submit"
-          disabled={!canSend}
-          className="btn-secondary flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {status === "sending" ? "Wird gesendet …" : "Senden"}
-        </button>
-      </form>
-      <div role="status" aria-live="polite">
-        {status === "sent" && <p className="mt-2 text-sm text-[var(--ok-text)]">Danke, deine Frage ist angekommen.</p>}
-        {status === "error" && <p className="mt-2 text-sm text-[var(--bad-text)]">{errorText}</p>}
-      </div>
-      <p id="academy-question-note" className="mt-2 max-w-md text-sm text-[var(--muted)]">
-        Wir beantworten Fragen nicht einzeln. Häufige Fragen nehmen wir in die Akademie und das FAQ auf. Bitte keine persönlichen Daten eingeben.
-      </p>
     </div>
   );
 }
@@ -557,15 +446,41 @@ function SectorsPage({ onBack }) {
 
 /* ---------- Root ---------- */
 
+// Seitenleiste eingeklappt? Nur eine Bequemlichkeit je Browser; ohne Speicher (privates Fenster) ausgeklappt.
+const SIDEBAR_STORAGE_KEY = "tazkiyah-seitenleiste-eingeklappt";
+function readSidebarCollapsed() {
+  try {
+    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeSidebarCollapsed(collapsed) {
+  try {
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "1" : "0");
+  } catch {
+    // Speicher nicht verfügbar: Zustand gilt nur bis zum Neuladen
+  }
+}
+
 const FOOTER_LINK =
   "-my-3 inline-flex min-h-[44px] items-center text-[var(--footer-link)] underline decoration-[var(--footer-link)]/50 underline-offset-2 hover:decoration-[var(--footer-link)]";
 
 // Seiten, die über die Hash-Adresse geöffnet werden (siehe src/lib/hashRoute.js)
-const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "kontakt", "reports", "blog", "blogpost", "redaktion", "redaktionVorschau"];
+const ROUTED_PAGES = ["tazkiyah30", "aktien", "detail", "criterion", "methodik", "methodik2", "faq", "lesson", "kontakt", "reports", "blog", "blogpost", "redaktion", "redaktionVorschau"];
 
 export default function TazkiyahPrototype() {
   const [page, setPage] = useState("home"); // home | tazkiyah30 | aktien | detail | criterion | methodik | portfolio | watchlist | reports | faq | sectors | …
   const [selectedTicker, setSelectedTicker] = useState(null);
+  const [aktienQuery, setAktienQuery] = useState(null);
+  const [akademieFocus, setAkademieFocus] = useState({});
+  const [lessonSlug, setLessonSlug] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
+  const toggleSidebar = () =>
+    setSidebarCollapsed((v) => {
+      writeSidebarCollapsed(!v);
+      return !v;
+    });
   const [criterionId, setCriterionId] = useState(null);
   const [reportSlugState, setReportSlugState] = useState(null);
   const [redaktionId, setRedaktionId] = useState(null);
@@ -602,7 +517,7 @@ export default function TazkiyahPrototype() {
   }, [userId]);
   const wl = useWatchlist(["NVDA"], { storageKey: "amanah-watchlist", userId });
   const [activeAnchor, setActiveAnchor] = useState(null);
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [, setActiveFilter] = useState(null); // Filter für die Seite der Tazkiyah 30 (aus der früheren Kopfleiste)
 
 
   // Seiten mit Hash-Adresse: Hauptseite, Detailseite, Erklärseite, Methodik, Kontakt.
@@ -619,14 +534,28 @@ export default function TazkiyahPrototype() {
       setCriterionId(route.id);
       setPage("criterion");
       setActiveAnchor(null);
+    } else if (route.name === "tazkiyah30" && !FEATURE_TAZKIYAH30) {
+      // Archiv (17.10.2026): #/tazkiyah-30 und #/screener führen auf die Aktiensuche (ersetzt den Verlaufseintrag)
+      window.location.replace(routes.aktien());
     } else if (route.name === "tazkiyah30" || route.name === "aktien") {
+      if (route.name === "aktien") setAktienQuery(route.query || null);
       setPage(route.name);
       setActiveAnchor(null);
     } else if (route.name === "lernen") {
-      // Akademie mit Lernpfad (page "faq")
+      // Akademie mit Lernpfad (page "faq"), optional Sprung zu Stufe oder Glossar-Begriff
+      setAkademieFocus({ stufe: route.stufe || null, glossar: route.glossar || null });
       setPage("faq");
       setActiveAnchor(null);
-      window.scrollTo({ top: 0 });
+      if (!route.stufe && !route.glossar) window.scrollTo({ top: 0 });
+    } else if (route.name === "lesson") {
+      // Lektion; unbekannt oder nicht online (außer im Entwurfsmodus) → Übersicht
+      if (!lessonBySlug(route.slug) || !isOpenable(route.slug)) {
+        window.location.replace(routes.lernen());
+        return;
+      }
+      setLessonSlug(route.slug);
+      setPage("lesson");
+      setActiveAnchor(null);
     } else if (route.name === "methodik2") {
       setPage("methodik2");
       setActiveAnchor(null);
@@ -670,6 +599,9 @@ export default function TazkiyahPrototype() {
       navigate(routes.methodik());
     } else if (targetPage === "redaktion") {
       navigate(routes.redaktion());
+    } else if (targetPage === "kontakt") {
+      navigate(routes.kontakt());
+      if (page === "kontakt") window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (targetPage === "reports" || targetPage === "blog") {
       navigate(targetPage === "reports" ? routes.wochenbericht() : routes.blog());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -678,6 +610,9 @@ export default function TazkiyahPrototype() {
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
       setPage(targetPage);
       setActiveAnchor(null);
+    } else if (targetPage === "tazkiyah30" && !FEATURE_TAZKIYAH30) {
+      goTo("aktien");
+      return;
     } else if (targetPage === "home" || targetPage === "tazkiyah30" || targetPage === "aktien") {
       navigate(targetPage === "home" ? routes.home() : targetPage === "aktien" ? routes.aktien() : routes.tazkiyah30());
       if (page === targetPage) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -793,6 +728,11 @@ export default function TazkiyahPrototype() {
         /* Auf grünen Flächen: Fokus in Hellgold */
         .on-green :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline-color: var(--gold-light); }
 
+        /* Kurzes Einblenden (Akademie: Abschluss, Quiz), nicht bei reduzierter Bewegung */
+        .fade-in { animation: tz-fade .35s ease-out both; }
+        @keyframes tz-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
         .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
         .font-body { font-family: 'Source Sans 3', system-ui, sans-serif; }
         .app-root { font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
@@ -802,7 +742,7 @@ export default function TazkiyahPrototype() {
       <SiteHeader
         page={page}
         isAdmin={isAdmin}
-        activeFilter={activeFilter}
+        watchCount={wl.watchlist.length}
         onGo={goTo}
         session={session}
         onOpenAuth={() => setShowAuth(true)}
@@ -813,15 +753,28 @@ export default function TazkiyahPrototype() {
       {showAuth && <AuthPanel onClose={() => setShowAuth(false)} />}
       {showResetPassword && <ResetPasswordPanel onDone={() => setShowResetPassword(false)} />}
 
-      <div>
+      {/* Seitenleiste links (ab 1024 px), daneben Inhalt und Fußzeile */}
+      <div className="lg:flex">
+        {page !== "redaktionVorschau" && (
+          <SidebarDesktop
+            page={page}
+            onGo={goTo}
+            session={session}
+            isAdmin={isAdmin}
+            watchCount={wl.watchlist.length}
+            collapsed={sidebarCollapsed}
+            onToggleCollapsed={toggleSidebar}
+          />
+        )}
+      <div className="min-w-0 flex-1">
         {page === "home" && <StartPage onGo={goTo} />}
-        {page === "tazkiyah30" && <Tazkiyah30Page />}
-        {page === "aktien" && <AktienPage />}
+        {page === "tazkiyah30" && FEATURE_TAZKIYAH30 && <Tazkiyah30Page />}
+        {page === "aktien" && <AktienPage initialQuery={aktienQuery} />}
         {page === "portfolio" && <PortfolioPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "detail" && selectedTicker && (
           <StockDetailPage
             ticker={selectedTicker}
-            onBack={() => goTo("tazkiyah30")}
+            onBack={() => goTo(FEATURE_TAZKIYAH30 ? "tazkiyah30" : "aktien")}
             watchlist={wl.watchlist}
             onToggleWatchlist={wl.toggle}
           />
@@ -840,10 +793,11 @@ export default function TazkiyahPrototype() {
         {page === "redaktionVorschau" && <RedaktionVorschau />}
         {page === "blog" && <BlogPage />}
         {page === "blogpost" && blogSlug && <BlogArticle slug={blogSlug} />}
-        {page === "faq" && <AkademiePage onBack={() => goTo("home")} />}
+        {page === "faq" && <AkademiePage onBack={() => goTo("home")} focus={akademieFocus} />}
+        {page === "lesson" && lessonSlug && <LessonPage key={lessonSlug} slug={lessonSlug} />}
         {page === "methodik" && <MethodikPage onBack={() => goTo("home")} anchor={activeAnchor} />}
         {page === "methodik2" && <Methodik2Page />}
-        {page === "sectors" && <SectorsPage onBack={() => goTo("home")} />}
+        {page === "sectors" && FEATURE_TAZKIYAH30 && <SectorsPage onBack={() => goTo("home")} />}
         {page === "profile" && <ProfilePage session={session} onGo={goTo} />}
         {page === "security" && <SecurityPage session={session} onGo={goTo} />}
         {page === "settings" && <SettingsPage session={session} onGo={goTo} />}
@@ -885,6 +839,7 @@ export default function TazkiyahPrototype() {
         </footer>
         </>
         )}
+      </div>
       </div>
 
       <Toast toast={wl.toast} onDismiss={wl.dismissToast} />

@@ -5,12 +5,20 @@
 // bei der Freigabe noch einmal selbst; die Regeln hier und dort müssen übereinstimmen.
 
 import { readingMinutes } from "./blog.js";
+import { FEATURE_TAZKIYAH30 } from "./features.js";
 
 /** Die 11 Punkte vor jeder Freigabe (wochenbericht-checkliste.md, Stand 16.10.2026). */
 export const CHECKLIST = [
   { nr: 1, group: "Rechtliches", label: "Keine Kauf- oder Verkaufsformulierungen („kaufen“, „einsteigen“, „aussteigen“, „jetzt“, „Chance“, „lohnt sich“)" },
   { nr: 2, group: "Rechtliches", label: "Keine Kursziele, Rankings, Prognosen der Redaktion, kein „Top“" },
-  { nr: 3, group: "Rechtliches", label: "Unternehmen aus den Tazkiyah 30 nur mit Fakten, keine Wertung" },
+  {
+    nr: 3,
+    group: "Rechtliches",
+    // Archiv Tazkiyah 30 (17.10.2026): keine Sharia-Einschätzung zu einzelnen Aktien, auch kein Status der 30
+    label: FEATURE_TAZKIYAH30
+      ? "Unternehmen aus den Tazkiyah 30 nur mit Fakten, keine Wertung"
+      : "Keine Sharia-Einschätzung zu einzelnen Aktien (kein „konform“, kein Abschnitt zu den Tazkiyah 30)",
+  },
   { nr: 4, group: "Rechtliches", label: "Hinweis „Keine Anlageberatung, keine Fatwa“ vorhanden" },
   { nr: 5, group: "Fakten", label: "Jede Zahl gegen die Primärquelle geprüft" },
   { nr: 6, group: "Fakten", label: "Einheit, Währung und Zeitraum bei jeder Zahl" },

@@ -11,6 +11,7 @@ import { routes } from "../../lib/hashRoute.js";
 import { POSTS, postBySlug } from "../../lib/blogPosts.js";
 import { fmtPostDate, topicLabel } from "../../lib/blog.js";
 import { LESSONS } from "../../data/lernpfad.js";
+import { isOnline } from "../../lib/lessonFiles.js";
 import { ManuscriptFrame, StarRule } from "../ornaments.jsx";
 import { Blocks } from "./MarkdownBlocks.jsx";
 import { SERIF, inTextLink } from "./markdownStyles.js";
@@ -105,9 +106,9 @@ export default function BlogArticle({ slug }) {
         {(lesson || next) && (
           <div className="mt-9 flex flex-wrap gap-4">
             {lesson && (
-              <a href={routes.lernen()} className="group min-w-0 flex-[1_1_280px] text-[var(--text)]">
+              <a href={isOnline(lesson.slug) ? routes.lesson(lesson.slug) : routes.lernen({ stufe: lesson.stufe })} className="group min-w-0 flex-[1_1_280px] text-[var(--text)]">
                 <ManuscriptFrame className="h-full p-[5px]" innerClassName="px-5 py-[18px]">
-                  <span className="kicker">Passt dazu · Lernpfad</span>
+                  <span className="kicker">Passt dazu · Akademie</span>
                   <span className="font-display mt-1.5 block text-[24px] font-semibold text-[var(--heading)] group-hover:text-[var(--primary)]">
                     Lektion {lesson.nr}: {lesson.title}
                   </span>

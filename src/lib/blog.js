@@ -5,7 +5,7 @@
 // es wird nie Text als HTML eingefügt.
 //
 // Kopfangaben (zwischen --- und ---): titel, untertitel, datum, aktualisiert, thema, lesezeit (optional,
-// sonst aus der Wortzahl), lektion (Nummer im Lernpfad), quellen (Liste mit „- …“).
+// sonst aus der Wortzahl), lektion (Nummer der Lektion in der Akademie, z. B. 1.3), quellen (Liste mit „- …“).
 //
 // Unterstützter Text: Absätze, „## Zwischenüberschrift“, „> Zitat“, Listen („- “ und „1. “),
 // **fett**, *kursiv*, [Link](https://… oder #/…), Quellenverweis [^1], Kästen
@@ -113,29 +113,63 @@ export function parseInline(text) {
   return out;
 }
 
-/** Text in Blöcke: p, h2, quote, ul, ol, kurz, einordnung. */
-export function parseBody(body) {
+// Kästen im Blog; die Akademie (src/lib/lessons.js) nutzt stattdessen „beispiel“
+const BLOG_BOXES = ["kurz", "einordnung"];
+
+/** Tabellenzeile „| a | b |“ → Zellen; Trennzeile „|---|---|“ → null. */
+function tableCells(line) {
+  const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+  return cells.every((c) => /^:?-{2,}:?$/.test(c)) ? null : cells;
+}
+
+/**
+ * Text in Blöcke: p, h2, h3, quote, ul, ol, table, Kästen (kurz, einordnung bzw. options.boxes).
+ * options.inline: eigene Zerlegung der Zeilen (Akademie: [[Begriff]]), Standard parseInline.
+ * Tabelle: Zeilen „| Bezeichnung | Wert |“; eine Zeile, deren erste Zelle ganz **fett** ist, gilt als Ergebniszeile.
+ */
+export function parseBody(body, options = {}) {
+  const inline = options.inline || parseInline;
+  const boxes = options.boxes || BLOG_BOXES;
   const lines = String(body || "").replace(/\r\n?/g, "\n").split("\n");
   const blocks = [];
   let para = [];
   const flush = () => {
-    if (para.length) blocks.push({ type: "p", inline: parseInline(para.join(" ").trim()) });
+    if (para.length) blocks.push({ type: "p", inline: inline(para.join(" ").trim()) });
     para = [];
   };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const t = line.trim();
-    const box = t.match(/^:::(kurz|einordnung)\s*(.*)$/);
-    if (box) {
+    const box = t.match(/^:::([a-zäöü]+)\s*(.*)$/);
+    if (box && boxes.includes(box[1])) {
       flush();
       const inner = [];
       i++;
       while (i < lines.length && lines[i].trim() !== ":::") inner.push(lines[i++]);
-      blocks.push({ type: box[1], title: box[2].trim(), blocks: parseBody(inner.join("\n")) });
+      blocks.push({ type: box[1], title: box[2].trim(), blocks: parseBody(inner.join("\n"), options) });
       continue;
     }
     if (!t) {
       flush();
+      continue;
+    }
+    if (t.startsWith("### ")) {
+      flush();
+      blocks.push({ type: "h3", text: t.slice(4).trim() });
+      continue;
+    }
+    if (t.startsWith("|")) {
+      flush();
+      const rows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        const cells = tableCells(lines[i++]);
+        if (cells) {
+          const result = /^\*\*[^*]+\*\*$/.test(cells[0]);
+          rows.push({ result, cells: cells.map((c) => inline(result ? c.replace(/^\*\*(.*)\*\*$/, "$1") : c)) });
+        }
+      }
+      i--;
+      if (rows.length) blocks.push({ type: "table", rows });
       continue;
     }
     if (t.startsWith("## ")) {
@@ -148,7 +182,7 @@ export function parseBody(body) {
       const q = [];
       while (i < lines.length && lines[i].trim().startsWith(">")) q.push(lines[i++].trim().replace(/^>\s?/, ""));
       i--;
-      blocks.push({ type: "quote", inline: parseInline(q.join(" ").trim()) });
+      blocks.push({ type: "quote", inline: inline(q.join(" ").trim()) });
       continue;
     }
     const li = t.match(/^(-|\d+\.)\s+(.*)$/);
@@ -159,7 +193,7 @@ export function parseBody(body) {
       while (i < lines.length) {
         const m = lines[i].trim().match(/^(-|\d+\.)\s+(.*)$/);
         if (!m || (m[1] !== "-") !== ordered) break;
-        items.push(parseInline(m[2]));
+        items.push(inline(m[2]));
         i++;
       }
       i--;
@@ -195,7 +229,7 @@ export function parsePost(slug, source) {
   const datum = isoDate(meta.datum);
   if (!meta.titel || !datum) return null;
   const lesezeit = Number.parseInt(meta.lesezeit, 10);
-  const lektion = Number.parseInt(meta.lektion, 10);
+  const lektion = String(meta.lektion || "").trim();
   const blocks = parseBody(body);
   const firstP = blocks.find((b) => b.type === "p");
   return {
@@ -206,7 +240,8 @@ export function parsePost(slug, source) {
     aktualisiert: isoDate(meta.aktualisiert),
     thema: normalizeTopic(meta.thema),
     lesezeit: lesezeit > 0 ? lesezeit : readingMinutes(body),
-    lektion: lektion > 0 ? lektion : null,
+    // Nummer einer Lektion der Akademie, z. B. „1.3“ (src/data/lernpfad.js)
+    lektion: /^\d\.\d{1,2}$/.test(lektion) ? lektion : null,
     quellen: (Array.isArray(meta.quellen) ? meta.quellen : meta.quellen ? [meta.quellen] : []).map(parseSource),
     blocks,
     // Anriss für Übersichten: Untertitel, sonst der erste Absatz als Text

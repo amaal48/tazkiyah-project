@@ -3,6 +3,7 @@
 // Kalender (Navigation „Kalender“): Termine aller Aktien in den nächsten 30 Tagen, nach Datum. Quartalszahlen
 // (voraussichtlich / bestätigt) und Hauptversammlungen, nur aus SEC EDGAR (Tabelle company_calendar).
 // Filter „nur Tazkiyah 30“. Kein Halal-Status, keine Kurse.
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): kein Filter und keine Markierung „Tazkiyah 30“.
 
 import { useMemo, useState } from "react";
 import { useScreeningList } from "../lib/screeningData.js";
@@ -10,6 +11,7 @@ import { EARNINGS_STATUS_TEXT, todayIso, upcomingEvents, useCalendarList } from 
 import { routes } from "../lib/hashRoute.js";
 import { addDays } from "../calendar/secCalendar.js";
 import { H1_STYLE, H2_STYLE } from "./screening/format.js";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 const DAYS = 30;
 const KIND_TEXT = { zahlen: "Quartalszahlen", hv: "Hauptversammlung" };
@@ -25,7 +27,8 @@ function dayLabel(iso) {
 export default function CalendarPage() {
   const cal = useCalendarList();
   const list = useScreeningList();
-  const [only30, setOnly30] = useState(savedOnly30);
+  const [only30State, setOnly30] = useState(savedOnly30);
+  const only30 = FEATURE_TAZKIYAH30 && only30State;
   const toggle = (v) => {
     savedOnly30 = v;
     setOnly30(v);
@@ -61,6 +64,7 @@ export default function CalendarPage() {
         </p>
       </header>
 
+      {FEATURE_TAZKIYAH30 && (
       <div className="card mt-8 flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[15px] font-medium text-[var(--muted)]">Auswahl:</span>
         <button type="button" className="chip" aria-pressed={!only30} onClick={() => toggle(false)}>
@@ -70,6 +74,7 @@ export default function CalendarPage() {
           Nur Tazkiyah 30
         </button>
       </div>
+      )}
 
       <p className="mb-4 mt-6 text-[15px] text-[var(--muted)]">{loading ? "Lade Termine…" : `${events.length} ${events.length === 1 ? "Termin" : "Termine"}`}</p>
 
@@ -90,7 +95,7 @@ export default function CalendarPage() {
                   <a href={routes.stock(e.ticker)} className="group min-w-0">
                     <span className="font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{e.sec.name}</span>{" "}
                     <span className="font-[IBM_Plex_Mono] text-[13px] text-[var(--muted)]">{e.ticker}</span>
-                    {e.sec.inTazkiyah30 && <span className="ml-2 text-sm text-[var(--gold-soft)]">Tazkiyah 30</span>}
+                    {FEATURE_TAZKIYAH30 && e.sec.inTazkiyah30 && <span className="ml-2 text-sm text-[var(--gold-soft)]">Tazkiyah 30</span>}
                   </a>
                   <span className="text-[15px] text-[var(--text-soft)]">
                     {KIND_TEXT[e.kind]}

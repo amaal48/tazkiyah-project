@@ -3,12 +3,15 @@
 // Aktiensuche (#/aktien, Navigation „Aktien“; Neue Ausrichtung 15.10.2026): alle aktiven Titel aus dem
 // Universum, nur Stammdaten, KEIN Halal-Status. Suche nach Name oder Ticker, Filter nach Branche.
 // Titel der Tazkiyah 30 tragen nur den Link „in den Tazkiyah 30“. Nächste Zahlen aus SEC EDGAR (company_calendar).
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): keine Markierung der 30, Hinweis ohne Einschätzung.
 
 import { useEffect, useMemo, useState } from "react";
 import { useScreeningList } from "../lib/screeningData.js";
 import { EARNINGS_STATUS_TEXT, useCalendarList } from "../lib/calendarData.js";
 import { routes } from "../lib/hashRoute.js";
 import { H1_STYLE, fmtDate } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 const PAGE = 50;
 const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]";
@@ -16,7 +19,8 @@ const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text
 // Sitzungsweiter Zustand der Suche
 let saved = { query: "", sector: "" };
 
-export default function AktienPage() {
+/** initialQuery: Suchbegriff aus der Adresse (#/aktien?suche=…, Suchfeld der Kopfleiste) */
+export default function AktienPage({ initialQuery = null }) {
   const list = useScreeningList();
   const cal = useCalendarList();
   const [f, setF] = useState(saved);
@@ -29,6 +33,9 @@ export default function AktienPage() {
     });
 
   useEffect(() => setVisible(PAGE), [f]);
+  useEffect(() => {
+    if (initialQuery) update({ query: initialQuery, sector: "" });
+  }, [initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sectors = useMemo(() => [...new Set(list.rows.map((r) => r.sector).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de")), [list.rows]);
 
@@ -46,13 +53,24 @@ export default function AktienPage() {
         <h1 className="font-display" style={{ ...H1_STYLE, fontSize: "clamp(40px, 6vw, 60px)", lineHeight: 1.05 }}>
           Aktien
         </h1>
-        <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
-          Kurs, Chart und Unternehmensprofil für alle Aktien unserer Liste. Eine Sharia-Prüfung bieten wir nur für die{" "}
-          <a href={routes.tazkiyah30()} className={linkClass}>
-            Tazkiyah 30
-          </a>{" "}
-          an, deshalb steht hier kein Halal-Status.
-        </p>
+        {FEATURE_TAZKIYAH30 ? (
+          <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
+            Kurs, Chart und Unternehmensprofil für alle Aktien unserer Liste. Eine Sharia-Prüfung bieten wir nur für die{" "}
+            <a href={routes.tazkiyah30()} className={linkClass}>
+              Tazkiyah 30
+            </a>{" "}
+            an, deshalb steht hier kein Halal-Status.
+          </p>
+        ) : (
+          <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
+            Kurs, Chart, Unternehmensprofil, Termine und Berichte für alle Aktien unserer Liste. Tazkiyah gibt keine
+            Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann, erklären wir in der{" "}
+            <a href={AKADEMIE_PRUEFEN_LINK} className={linkClass}>
+              Akademie
+            </a>
+            .
+          </p>
+        )}
       </header>
 
       <div className="card mt-8">
@@ -106,7 +124,7 @@ export default function AktienPage() {
                   <td className="px-5 py-3">
                     <span className="block font-semibold text-[var(--text)]">{r.name}</span>
                     <span className="block font-[IBM_Plex_Mono] text-[13px] text-[var(--muted)]">{r.ticker}</span>
-                    {r.inTazkiyah30 && (
+                    {FEATURE_TAZKIYAH30 && r.inTazkiyah30 && (
                       <a href={routes.stock(r.ticker)} className={"mt-1 inline-block text-sm " + linkClass}>
                         in den Tazkiyah 30
                       </a>

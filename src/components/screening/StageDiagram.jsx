@@ -4,6 +4,7 @@
 // Erklärseite, bei Stufe B die Grenzwerte aus den Parametern. Die Karten stehen in einem
 // Raster mit auto-fit und Mindestbreite; Text bricht um, nichts wird abgeschnitten.
 
+import { neutralize } from "../../lib/neutralWording.js";
 import { EXPLANATIONS, ETF_STAGE, STAGES, defaultParameterValues } from "../../screening/explanations.js";
 import { routes } from "../../lib/hashRoute.js";
 import { fmtLimit } from "./format.js";
@@ -19,7 +20,7 @@ function CriterionLink({ id, parameters }) {
       <a href={routes.criterion(id)} className="group grid grid-cols-[1.75rem_1fr] gap-x-1 py-1.5 text-sm">
         <span className="pt-px font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{id}</span>
         <span className="min-w-0 break-words text-[var(--text-soft)] group-hover:text-[var(--text)] group-hover:underline">
-          {EXPLANATIONS[id]?.name || id}
+          {neutralize(EXPLANATIONS[id]?.name) || id}
           {typeof limit === "number" && <span className="block text-sm text-[var(--gold-soft)]">höchstens {fmtLimit(limit)}</span>}
         </span>
       </a>
@@ -53,7 +54,7 @@ export default function StageDiagram({ parameters = defaultParameterValues() }) 
         {ETF_STAGE.criteria.map((id, i) => (
           <span key={id}>
             <a href={routes.criterion(id)} className="underline decoration-[var(--border)] underline-offset-2 hover:text-[var(--text-soft)]">
-              {EXPLANATIONS[id]?.name || id}
+              {neutralize(EXPLANATIONS[id]?.name) || id}
             </a>
             {i < ETF_STAGE.criteria.length - 1 ? ", " : ""}
           </span>

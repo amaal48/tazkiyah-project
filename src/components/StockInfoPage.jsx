@@ -6,12 +6,18 @@
 //
 // Auch Titel der Tazkiyah 30, deren Prüfung noch nicht abgeschlossen ist, erscheinen hier
 // (pending: true), damit öffentlich kein Zwischenstand zu sehen ist.
+//
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): Diese Seite gilt für ALLE Titel, auch die 30.
+// Statt „Sharia-Prüfung nur für die Tazkiyah 30“ steht der Hinweis ohne Einschätzung mit Link zur Akademie;
+// „Prüfung wünschen“ und „Zu den Tazkiyah 30“ sind ausgeblendet.
 
 import { useEffect } from "react";
 import { routes } from "../lib/hashRoute.js";
 import MarketData from "./screening/MarketData.jsx";
 import CompanyCalendar from "./CompanyCalendar.jsx";
 import { H1_STYLE } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
+import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
 const linkClass = "text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]";
@@ -46,7 +52,16 @@ export default function StockInfoPage({ ticker, row, pending = false, onBack, ba
       </header>
 
       <section aria-label="Hinweis zur Sharia-Prüfung" className="mt-8 border border-[var(--note-border)] bg-[var(--note-bg)] p-6">
-        {pending ? (
+        {!FEATURE_TAZKIYAH30 ? (
+          <p className="max-w-[68ch] text-[17px] leading-relaxed text-[var(--text-soft)]">
+            Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann,
+            erklären wir in der{" "}
+            <a href={AKADEMIE_PRUEFEN_LINK} className={linkClass}>
+              Akademie
+            </a>
+            .
+          </p>
+        ) : pending ? (
           <p className="max-w-[68ch] text-[17px] leading-relaxed text-[var(--text-soft)]">
             Diese Aktie gehört zu den Tazkiyah 30. Die Prüfung ist noch nicht abgeschlossen; das Ergebnis erscheint, sobald sie
             fertig ist.{" "}

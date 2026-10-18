@@ -3,13 +3,15 @@
 // Rechtlicher Hinweis der Tazkiyah 30 (Liste und Detailseite): kurz sichtbar „Keine Anlageberatung,
 // keine Fatwa.“ mit Link „Mehr dazu“, der volle Text eingeklappt (<details>) unten auf der Seite.
 // Wortlaut festgelegt am 15.10.2026; vor dem Launch anwaltlich prüfen lassen.
+// Archiv Tazkiyah 30 (17.10.2026, VITE_FEATURE_TAZKIYAH30 aus): allgemeiner Text ohne die 30 und ohne
+// „konform“ (aus dem bisherigen Wortlaut abgeleitet, ebenfalls vor dem Launch anwaltlich prüfen lassen).
+
+import { LEGAL_NOTICE_TEXT } from "./legalNoticeText.js";
 
 export const LEGAL_NOTICE_ID = "rechtlicher-hinweis";
 
 export const LEGAL_NOTICE_TITLE = "Keine Anlageberatung · rechtlicher Hinweis";
 
-export const LEGAL_NOTICE_TEXT =
-  "Die Tazkiyah 30 zeigen, ob Aktien die Kriterien des AAOIFI-Standards Nr. 21 erfüllen. Die Auswahl richtet sich danach, wie verbreitet die Aktien bei Anlegern in Deutschland sind und ob genug öffentliche Angaben für eine vollständige Prüfung vorliegen, nicht nach ihren Ertragsaussichten. Die Einstufung „konform“ ist keine Empfehlung zum Kauf, Verkauf oder Halten und berücksichtigt nicht Ihre persönliche Situation. Sie ist keine Fatwa. Bitte treffen Sie Anlageentscheidungen eigenverantwortlich und holen Sie bei Bedarf fachkundigen Rat ein. Stand und Quellen sind bei jeder Aktie angegeben.";
 
 /** Öffnet den eingeklappten vollen Text und scrollt dorthin (ohne die Hash-Adresse zu ändern). */
 function openFull(e) {

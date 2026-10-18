@@ -1,14 +1,191 @@
 # PROJECT-CONTEXT.md — Tazkiyah
 
-Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: Abschnitt 0.**
+Stand: 18.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Claude-Code-Sessions und neue Claude-Chats, um sofort produktiv weiterzumachen. **Einstieg: „Neuer Stand 18.10.2026“, danach Abschnitt 0.**
+
+---
+
+## Neuer Stand 18.10.2026 (geht allem Älteren vor)
+
+### Ausrichtung
+- Tazkiyah gibt zum Launch KEINE eigene Sharia-Einschätzung zu einzelnen Aktien ab.
+- "Die Tazkiyah 30" sind ARCHIVIERT, nicht gelöscht: Code bleibt, ausgeblendet über
+  Feature-Flag VITE_FEATURE_TAZKIYAH30 (Standard false); Daten bleiben in Supabase,
+  öffentlicher Zugriff wird entzogen (supabase_archiv_tazkiyah30.sql mit Rückgängig-Abschnitt);
+  Prüfunterlagen (review-work, manual_reviews) bleiben. Nach dem Launch ggf. wieder einschalten.
+- Tiingo wird vorerst NICHT gebucht (nur für die Tazkiyah 30 nötig).
+- Aktiensuche (#/aktien) und Detailseiten (#/aktie/TICKER) bleiben für ALLE Aktien des
+  Universums (ca. 500 US-Titel mit deutschem Handelsplatz): Kurs (TradingView), Profil,
+  Termine, SEC-Berichte. Ohne Halal-Status, ohne Badge "geprüft"/"Tazkiyah 30",
+  ohne Knopf "Prüfung wünschen". Öffentlich erscheint nirgends "konform", "nicht konform"
+  oder "nicht geprüft".
+- Stattdessen "Hilfe zur Selbstprüfung" in der Akademie: Prüfanleitung nach AAOIFI SS 21
+  (Kriterien, wo stehen die Zahlen im 10-K/10-Q, Verweis auf Standard-Nummern, keine langen
+  Zitate aus dem Standard), Prüf-Rechner (Nutzer tragen Zahlen selbst ein, Ergebnis nur
+  "unter/über Grenze"), Beispiele mit erfundener "Muster AG", kein Urteil über echte Firmen.
+  Optional Link "Einschätzung bei Zoya ansehen" (nur Link, keine übernommenen Daten).
+- Kein Übernehmen von Zoya-/Musaffa-Status (Nutzungsbedingungen/Lizenz).
+- Hinweistext statt "Sharia-Prüfung nur für die Tazkiyah 30":
+  "Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem
+  AAOIFI-Standard prüfen kann, erklären wir in der Akademie."
+
+### Navigation
+- Seitenleiste statt Menülinks oben (Desktop fest, einklappbar, Zustand im localStorage
+  mit try/catch; Handy als ausklappbares Menü von links). Bereiche: Start · Aktiensuche ·
+  Berichte (Wochenbericht, Blog) · Kalender · Akademie · Methodik · Kontakt; angemeldet
+  zusätzlich Watchlist · Konto. "Die Tazkiyah 30" nur bei Feature-Flag true.
+  Unfertige Bereiche sichtbar mit "folgt bald". Oben schmale Kopfleiste: Logo, Suchfeld,
+  Anmelden/Konto. Design B2.
+
+### Design
+- Designrichtung B2 "Das Muster, hell": Papierton, Dunkelgrün, Gold; Cormorant Garamond
+  (Überschriften) + Source Sans 3 (Text); Spitzbogen, Rosettenmuster, Fries,
+  Manuskript-Rahmen, achtzackiger Stern; keine runden Karten, keine Schatten.
+- Schriften selbst hosten (nicht von Google Fonts laden).
+
+### Branch-Reihenfolge
+1. archiv-tazkiyah30 (von main; main enthält tazkiyah-30 vollständig) → Vorschau → Merge.
+   Auf main erscheint der Status derzeit nur für die 30; die Aktiensuche zeigt keinen Status.
+   Mit dem Archiv-Branch verschwindet er auch bei den 30.
+2. seitenleiste (von archiv-tazkiyah30) → Vorschau → Merge
+3. akademie-lernpfad (von seitenleiste) → Vorschau → Merge
+4. Schriften selbst hosten (Cormorant Garamond, Source Sans 3, Source Serif 4, ggf. IBM Plex Mono;
+   kommen derzeit noch von Google Fonts) – eigener kleiner Branch
+Design B2 ist seit 16.10. auf allen Seiten auf main (8050ffe), kein eigener Schritt mehr.
+
+### Akademie
+- Aufbau nach dem freigegebenen Entwurf „Akademie – Entwurf“ (Claude Design, 18.10.2026), Branch
+  `akademie-lernpfad` (von `seitenleiste`), gepusht, nicht gemergt. Planung der Inhalte in Notion „Akademie – Lernpfad“.
+- Drei Stufen, 25 Lektionen (`src/data/lernpfad.js`, Titel und Sätze wörtlich): 1 Grundlagen (1.1–1.7),
+  2 Einsteigen (2.1–2.10), 3 Fortgeschritten (3.1–3.8); 11 Lektionen mit „Islamischem Blick“.
+- **Alle Lektionen sind kostenlos.** Bezahlte Inhalte (Phase 2, einmalige Kurse) kommen später getrennt davon.
+- **Launch: 15 Lektionen** = Stufe 1 (1.1–1.7), 2.1–2.3, 2.7, 3.1–3.4. Die übrigen stehen als „folgt“.
+- **Texte:** je Lektion `content/lernen/<slug>.md` (Lektion 1.3 → `1-3.md`), Vorlage `content/lernen/_vorlage.md`.
+  Eine Lektion ist online, sobald die Datei im Repository ist (nach Commit und Deployment). Kopfangaben:
+  `aktualisiert` (Pflicht), `lesezeit`, `inhalt` („Auf dieser Seite“ auch bei kurzen Lektionen, sonst ab ca. 1.200
+  Wörtern), `abschluss` (nur letzte Lektion einer Stufe). Feste Abschnitte `## Kurz erklärt`, `## Erklärung`,
+  `## Islamischer Blick`, `## Häufige Fehler`, `## Merke`, `## Quiz`, `## Quellen`; im Text `### `
+  Zwischenüberschrift, `:::beispiel … :::` mit Rechentabelle (Ergebniszeile: erste Zelle **fett**),
+  `[[Begriff]]` bzw. `[[Begriff|Text]]` für das Glossar. Quiz: `### Frage: …`, `- [ ]`/`- [x]` (genau eine
+  richtig), `> Erklärung: …`. Test `src/lib/lessons.test.js` prüft jede Datei (Pflichtabschnitte Kurz erklärt,
+  Erklärung, Merke, gültiges Quiz) und warnt bei unbekannten Glossar-Begriffen. Kein HTML, Links nur
+  https/mailto/intern.
+- **Seiten:** Übersicht `#/lernen` (Weiter, wo du warst · Wo stehst du? · Stufen · Weitere Fragen, Reiter
+  „Broker-Vergleich“ ausgeblendet, Code bleibt), Sprung `#/lernen?stufe=n`, Glossar `#/lernen?glossar=Begriff`,
+  Lektion `#/lernen/<slug>` (nicht online → Übersicht). Glossar-Daten in `src/data/glossar.js` (ein Datensatz
+  für Reiter und Lektionstext). „… erklären wir in der Akademie“ (Aktienseite, Aktiensuche, Methodik) führt
+  über `AKADEMIE_PRUEFEN_LINK` auf 3.3, sobald `3-3.md` existiert, sonst auf `#/lernen`.
+- **Entwurfsmodus:** `VITE_AKADEMIE_ENTWURF = true` (nur lokal oder in der Vorschau, nie in Production): alle 25
+  Lektionen öffnebar, fehlende Abschnitte als graue Platzhalter, Beispiel-Quiz. Online sind weiter nur echte Dateien.
+- **Fortschritt nur im Browser:** localStorage `tazkiyah-akademie-gelesen` (Liste gelesener Lektionen) und
+  `tazkiyah-akademie-zuletzt` (zuletzt geöffnete). „Gelesen“, sobald der Abschluss-Kasten sichtbar wird. Nichts
+  geht an Supabase. Ohne Speicher (privates Fenster) einfach ohne Fortschritt.
+  **Für die Datenschutzerklärung vormerken:** lokale Speicherung des Lesefortschritts (und der eingeklappten
+  Seitenleiste) im Browser, keine Übermittlung, löschbar über die Browserdaten.
+- Geprüft (lokal, 18.10.2026, mit Entwurfsmodus und zwei vorübergehenden Testdateien 1-3/1-7, danach gelöscht):
+  1280/768/375 px ohne seitliches Scrollen; Glossar mit Tastatur und Esc; Quiz; gelesen und „Weiter, wo du warst“
+  nach Neuladen; „Stufe 1 abgeschlossen“ → 2.1; privates Fenster (Speicher gesperrt) ohne Fehler; Kontrast der
+  verwendeten Farbpaare mind. 5,1 : 1. Ohne Entwurfsmodus: nicht vorhandene Lektionen leiten auf `#/lernen`.
+- **Offen:** Einleitung der Übersicht ([Platzhalter]); Lektionstexte; Zielgruppe der Kurse (Phase 2);
+  Broker-Vergleich neu oder entfernen; Blogbeiträge verweisen mit `lektion: 1.3` auf eine Lektion.
+
+### Wochenbericht
+- Entwurf entsteht samstags 6:54 Uhr per geplanter Claude-Aufgabe in Notion
+  (unter "Wochenbericht – Ausarbeitung (Checkliste)"); keine KI-API, keine API-Kosten.
+- Format: "Das Wichtigste in drei Sätzen", Fließtext mit Zwischenüberschriften (ca. 1.600–
+  2.000 Wörter), kurzer Kasten "Einordnung für muslimische Anleger", Quellen, Hinweis.
+  Nur Rückblick, kein Ausblick. Kein Halal-Status für Unternehmen. Islamisches
+  Finanzwesen nur, wenn belegt und relevant.
+- Amaal prüft Sa/So, gibt frei; Veröffentlichung montags 12 Uhr.
+- Gebaut und auf main (96df55d): interne Prüfseite (Admin), Freigabe, Veröffentlichung
+  montags 12:00. Adresse je Ausgabe: #/berichte/wochenbericht/2026-kw43.
+  Korrekturen werden sichtbar markiert: Nach einer Änderung an einer veröffentlichten Ausgabe
+  setzt die Datenbank korrigiert_am, die Ausgabe zeigt „Korrigiert am …“ (geprüft 18.10.2026).
+  Alter Wochenbericht-Generator ist entfernt.
+- Mail/Newsletter erst nach dem Launch (braucht eigene Domain + Double-Opt-in).
+- Blog: Bereich unter "Berichte" neben dem Wochenbericht.
+
+### Launch in zwei Phasen
+- Phase 1 (Ziel Ende November 2026): ohne Gewerbe, keine Einnahmen (keine Werbung,
+  Affiliate-Links, Spenden, Bezahlinhalte). Voraussetzungen: Impressum (Name von Amaal,
+  Anschrift über Impressum-Adressdienst/c/o mit Zustellungsvollmacht, E-Mail-Adresse,
+  Verantwortliche nach § 18 Abs. 2 MStV), Datenschutzerklärung (Konten, Kontaktformular,
+  Akademie-Fragen, Resend, Supabase, Vercel, TradingView Zwei-Klick, ggf. cookielose
+  Statistik, USA-Übermittlung), Nutzungsbedingungen für Konten, Funktion "Konto löschen",
+  Haftungshinweis, AVV mit Supabase/Vercel/Resend, eigene Domain + Postfach, Auth-Mails
+  über eigenen SMTP (Resend), Sicherheitsblock (2FA, Backups mit Wiederherstellungstest,
+  RLS-Prüfung, Test-/Live-Datenbank trennen, Uptime-Monitor, Dependabot, Repo privat),
+  anwaltliche Kurzprüfung (MAR, Impressum, Kursangaben/MSCI-Lizenz).
+  Rechtstexte über IT-Recht Kanzlei (Paket "Datenschutz").
+- Phase 2: Gewerbe oder freiberuflich (Finanzamt), Monetarisierung (eher einmalig bezahlte
+  Kurse), AGB, Widerrufsbelehrung, Kündigungsbutton bei Abos, Stripe, Rechnungen.
+  Erst dann Code für Bezahlung.
 
 ---
 
 ## 0. Aktueller Stand und nächster Schritt (15.10.2026)
 
+### Navigation / Seitenleiste (17.10.2026)
+
+Branch `seitenleiste` (von `archiv-tazkiyah30`), gepusht, **nicht gemergt**. Ersetzt die Menülinks der Kopfleiste und das bisherige Handy-Menü.
+
+- **Desktop (ab 1024 px):** feste Seitenleiste links (`src/components/Sidebar.jsx`, `SidebarDesktop`, `<nav aria-label="Hauptnavigation">`), 248 px breit. Punkte: Start · Aktiensuche · (Die Tazkiyah 30, nur mit `VITE_FEATURE_TAZKIYAH30 = true`) · Berichte (aufklappbar: Wochenbericht, Blog) · Kalender · Akademie · Methodik · Kontakt. Angemeldet unter „Für dich“ zusätzlich Watchlist (mit Anzahl) · Konto (→ Profil); für Admins auch Redaktion.
+- **„folgt bald“:** Blog und Kalender sind sichtbar, aber nicht klickbar (`SOON_KEYS` in `Sidebar.jsx`; zum Freischalten den Schlüssel entfernen). Beide Seiten gibt es schon: Der Kalender zeigt SEC-Termine, der Blog ist leer. Über die Adresse, den Umschalter „Wochenbericht | Blog“ auf der Seite Berichte und die Startseite (Weg „Dranbleiben“, „Zum Kalender“) sind sie weiter erreichbar.
+- **Einklappen:** Knopf unten in der Leiste („Einklappen“, `aria-expanded`, `aria-controls`), eingeklappt 68 px nur mit Zeichen. Die Bezeichnungen bleiben für Screenreader lesbar und stehen als Tooltip am Zeichen. Der Zustand steht im localStorage unter `tazkiyah-seitenleiste-eingeklappt` („1“/„0“). Lesen und Schreiben laufen in try/catch; ohne Speicher (privates Fenster) startet die Leiste ausgeklappt.
+- **Kopfleiste** (`SiteHeader.jsx`), 64 px hoch: Logo, Suchfeld „Aktie suchen“ (ab 640 px; springt zu `#/aktien?suche=…`, die Aktiensuche übernimmt den Begriff), Anmelden bzw. Kontomenü (E-Mail-Adresse, unter 768 px „Konto“). Darunter der Fries.
+- **Handy/Tablet (unter 1024 px):** Menüknopf links in der Kopfleiste öffnet dieselben Punkte als Menü von links (`NavDrawer`, `role="dialog"`, mit Suchfeld oben). Es schließt bei Klick auf einen Link, auf den Hintergrund, mit Esc, mit dem Knopf „Menü schließen“ und bei jedem Seitenwechsel. Der Fokus bleibt im Menü und springt beim Schließen auf den Menüknopf zurück; die Seite dahinter scrollt nicht mit.
+- **Aktiv:** Der aktive Punkt ist dunkelgrün hinterlegt, mit Goldstrich links und `aria-current="page"`. Bei aufgeklappten Berichten trägt der Unterpunkt die volle Markierung, „Berichte“ nur den Goldstrich. Die Gruppe klappt auf, sobald man in Berichten ist.
+- **Design B2:** Fläche `--surface`, Trennlinie `--border` statt Schatten, eckig, Zeichen als Linien ohne Kreise; Überschriften Cormorant Garamond, Text Source Sans 3. Sichtbarer Fokus über die globale Regel (`:focus-visible`, 2 px Link-Grün).
+- **Unverändert:** Fußzeile (Methodik, Watchlist, Kontakt), Kontomenü-Einträge, Seiten und Adressen.
+- Geprüft (lokal, 17.10.2026): Desktop 1280 px aus- und eingeklappt, Zustand nach Neuladen, Suche „micro“ → 5 Treffer; Handy 375 px und Tablet 768 px ohne seitliches Scrollen, Menü schließt mit Esc, Link, Hintergrund und Seitenwechsel; Berichte aufklappbar (`aria-expanded`). Angemeldete Ansicht (Watchlist, Konto) nur im Code geprüft.
+- **Offen:** Blog und Kalender freischalten, sobald fertig (`SOON_KEYS`). Klären, ob der Umschalter auf der Seite Berichte den Blog bis dahin auch als „folgt bald“ zeigen soll.
+
+### Archiv Tazkiyah 30 (17.10.2026)
+
+**Entscheidung 17.10.2026:** Die Tazkiyah 30 werden zum Launch **archiviert, nicht gelöscht**. Tazkiyah gibt zum Launch **keine eigene Sharia-Einschätzung zu einzelnen Aktien** ab. Aktiensuche und Aktienseiten für alle Aktien des Universums bleiben öffentlich, ohne Halal-Status. Branch `archiv-tazkiyah30` (von `main`, das `tazkiyah-30` vollständig enthält), gepusht, **nicht gemergt**.
+
+**Schalter:** `VITE_FEATURE_TAZKIYAH30` (`src/lib/features.js`). Standard: aus. Nur der Wert `true` schaltet ein. Wirkt nach dem nächsten Deployment, gilt für Website und `api/fundamentals.js`.
+
+**Bei ausgeschaltetem Schalter ausgeblendet:**
+- Seite „Tazkiyah 30“: `#/tazkiyah-30` und `#/screener` leiten auf `#/aktien` um. Menüpunkt in Kopfleiste und Handy-Menü entfernt, ebenso der Kasten „Die Tazkiyah 30“ und der Link auf der Startseite (Weg „Selbst prüfen“ ohne „30 Beispiele“).
+- Halal-Status überall: Aktienseiten zeigen für alle Titel (auch die 30) nur die Seite ohne Status (`StockInfoPage`). Ergebnis, Prüfungen und Verlauf werden nicht geladen. Die Detailseite mit Status (`ScreeningDetailWithStatus` in `ScreeningDetail.jsx`) bleibt im Code. Keine Markierung „Tazkiyah 30“ in Aktiensuche, Kalender und Watchlist; Filter „Nur Tazkiyah 30“ im Kalender ausgeblendet; Sektor-Übersicht nicht erreichbar.
+- Knopf „Prüfung wünschen“ und Link „Zu den Tazkiyah 30“ auf der Aktienseite. Der Hinweis lautet jetzt: „Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann, erklären wir in der Akademie.“ (Link „Akademie“ → `#/lernen`; gleicher Satz in der Aktiensuche und auf der Methodik-Seite).
+- Abfragen: Die Website fragt `screening_current`, `tazkiyah30` und `screening_status_changes` nicht mehr ab (`src/lib/screeningData.js`). Liste und Aktienseiten kommen aus `securities` und `company_calendar`. Im Browser geprüft: Es werden nur `securities`, `company_calendar` und `weekly_reports` abgefragt.
+- Alter Endpunkt `api/fundamentals.js` (öffentlich, lieferte „KONFORM“/„NICHT KONFORM“ für jedes Symbol, von der Website nicht genutzt): antwortet mit 404.
+
+**Bereinigte Texte (Fundstellen der Prüfung vom 17.10.2026; bei eingeschaltetem Schalter erscheinen die bisherigen Fassungen):**
+- Methodik `#/methodik`: Einleitung ohne „Tazkiyah prüft die Tazkiyah 30“, Kasten „Wir prüfen nur die Tazkiyah 30“ durch den Hinweis ersetzt, Statuslegende entfernt. Den Absatz „Das Ergebnis ist einer von drei Status …“ und den Watchlist-Hinweis ersetzt ein neutraler Absatz. Bei Grenzwerten, ETFs, Produkten und „Daten und ihre Grenzen“ steht „erfüllt die Kriterien nicht“ bzw. „bleibt offen“ statt „nicht konform“/„nicht geprüft“.
+- Methodik- und Erklärseiten-Texte aus der Prüflogik (`parameters.js`, `explanations.js`, `industryRules.js`, 17 Sätze, u. a. A2, B3, G1–G4, Leasing, Segmente): Die Prüflogik bleibt unverändert. Die Anzeige ersetzt die Sätze wortgenau über `src/lib/neutralWording.js`. Test `neutralWording.test.js` prüft alle Texte und schlägt bei neuen Status-Wörtern an.
+- Akademie `#/lernen`: Glossar ohne „Konform“, „Nicht konform“, „Nicht geprüft“. „Halal“, „Portfolio“, „Verschuldungsquote“, „Anleihe“, „Blue Chip“ und „Sukuk“ neutral formuliert. Häufige Fragen (Tech-Aktien, „bisher konforme Aktie“, Anleihen), Einstieg Schritt 2, 3 und 5, Broker-Vergleich („Kontoführung ohne Zinsen“), Reiter Methodik und Vertiefen ebenfalls neutral.
+- Watchlist: Hinweis ohne Halal-Status; Karten ohne Status („Kurs, Termine und Berichte auf der Aktienseite.“).
+- Rechtlicher Hinweis (Startseite, Methodik 2): `LEGAL_NOTICE_TEXT_ARCHIV` in `src/components/screening/legalNoticeText.js`, ohne „Die Tazkiyah 30 zeigen …“ und ohne „Einstufung ‚konform‘“, aus dem bisherigen Wortlaut abgeleitet. **Vor dem Launch mit zur Anwaltsprüfung.**
+- Portfolio-Seite (nicht verlinkt): ohne „Status je Position“.
+- Wochenbericht: Punkt 3 der Checkliste lautet jetzt „Keine Sharia-Einschätzung zu einzelnen Aktien (kein ‚konform‘, kein Abschnitt zu den Tazkiyah 30)“. Die Vorlage KW 42 hat noch einen Abschnitt „## Aus den Tazkiyah 30“; der darf nicht erscheinen.
+- Meta-Tags (`index.html`): nur „Tazkiyah“, nichts zu ändern. Öffentliche API-Antworten: `api/fundamentals.js` (siehe oben) und die Datenbank (siehe SQL). Alle übrigen Endpunkte sind durch `CRON_SECRET` geschützt oder liefern keinen Status.
+- Geprüft (lokal, 17.10.2026, Schalter aus): ohne Treffer für „konform“, „nicht geprüft“, „Halal-Status“, „Tazkiyah 30“, „Prüfung wünschen“: Startseite, Aktiensuche, NVDA, AAPL, JNJ, Methodik, Methodik 2, Akademie mit allen Reitern und aufgeklappten Fragen, Erklärseiten A2/B1/B3/G1/G2, Wochenbericht, Blog, Kontakt, Watchlist, Kalender. Eingeschaltet (`true`) erscheinen Seite, Menüpunkt und Status wieder.
+- Bewusst unverändert: interne Redaktion, Code-Kommentare, `src/data/tazkiyah30.js`, `Tazkiyah30Page.jsx` und alle Komponenten und Daten der 30. Die Vorbelegung `#/kontakt?thema=pruefung` funktioniert noch, ist aber nirgends mehr verlinkt.
+
+**SQL `supabase_archiv_tazkiyah30.sql` (die Nutzerin führt sie aus, ERST NACH dem Merge auf `main` und dem Production-Deployment; der bisherige Stand liest `screening_current` für die Aktiensuche und zeigt sonst „Die Aktien konnten nicht geladen werden“):**
+- Entzieht `anon` und `authenticated` jedes Recht auf `screening_current` und `tazkiyah30`. Zusätzlich auf `screening_runs` (Spalten `status`/`public_result`; `screening_current` ist security_invoker und liest diese Tabelle) und `screening_status_changes` sowie das Leserecht auf `user_notifications`, weil der Status sonst über die Daten-API lesbar bliebe.
+- Keine neue öffentliche View nötig: Aktiensuche und Aktienseiten brauchen nur `securities` (Name, Ticker, Art, US-Börse, aktiv) und `company_calendar`. ISIN und Handelsplätze werden öffentlich nicht angezeigt.
+- Unverändert: Cron/Service-Role (auch Lesen von `tazkiyah30` für den Kalender-Cron), `screening_current_internal`, `manual_reviews_due`, Trigger, `is_tazkiyah30()`, alle Policies. Gelöscht wird nichts.
+- Kontrollabfrage am Ende von Abschnitt 1: alle `anon_…`/`auth_…` = false, `service_…` und `…_bleibt_oeffentlich` = true. Abschnitt 2 „Rückgängig machen“ ist auskommentiert (läuft beim Ausführen der Datei nicht mit). Getestet mit PGlite (`src/screening/archivTazkiyah30.test.js`, auch der Abschnitt „Rückgängig machen“).
+
+**Wieder einschalten:**
+1. In Vercel `VITE_FEATURE_TAZKIYAH30` = `true` setzen (Production bzw. Preview), Redeploy.
+2. Im SQL Editor Abschnitt 2 von `supabase_archiv_tazkiyah30.sql` ausführen (Zeilen ohne „-- “), danach die Kontrollabfrage aus Abschnitt 1 erneut ausführen (dann alle `anon_…`/`auth_…` = true).
+3. Rechtlichen Hinweis (`LEGAL_NOTICE_TEXT_TAZKIYAH30`) und Methodik-Texte prüfen; sie erscheinen automatisch wieder in der bisherigen Fassung.
+
+**Offen (17.10.2026):**
+1. Vorschau prüfen, dann Merge auf `main` (auf Anweisung), dann `supabase_archiv_tazkiyah30.sql` ausführen.
+2. In Vercel nichts setzen, solange die 30 archiviert bleiben (fehlende Variable = aus).
+3. Rechtlicher Hinweis (Archiv-Fassung) und Hinweissatz auf der Aktienseite mit zur Anwaltsprüfung.
+4. Abschnitt „Positionierung & Wettbewerb“ (16.10.) setzt auf die Tazkiyah 30 als Lücke („Konkrete, belegte Prüfungen“); mit dem Archiv neu einordnen.
+5. Akademie verspricht „wie man selbst prüft“; die Lektionen 7 und 8 des Lernpfads (Kriterien, Selbst prüfen) haben noch keinen Inhalt.
+6. Wochenbericht-Vorlage: Abschnitt „Aus den Tazkiyah 30“ und den Satz zur Neuprüfung aus der geplanten Aufgabe (Entwurf samstags) streichen.
+
 ### Wochenbericht (16.10.)
 
-**Grundsatz:** Ohne Freigabe der Nutzerin erscheint nie etwas. Keine Anbindung an eine KI-API, kein automatischer Generator (der alte Generator `api/generate-weekly-report.js` ist entfernt). Branch `wochenbericht` (von `main`), gepusht, nicht gemergt.
+**Grundsatz:** Ohne Freigabe der Nutzerin erscheint nie etwas. Keine Anbindung an eine KI-API, kein automatischer Generator (der alte Generator `api/generate-weekly-report.js` ist entfernt). Branch `wochenbericht` (von `main`), am 16.10.2026 auf `main` gemergt (Merge-Commit `96df55d`).
 
 **Ablauf**
 1. **Samstag:** Eine geplante Aufgabe in Claude schreibt den Entwurf in Notion (Aufbau, Ton und Länge wie `wochenbericht-vorlage-kw42.md`, offene Stellen als [eckige Klammern]).
@@ -47,6 +224,8 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ### Neue Ausrichtung (16.10.)
 
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
+
 **Entscheidung 16.10.2026:** Tazkiyah wird vom Prüfwerkzeug zum **Begleiter für Einsteiger**. Drei Säulen: **Lernen → Selbst prüfen → Dranbleiben.** Die Tazkiyah 30 sind ein Bereich unter mehreren, nicht mehr der Aufmacher. Keine Wörter wie „kaufen“, „Top“, keine Kursziele, keine Preise oder Abos auf der Seite.
 
 - **Hauptmenü (Desktop und Handy), alle Punkte gleich gewichtet:** Lernen · Methodik · Tazkiyah 30 · Aktien · Berichte · Kalender. „Lernen“ führt zur Akademie mit dem Lernpfad (`#/lernen`). Das Aufklappmenü bei „Berichte“ (einziger Unterpunkt „PDF-Berichte“, dieselbe Seite) ist entfernt. Watchlist und Kontakt bleiben in der Fußzeile.
@@ -81,6 +260,8 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 
 ### Neue Ausrichtung (15.10.2026)
 
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
+
 **Kurzfassung:** Tazkiyah ist kein Halal-Screener für ca. 500 Titel mehr, sondern **„Die Tazkiyah 30“**: eine feste, kostenlose Liste von 30 Aktien, die dauerhaft bei 30 bleibt. Neuprüfung nach jedem Quartalsbericht (4× im Jahr), Statusänderungen erscheinen im Wochenbericht. Ältere Planungen zu großen A2/B3-Paketen und zum großen Lauf sind unten als „entfällt“ markiert.
 
 - **Start-30:** NVDA, MU, QCOM, TXN, ADI, AMAT, LRCX, KLAC, ANET, AMD, CRM, META, PLTR, ADBE, SNPS, FTNT, WDAY, LLY, JNJ, PFE, AMGN, GILD, REGN, VRTX, BMY, SYK, BSX, EW, SHW, ITW. Auswahl nach Verbreitung bei deutschen Anlegern und ausreichender Datenlage, nicht nach Ertragsaussichten. Alle bei deutschen Brokern handelbar.
@@ -93,6 +274,8 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - **Bis zum Launch:** (1) Tiingo Commercial buchen + Adapter, (2) Zinserträge nachtragen (`interestIncomeNotes`, braucht die 10-Q; Analyse vom 15.10.2026: FMP Free liefert Kurse nur für eine Beispielliste von Symbolen, Zinserträge fehlen in den SEC-Daten bei TXN, LLY u. a.), (3) Paket AMD/META/PLTR/ADBE, (4) Seite „Tazkiyah 30“ und Aktiensuche bauen, (5) bisherigen Screener auf die 30 begrenzen. **Code erst nach Freigabe durch die Nutzerin.**
 
 ### Positionierung & Wettbewerb (16.10.2026)
+
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **Kernsatz:** „Halal investieren auf Deutsch, für deutsche Anleger: verständlich erklärt, sorgfältig belegt, unabhängig.“
 
@@ -116,6 +299,7 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 **Folge für die Umsetzung:** Vorrang haben das Änderungsprotokoll (öffentlich, mit Datum und Begründung) und Fundstellen je Aussage auf der Detailseite der 30. Akademie-Artikel verlinken auf die jeweilige Aktie der Liste.
 
 **Umsetzung „Die Tazkiyah 30 + Aktiensuche“ (Branch `tazkiyah-30`, 15.10.2026, nicht auf `main`; Freigabe der Nutzerin für die Umsetzung, Merge erst nach Prüfung der Vercel-Vorschau)**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **SQL `supabase_tazkiyah30.sql` (noch nicht ausgeführt, die Nutzerin führt es aus):** Tabelle `tazkiyah30` (ticker PK mit Verweis auf `securities.ticker`, sort_order, gruppe `beliebt`/`datenlage`, kurzbegruendung leer, aufgenommen_am), RLS, öffentlich nur lesen, mit den 30 Titeln befüllt (gruppe ist ein **Vorschlag**: beliebt = NVDA, MU, AMD, CRM, META, PLTR, ADBE, LLY, JNJ, PFE). Öffentlich nur noch die 30: View `screening_current` mit Join auf `tazkiyah30`; RLS von `screening_runs`, `screening_status_changes` und `user_notifications` auf `is_tazkiyah30(security_id)` beschränkt; ETFs damit nicht öffentlich. Cron und Wochenbericht (Service-Role) und `screening_current_internal` unverändert; `manual_reviews_due` liest jetzt die interne View. Zwei Kontrollabfragen am Ende (als anon: 30 Zeilen, nichts außerhalb der Liste). Getestet mit PGlite (`src/screening/tazkiyah30.test.js`). **Achtung:** `supabase_b1_b2_binaer.sql` und `supabase_schema_screening.sql` legen `screening_current` ohne Filter an; nach erneutem Ausführen `supabase_tazkiyah30.sql` wiederholen (Hinweis steht in beiden Dateien).
 - **Website:** Seite „Die Tazkiyah 30“ (`#/tazkiyah-30`, `#/screener` führt dorthin; ersetzt den Screener): Karten nach Branche, nur Endergebnisse (konform / nicht konform), Zähler „x von 30 geprüft“, Filter Status und Auswahl, Kästen „Warum nur 30?“, „Weitere Aktien“, „So lesen Sie die Liste“, rechtlicher Hinweis kurz + eingeklappt. Aktiensuche (`#/aktien`, Navigation „Aktien“): alle aktiven Titel ohne Status. Aktienseite ohne Halal-Status für alle Titel außerhalb der 30 (TradingView-Chart, -Finanzdaten und -Unternehmensprofil nach Zustimmung, Platzhalter Kalender/Berichte, „Prüfung wünschen“ → Kontaktformular vorausgefüllt); Titel der 30 ohne Endergebnis zeigen dieselbe Seite mit „Prüfung noch nicht abgeschlossen“. Kopfzeile: Aktien, Tazkiyah 30, Berichte, Kalender, Akademie; Methodik, Watchlist und Kontakt in der Fußzeile. Status sonst nur für die 30 (Watchlist, Sektoren, Vergleich, Startseite). Zusätzlicher Filter im Browser auf die Liste, solange die SQL-Datei nicht ausgeführt ist (Rückfall-Liste `src/data/tazkiyah30.js`, muss mit der SQL-Datei übereinstimmen, Test prüft das).
 - **Entscheidungen 15.10.2026 (nach der Umsetzung):** Gruppen bestätigt; Titel der 30 ohne Endergebnis zeigen nur „Prüfung noch nicht abgeschlossen“ (gewollt); Watchlist/Methodik in der Fußzeile, Portfolio nicht in der Navigation; **Vergleich ganz entfernt** (Seite, Route, Leiste, Kopfzeile); „Prüfung wünschen“ bleibt Thema „Sonstiges“ mit vorausgefülltem Text. `scripts/export-universum.mjs` und `scripts/sic-check.mjs` lesen jetzt `screening_current_internal` mit `SUPABASE_SERVICE_ROLE_KEY` (nur lokal in `.env.local` eintragen, nie mit `VITE_`-Präfix).
@@ -142,6 +326,7 @@ Stand: 16.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate and distinct object“, „independent object or activity“, „as a pursuit in itself“) – Verleihen gegen Zinsen an Dritte, Finanzierungsgeschäft für Dritte („business of financing“), Derivate-, Währungs- oder Zinsgeschäfte mit eigener Gewinnabsicht –, ist A2 `unclear` bis zur gelehrten Person. Reine Konzernfinanzierung allein wäre `pass`, aber nur, wenn keine dieser Klauseln vorkommt. Paket 2: A2 `unclear` bei STE (3.17 „business of financing“, 3.14 „independent object“), LIN (3.14 „as a pursuit in itself“), ACN (3.26 „independent object“), ETN (3.31 „business of financing“, 3.30 „independent object“) und weiterhin MDT (3.18 „at interest“); B3 unverändert.
 
 **Stand 12.10.2026 (abends): erstes A2/B3-Paket abgeschlossen**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **Paket:** LLY, MRK, PFE, BMY, AMGN, GILD, REGN, VRTX, ABT, TMO, ISRG, SYK, AVGO, TXN, ADI, AMAT, NOW, CDNS, KLAC, LRCX (CRM wegen C1 = fail durch LRCX ersetzt). A2: 20 × pass. B3: 14 × pass, 6 × unclear (MRK Schweine-Tiermedizin; ABT, TMO, CDNS Finanzierungsleasing; ISRG, AVGO eigene Kundenfinanzierung).
 - **Ablauf (für weitere Pakete beibehalten; gilt jetzt für das Paket AMD/META/PLTR/ADBE und die Quartalsprüfung der 30):** Entwürfe (Claude Code) → unabhängige Zweitprüfung durch Claude (Satzungen auf verbotene Zwecke, 10-K auf Kundenfinanzierung/Leasing/Rüstung, Segmentsummen gegen Gesamtumsatz) mit Prüfzettel (`review-work/pruefzettel-2026-10-12.md` und `review-work/Pruefzettel-A2-B3-2026-10-12.pdf`) → vollständige Gegenprüfung durch AMI (ca. 1–2 Min. je Aktie) → `confirmed: true`, `verification: "full"` → `review-to-sql.mjs --reviewer AMI` → `insert-reviews.sql` im SQL Editor ausgeführt (34 neue Zeilen, die 7 Pilot-Einträge nicht doppelt) → Neuberechnung `?limit=0`.
 - **Ergebnis nach Neuberechnung:** konform weiterhin JNJ, NVDA. Die 20 Aktien bleiben „nicht geprüft“, bis B1/B2 Kurse haben (`pending.prices` = 328 am 12.10., ca. 99 je Tag → fertig ca. 15./16.10.); der Cron rechnet danach selbst neu. Den Neuabruf der 17 alten FMP-Titel erst starten, wenn `pending.prices` = 0.
@@ -161,6 +346,7 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 - **Erstes A2/B3-Paket (11.10.2026, 20 Aktien; am 12.10.2026 bestätigt und eingetragen, siehe „Stand 12.10.2026 (abends)“):** LLY MRK PFE BMY AMGN GILD REGN VRTX ABT TMO ISRG SYK AVGO TXN ADI AMAT NOW CDNS KLAC LRCX (CRM wegen C1 fail durch LRCX ersetzt). A2 20 × pass. B3 14 × pass, 6 × unclear (MRK Schweine-Produkte; ABT, TMO, CDNS Finanzierungsleasing; ISRG Kundenfinanzierung über Leasing; AVGO Finanzierungsmodelle für KI-Systeme). check-quotes alles OK, Kontrollbogen `review-work/kontrollbogen.md`.
 
 **Neu am 11.10.2026 (Branch `b1-b2-binaer`, am 11.10.2026 auf `main` gemergt): B1/B2 öffentlich nur binär** (Lizenz FMP Free jetzt, Tiingo Commercial später; siehe „Neu am 08.10.2026“):
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **Oberfläche:** Detailseite zeigt bei B1/B2 je Periode nur „höchstens 30 %“ bzw. „über 30 %“ (bei „nicht geprüft“ den Grund), ohne Wert, Abstand und Balken, dazu „Wir zeigen nur, ob die Grenze eingehalten ist … Warum?“ und, wenn SEC-Daten vorliegen, „Schulden im 10-K vom … nachlesen“ (Link ins EDGAR-Archiv). Begründungszeile ohne B1/B2-Wert („Zinstragende Schulden über 30 %, Quartal 30.06.2026“). Sortierungen nach B1/B2 im Screener entfernt. Beispielkarte der Startseite binär. Erklärseiten B1/B2 und Methodik („Daten und ihre Grenzen“) mit kurzem Absatz zur Lizenz. Texte zentral in `format.js` (`BINARY_CRITERIA`, `binaryOutcome`). Vergleich, Watchlist, Portfolio und Berichte zeigten keine B1/B2-Werte.
 - **Engine 1.7.0:** `dataBasis.annualFiling`/`quarterFiling` (Formular, Einreichungsdatum, Link), nur mit SEC-Daten. Der Cron rechnet nach dem Merge alle Titel aus gespeicherten Daten neu (0 Abrufe, nach dem Abrufen im selben Lauf, Rest am Folgetag).
 - **Daten:** `supabase_b1_b2_binaer.sql`: Funktion `screening_public_result(result)` entfernt bei B1/B2 alles außer basis, periodEnd, label, limit, comparator, result, reason und Leasing-Angaben, in `headline.failed` den Wert, dazu `zakat.trading.priceAtPeriodEnd` und in `purification.periods` `prohibitedIncome`, `sharesOutstanding` und neu `ratePctOfPrice` (mit dem Betrag je Aktie ergäbe sich der Kurs). Ergebnis als berechnete Spalte `screening_runs.public_result` (generated … stored); `screening_current.result` = `public_result`; öffentlich auf `screening_runs` nur noch `public_result` statt `result` (auch der Verlauf bereinigt). Der Cron liest und schreibt unverändert (volle Werte in `result` und `screening_current_internal`). Schema-Datei angeglichen. Getestet mit PGlite (`src/screening/publicResult.test.js`: SQL-Datei, Schema zweimal, Rechte als Rolle `anon`).
@@ -228,13 +414,14 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 - **SQL auszuführen vor dem Merge von `sec-adapter`:** `supabase_manual_reviews_interest_notes.sql` (neue Spalte; der Cron läuft auch ohne sie). `supabase_protect_raw_inputs.sql` wurde am 08.10.2026 ausgeführt (vor dem Merge; der Cron auf `main` brach deshalb kurz mit „column screening_current.inputs does not exist“ ab). Mit dem Merge von `sec-adapter` liest der Cron die interne View `screening_current_internal`.
 
 **Neu am 08.10.2026:**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **Tiingo-Antwort:** Der 50-$-Commercial-Tarif ist nur für interne Nutzung, keine öffentliche Anzeige. Auch Marktkapitalisierung und Quoten mit Marktkapitalisierung im Nenner (B1, B2) gelten als Kursanzeige (rückrechenbar). Öffentliche Anzeige nur mit Startup-Redistribution-Lizenz 250 $/Monat (<5 Vollzeitkräfte), Pflicht-Hinweis „Data powered by Tiingo.com“ mit Link.
 - **Geplanter Mittelweg** (von Tiingo am 09.10.2026 schriftlich bestätigt, siehe nächster Punkt): 50-$-Tarif intern, bei B1/B2 nur „unter/über 30 %“ ohne Wert und ohne Abstand zum Grenzwert anzeigen; Kurs, Chart und Marktkapitalisierung nur über TradingView-Widgets; Methodik-Seite erklärt, warum kein genauer Wert steht, mit Link auf den 10-K. B3, C1, Reinigung und Zakat sind nicht betroffen (nur SEC-Daten). Wechsel auf 250 $, sobald Einnahmen das tragen.
 - **Tiingo-Antwort auf die Rückfrage (09.10.2026):** Im Commercial-Tarif (50 $/Monat oder 499 $/Jahr) ist öffentlich nur „unter/über 30 %“ bzw. konform/nicht konform erlaubt, kein Wert, keine Marktkapitalisierung, kein Kurs aus Tiingo. TradingView-Widgets unbedenklich. Die 250-$-Lizenz ist nur bei eigener Kursanzeige nötig. Schriftlich abgelegt in Notion „Verträge & Lizenzen“.
 - **Twelve Data entfernt** (Branch `twelve-data-entfernen`, am 08.10.2026 auf `main` gemergt): `api/price-history.js` gelöscht, Generator (`api/generate-weekly-report.js`) ohne Twelve Data. `TWELVE_DATA_API_KEY` danach in Vercel löschen.
 
 **Neu am 06.10.2026 (abends):**
-- **Screener pausiert**, bis die Antwort von Tiingo vorliegt (Anzeige von Status, Prozent-Kennzahlen und Marktkapitalisierung im Commercial-Tarif). Danach weiter mit Neuberechnung (`?limit=0`) auf Production, Kandidatenabfrage A2/B3, SEC- und Tiingo-Adapter.
+- **Screener pausiert**, bis die Antwort von Tiingo vorliegt (Anzeige von Status, Prozent-Kennzahlen und Marktkapitalisierung im Commercial-Tarif). Danach weiter mit Neuberechnung (`?limit=0`) auf Production, Kandidatenabfrage A2/B3, SEC- und Tiingo-Adapter. — **Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **Wochenbericht:** Der Cron `/api/generate-weekly-report` schrieb noch das alte Format (highlight/marktueberblick, Schlagzeilen von FMP) und legte am 05.10.2026 einen leeren Bericht an („Wochenbericht KW 41“, tldr leer). Weil die Seite bei mindestens einem Datenbank-Eintrag nur diese zeigt, waren die vier Demo-Berichte ausgeblendet. Cron am 06.10. aus vercel.json entfernt (Commit `fa8b9f0`), `api/generate-weekly-report.js` bleibt erhalten. Leeren Eintrag in `weekly_reports` löschen, falls noch nicht geschehen. Später: Generator neu bauen (Format tldr/makroPolitik/indices/aktienFokus/ausblick, Referenzwerte DAX, MSCI World, ISWD, Quellen, Entwurfsstatus, Veröffentlichung erst nach Gegenlesen).
 - **Akademie-Fragen live** (auf `main`, Commit `1bf8998`): Feld „Frage nicht gefunden?“ speichert in `academy_questions` (Besucher dürfen nur einreichen, nicht lesen, Drossel 30 in 10 Minuten). Tägliche Sammel-Mail über Resend (`/api/notify-questions`, 5:00 UTC, nur bei neuen Fragen), am 06.10. getestet (`sent: true`). Absender noch `onboarding@resend.dev`, landete im Spam (als „Kein Spam“ markiert). Fragen werden nicht einzeln beantwortet, sondern ins FAQ / die Akademie übernommen, danach Status `beantwortet`.
 - **`CRON_SECRET` am 06.10. abends erneut erneuert** (per `openssl rand -hex 32`, 64 Zeichen). Ein früherer Wert ist im Chat gelandet und ungültig. Gilt für beide Crons.
@@ -249,19 +436,20 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 - **Akademie-Fragen per E-Mail** (Branch `akademie-fragen`): `api/notify-questions.js`, Cron täglich 5:00 UTC. Schickt über Resend eine Sammel-Mail mit allen Fragen mit `status = 'neu'` und leerem `notified_at` (höchstens 100 je Lauf, Rest beim nächsten Lauf). Erst nach erfolgreichem Versand wird `notified_at` gesetzt. Absender `onboarding@resend.dev`, damit nur an die Adresse des Resend-Kontos möglich (für andere Empfänger eigene Domain bei Resend bestätigen). Neue Vercel-Variablen: `RESEND_API_KEY` (geheim), `QUESTIONS_NOTIFY_EMAIL`. Test: `?dryRun=1` (nur zählen). Betreff und Text: `src/lib/questionDigest.js` (Tests in `npm run test:lib`). **Resend vor dem Launch in die Datenschutzerklärung aufnehmen.**
 - **Kontaktformular** (Branch `kontakt-formular`, nicht auf `main`): Seite `#/kontakt`, Link „Kontakt“ in der Fußzeile. Besucher schreiben nur über `api/contact.js` (nur POST), nie direkt in Supabase; Tabelle `contact_messages` ohne Zugriff für Besucher (gespeichert mit Service-Role-Key, E-Mail klein und getrimmt). Felder: E-Mail (Pflicht), Name (freiwillig, max. 80), Thema (`allgemein`, `fehler`, `feedback`, `sonstiges`), Nachricht (10–2000 Zeichen); keine Zeilenumbrüche in E-Mail und Name. Spam-Falle: verstecktes Feld `website`; ausgefüllt → Antwort 200, aber nichts gespeichert, nichts gesendet. Drosseln: höchstens 20 Nachrichten insgesamt in 10 Minuten und 3 je E-Mail-Adresse in 24 Stunden (sonst 429). Benachrichtigung sofort über Resend an `CONTACT_NOTIFY_EMAIL` (optional, sonst `QUESTIONS_NOTIFY_EMAIL`), `reply_to` = Absender; bei Erfolg `notified_at`. Scheitert sie, meldet `api/notify-questions.js` die Nachricht im täglichen Sammellauf unter „Kontaktnachrichten ohne Benachrichtigung“ (ab 10 Minuten Alter). Eingangsbestätigung an den Absender nur, wenn `CONTACT_FROM_EMAIL` gesetzt ist (**erst nach eigener Domain bei Resend setzen**), höchstens eine je Adresse in 24 Stunden, ohne Namen und Nachrichtentext; bei Erfolg `confirmation_sent_at`. Löschung nach 6 Monaten per pg_cron-Job `kontakt-nachrichten-loeschen`. Prüfung und Mail-Aufbau: `src/lib/contact.js` (Tests in `npm run test:lib`). Der Link „Datenschutzerklärung“ unter dem Formular führt vorerst auf die Konto-Seite „Datenschutz“ (eine echte Datenschutzerklärung fehlt noch). **Vor dem Launch Datenschutzerklärung ergänzen** (Kontaktformular, Speicherdauer 6 Monate, Resend).
 - **Gegenprüfung:** `pass` nur nach vollständiger Gegenprüfung, „nicht konform“ auch per Stichprobe; festgehalten in `manual_reviews.verification`. Details: Abschnitt 4, „Gegenprüfung (Regel vom 06.10.2026)“.
-- **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“.
+- **Prüfer-Angabe:** intern Kürzel (`AMI`) und `ai_draft`; öffentlich „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft · Quelle: … · geprüft im <Monat Jahr>“, ohne KI-Hinweis an den Ergebnissen (Engine 1.4.0). Die KI-Unterstützung steht einmal auf der Methodik-Seite. Details: Abschnitt 4, „Manuelle Prüfungen“. — **Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **Methodik-Seite:** Festlegung Arzneimittel bei „Drogen“, Absatz zur KI-gestützten Auswertung („Jede Auswertung nennt die genaue Fundstelle.“).
 - **`review-to-sql.mjs`:** Aufruf `node --env-file=.env.local scripts/review-to-sql.mjs --reviewer AMI`; prüft den Jahresabschluss gegen `screening_current` und die Gegenprüfung.
 - **Datenschutz der Prüfdaten:** `supabase_manual_reviews_verification.sql` und `supabase_manual_reviews_privacy.sql` am 06.10.2026 im SQL Editor ausgeführt. Test mit dem öffentlichen Schlüssel am 06.10.2026: `manual_reviews` und `manual_reviews_due` abgewiesen („permission denied“), 0 Vorkommen von `reviewer`, „KI-Entwurf“ oder `ai_draft` in den 31 gespeicherten Läufen; `screening_current` und `securities` weiter lesbar, Detailseite lädt.
 - **Nächste Schritte:** (1) ~~SQL ausführen~~ erledigt 06.10. (2) Vorschau von `ui-screening` prüfen. (3) Kandidatenabfrage in `docs/BRIEFING-A2-B3.md` an den Prüfumfang vom 05.10. anpassen und ausführen. (4) ~~`ui-screening` auf `main` mergen~~ erledigt 06.10., danach Neuberechnung (`?limit=0`) auf der Production-Adresse; erst dann erscheint „· vollständig geprüft“ an den Ergebnissen (die gespeicherten Ergebnisse stammen noch von Engine 1.3.0). Offene Punkte: Abschnitt 1, „Offene Punkte (Stand 06.10.2026)“.
 
 **Neu am 05.10.2026:**
-- **Datenanbieter entschieden:** FMP wird ganz ersetzt (SEC für Abschlüsse, Tiingo für Kurse). Bis dahin bleibt FMP Free in Betrieb. Details: Abschnitt 1, „Datenanbieter (Entscheidung 05.10.2026)“.
+- **Datenanbieter entschieden:** FMP wird ganz ersetzt (SEC für Abschlüsse, Tiingo für Kurse). Bis dahin bleibt FMP Free in Betrieb. Details: Abschnitt 1, „Datenanbieter (Entscheidung 05.10.2026)“. — **Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - **TradingView-Widgets auf der Detailseite** (Branch `ui-screening`, Commit `69e5e8f`): Kurs-Chart und Finanzdaten mit aktueller Marktkapitalisierung, erst nach Klick (Zwei-Klick-Lösung). Börse je Aktie in `securities.exchange` (in Supabase befüllt). Details: Abschnitt 1, „Kernfunktionen“.
 - **Cron untersucht:** Er läuft, aber FMP Free liefert für fast alle Aktien keine Jahresabschlüsse (Fehler 402). Deshalb stehen erst 9 Titel in `screening_current`. Details: Abschnitt 4, „Cron-Befund (05.10.2026)“.
-- **Nächster Schritt:** A2/B3 weiter mit der Kandidatenabfrage (Abschnitt 1, „Geplant / offen“, Punkt 3). Danach SEC- und Tiingo-Adapter bauen.
+- **Nächster Schritt:** A2/B3 weiter mit der Kandidatenabfrage (Abschnitt 1, „Geplant / offen“, Punkt 3). Danach SEC- und Tiingo-Adapter bauen. — **Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **Stand 02.10.2026 (abends), weiterhin gültig, soweit oben nichts anderes steht:**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **Wo wir stehen:** Datenbasis und Screening-Engine stehen und sind an Apple und Microsoft gegen Börsenkurs und 10-K geprüft. Die Oberfläche ist auf den Screener umgebaut (Branch `ui-screening`, Vorschau-Adresse bei Vercel, **noch nicht auf `main` gemergt**). Die Seite ist **nicht offiziell gestartet**, sie ist nur per Link erreichbar. Fast jede Aktie steht auf „nicht geprüft“, weil die Handprüfungen A2 (Satzung) und B3 (Umsatzsegmente) fehlen. Roadmap als Dokument: https://claude.ai/code/artifact/9740a04f-6d82-4c70-8fc2-c5bf2e8dac92
 
@@ -283,12 +471,16 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 ## 1. Projektüberblick
 
 **Was ist Tazkiyah** (ehemals "Amanah" — umbenannt wegen Namenskonflikt mit `amanah-invest.de`, einer bestehenden Plattform mit gleicher Zielgruppe): Eine Web-App für Halal-konformes Investieren. Screent Aktien und ETFs nach den AAOIFI-Sharia-Standards Nr. 21 (Financial Paper), Nr. 27 (Indices) und Nr. 35 (Zakah) und zeigt Privatanlegern transparent, ob und warum ein Titel konform ist.
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **Zielgruppe:** Privatanleger mit kleinerem Budget, Sharia-konform investieren wollend, explizit inklusive Einsteiger. Launch zunächst nur in Deutschland.
 
 **Kernprinzipien:** Radikale Transparenz (jede Einstufung mit Begründung und Quelle), kein "KI"-Hype-Marketing, Neutralitätsversprechen (unabhängig von Brokern, keine Provisionen). Der Screener gibt Prüfergebnisse nach AAOIFI aus, keine religiösen Urteile ("konform nach AAOIFI SS 21" statt "halal").
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 ### Kernfunktionen — umgesetzt
+
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 - **Screener, Aktien-/ETF-Detailseiten, Watchlist, Portfolio-Reinheit, Reinheits-Rechner, Vergleichsfunktion, Sektor-Explorer, Akademie, Termin-Kalender mit iCal-Export, deutscher Handelskalender, PDF-Berichte/Marktbericht, Sidebar-Navigation** — siehe README.md. Seit 02.10. kommt der **Status** dieser Oberflächen aus Supabase (Screener, Branch `ui-screening`). `src/data/stocks.js` enthält nur noch Stammdaten und Platzhalter (Kurse, `eckdaten` sind Beispielwerte aus einem alten Lauf und werden als solche gekennzeichnet).
 - **Nutzerkonten** (unverändert zum Stand 17.09.): Registrierung mit Autosave, Login, Passwort-Reset, Kontobereich mit 4 Unterseiten (`ProfilePage`, `SecurityPage`, `SettingsPage`, `PrivacyPage`), `profiles`-Tabelle mit Trigger und RLS, `watchlist_items`-Tabelle.
@@ -320,6 +512,7 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 ### Geplant / offen
 
 **Datenanbieter (Entscheidung 05.10.2026):**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 - FMP-Angebot „Builders Plan“ (599 $/Monat) abgelehnt, zu teuer für die Entwicklungsphase.
 - Ziel: FMP ganz ersetzen (geplant, noch kein Code):
   - Bilanz, GuV, Quartale, Aktienzahl am Bilanzstichtag: **SEC** (XBRL, kostenlos, kommerziell nutzbar). SEC als Quelle nennen, keine SEC- oder EDGAR-Logos verwenden.
@@ -401,6 +594,7 @@ Nennt eine Satzung ein verbotenes Geschäft als eigenen Gegenstand („separate 
 Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: siehe docs/UEBERGABE-2026-10-04.md
 
 **Screener (nächste Schritte, Stand 02.10. abends):**
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 1. `ui-screening` prüfen (Vorschau) und auf `main` mergen. Die Seite ist nicht gestartet.
 2. ~~`CRON_SECRET` erneuern~~ erledigt 06.10.2026. Noch offen: `SCREENING_DAILY_CALL_BUDGET` = 200 prüfen, Redeploy.
 3. **A2/B3-Pilot** mit zehn Aktien (NVDA, JNJ, AAPL, AMZN, GOOGL, DIS, BRK-B, MSFT, KO, HD): KI liest Satzung und Segmentangaben, liefert Entwurf mit wörtlichem Zitat und Link, die Nutzerin kontrolliert alle zehn. Details: `docs/BRIEFING-A2-B3.md`. Stand 05.10.: Pilot durchgeführt (Abschnitt 4). Als Nächstes die Kandidatenabfrage ausführen. Achtung: Die Abfrage in `docs/BRIEFING-A2-B3.md` filtert noch mit `status <> 'nicht_konform'` und damit auch nach B1/B2/C1. Für den Prüfumfang vom 05.10.2026 (Abschnitt 4) darf sie nur Titel ausschließen, die eindeutig an A1 scheitern (noch anzupassen). Offen: B3-Häufigkeit (jährlich, quartalsweise oder nur Aktien mit verbotenen Segmenten quartalsweise), Wortlaut der Prüfer-Angabe (entschieden 06.10.2026, Abschnitt 4, „Manuelle Prüfungen“). Methodik-Seite (seit 06.10.2026, ersetzt den Platzhalter „KI-gestützte Prüfung mit Stichprobenkontrolle“): „Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung nennt die genaue Fundstelle. Bevor ein Titel als ‚konform‘ gilt, prüfen wir die zitierten Stellen selbst nach.“ Regel dazu: Abschnitt 4, „Gegenprüfung“.
@@ -448,7 +642,7 @@ Stand der A2/B3-Prüfung, Auslegungen, FMP-Lizenzfrage und nächste Schritte: si
 - OpenFIGI (deutsche Handelsplätze per ISIN, kostenlos)
 - SEC / EDGAR (kostenlos, User-Agent mit Name und E-Mail Pflicht): 10-K und Satzung für A2/B3 (`scripts/sec-fetch.mjs`), Börse je Aktie (`scripts/sec-exchanges.mjs`). Abschlüsse per XBRL: SEC-Adapter `providers/sec.js` (seit 08.10.2026 auf Branch `sec-adapter`, noch nicht aktiv; ersetzt später FMP).
 - TradingView-Widgets (kostenlos, mit Branding, nur nach Klick): Kurs-Chart und Finanzdaten auf der Detailseite.
-- Tiingo Commercial: geplant (Kurse zum Stichtag), noch nicht gebucht.
+- Tiingo Commercial: geplant (Kurse zum Stichtag), noch nicht gebucht. — **Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **GitHub:** `github.com/amaal48/tazkiyah-project`
 
@@ -564,8 +758,10 @@ Suche in ~/Downloads die neueste Datei, deren Name mit "tazkiyah-..." beginnt un
 **Schutz des Crons (01.10.):** Sperre gegen gleichzeitige Läufe (Tabelle `screening_lock`, Funktionen `acquire_screening_lock`/`release_screening_lock`), Abrufe werden vor jedem Titel atomar über `add_api_usage` reserviert, FMP-Fehler haben eine Art (`limit`/`premium`/`other`). Bei „Limit Reach“ bricht der Abruf ab, ohne Titel als fehlerhaft zu markieren. Sind Quartale oder der Kursverlauf im Tarif gesperrt, wird mit den Jahreswerten weitergerechnet (betroffene Prüfungen „nicht geprüft“), und der Titel wird erst nach dem nächsten erwarteten Jahresabschluss erneut abgerufen.
 
 **Oberfläche (Entscheidungen 02.10.):** Statt der alten Bewertung drei Status (konform / nicht konform / nicht geprüft), kein Score, kein Stern, kein „Grenzwertig“, keine Zählung „x von y bestanden“; bei „nicht geprüft“ steht in Worten, was fehlt. Ein vierter Status „noch nicht bearbeitet“ entfällt (zeigt „Wird demnächst geprüft“). Hauptseite: Kopf mit Grundlage AAOIFI SS 21/27/35 (kein AAOIFI-Logo, Satz zur fehlenden Verbindung), Prüfstufen-Grafik, Legende, Filter, Liste mit Begründungszeile. Detailseite: Kriterien mit Werten, Abstand zur Grenze, Kennzeichnungen, Quellen. **Jede Quelle ist ein Link auf eine eigene Erklärseite je Prüfung** (`#/kriterium/b1`), Texte zentral in `src/screening/explanations.js` und `parameters.js`. Free/Pro-Abgrenzung später. Arbeitsanweisung für Claude Code: `docs/UI-UMBAU-SCHRITT-1.md`, Umbau auf Branch `ui-screening` (umgesetzt, noch nicht auf `main`). Texte in Akademie, FAQ und Glossar sind auf die drei Status umgestellt; `stocks.js` ist von der alten Bewertung bereinigt. Engine 1.3.0 liefert `result.headline` (Kurzfassung für die Liste). **Prüfer-Angabe an Ergebnissen (06.10.2026):** Die Detailseite zeigt an jeder manuellen Prüfung „Geprüft von der Tazkiyah-Redaktion · vollständig geprüft“ bzw. „· stichprobenartig geprüft“ und „· Quelle: …“ (Link) und am Ende „· geprüft im <Monat Jahr>“ (seit 06.10.2026); ohne Prüfer-Kürzel und ohne KI-Hinweis. Die KI-Unterstützung steht einmal auf der Methodik-Seite („Daten und ihre Grenzen“). Offen: `todo`-Felder in explanations.js (D2 Tamattu', C3 SS 59), Fundstellen gegen den Standardtext prüfen.
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **Seitenstruktur (Schritt 1b, 02.10.):** Die Seite hat drei Adressen: `#/` (Startseite), `#/screener` (Filter und Liste) und `#/methodik`. Die Startseite stellt Tazkiyah kurz vor und verlinkt auf Screener, Portfolio, Berichte, Watchlist, Akademie und Methodik; „So wird geprüft“ (Prüfstufen-Grafik und die drei Status) steht in der Methodik. Die AAOIFI-Grundlage (SS 21, 27, 35) bleibt als eine Zeile auf der Startseite, mit Link zur Methodik, „nicht mit der AAOIFI verbunden“ und „keine Anlageberatung, kein Rechtsgutachten (Fatwa)“. Arbeitsanweisung: `docs/UI-STARTSEITE.md`.
+**Überholt am 18.10.2026, siehe 'Neuer Stand 18.10.2026'**
 
 **A2/B3-Prüfung (Planung):** Vorprüfung durch KI mit Quelle und wörtlicher Textstelle, Kontrolle durch die Nutzerin nach der Regel „Gegenprüfung (06.10.2026)“ (unten in diesem Abschnitt); Grenzfälle werden gelistet und von ihr separat geprüft. A2 jährlich, B3 geplant nach jedem Quartalsbericht (Fundstelle SS 21, 3/4/8 noch prüfen). Methodik-Seite und Prüfer-Angabe: siehe „Gegenprüfung (06.10.2026)“ und „Manuelle Prüfungen“ (Prüfer-Angabe). **Entfällt (Neue Ausrichtung 15.10.2026):** ~~**Prüfumfang (Entscheidung 05.10.2026):** A2 und B3 für alle Aktien prüfen, außer Titeln, die eindeutig an A1 scheitern (Ausschlussbranchen laut `industryRules.js`). Kein Vorfilter nach B1, B2 oder C1, weil diese Kennzahlen je Quartal schwanken und die Prüfung dann schon vorliegen soll. Geschätzt fallen 60 bis 70 Titel raus (Banken, Versicherungen, Kreditgeber, Rüstung, Glücksspiel, Alkohol, Tabak, Schweinefleisch), es bleiben ca. 430 bis 440, darunter 25 bis 30 sonstige Finanzdienstleister mit besonders aufwändigem B3. (Bis 04.10. galt: Nur Titel prüfen, die nicht schon an A1/B1/B2/C1 scheitern.) Kontrollseite statt reiner Eingabemaske (Entwurf, Quelle, Textstelle, „bestätigt/korrigieren“).~~
 

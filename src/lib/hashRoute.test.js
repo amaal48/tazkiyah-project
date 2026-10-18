@@ -54,3 +54,20 @@ test("Vorbelegung des Formulars nutzt nur vorhandene Themen", () => {
   assert.equal(contactPrefill("fehler", null).topic, "fehler");
   assert.equal(contactPrefill("unbekannt", "X").topic, "allgemein");
 });
+
+test("Aktiensuche mit Suchbegriff (Suchfeld der Kopfleiste)", () => {
+  assert.equal(routes.aktien("Novo Nordisk"), "#/aktien?suche=Novo%20Nordisk");
+  assert.deepEqual(parseHash(routes.aktien("Novo Nordisk")), { name: "aktien", query: "Novo Nordisk" });
+  assert.deepEqual(parseHash("#/aktien?suche="), { name: "aktien" });
+});
+
+test("Akademie: Übersicht, Stufe, Glossar und Lektion", () => {
+  assert.deepEqual(parseHash("#/lernen"), { name: "lernen" });
+  assert.equal(routes.lernen(), "#/lernen");
+  assert.deepEqual(parseHash(routes.lernen({ stufe: 2 })), { name: "lernen", stufe: 2 });
+  assert.deepEqual(parseHash("#/lernen?stufe=9"), { name: "lernen" });
+  assert.deepEqual(parseHash(routes.lernen({ glossar: "Anleihe (Bond)" })), { name: "lernen", glossar: "Anleihe (Bond)" });
+  assert.equal(routes.lesson("1-3"), "#/lernen/1-3");
+  assert.deepEqual(parseHash("#/lernen/1-3"), { name: "lesson", slug: "1-3" });
+  assert.deepEqual(parseHash("#/lernen/2-10"), { name: "lesson", slug: "2-10" });
+});

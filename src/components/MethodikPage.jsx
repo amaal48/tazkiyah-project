@@ -22,6 +22,9 @@ import { routes } from "../lib/hashRoute.js";
 import StageDiagram from "./screening/StageDiagram.jsx";
 import StatusLegend from "./screening/StatusLegend.jsx";
 import { H1_STYLE, NOTICE_NO_ADVICE, shortExplanation } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
+import { FEATURE_TAZKIYAH30, NO_SHARIA_ASSESSMENT_TEXT } from "../lib/features.js";
+import { neutralize } from "../lib/neutralWording.js";
 
 // Kurztitel je Parameter (Überschrift des Eintrags)
 const TITLES = {
@@ -159,8 +162,9 @@ const STEPS = [
   ["Wertpapierart", "Stammaktie statt Vorzugsaktie mit finanziellem Vorrang, keine Anleihe."],
 ];
 
-// Geschütztes Leerzeichen vor „%“, damit „30 %“ nicht umbricht
-const nb = (t) => (typeof t === "string" ? t.replace(/ %/g, "\u00a0%") : t);
+// Geschütztes Leerzeichen vor „%“, damit „30 %“ nicht umbricht. Archiv Tazkiyah 30 (17.10.2026): ohne
+// Status-Wörter (neutralize, src/lib/neutralWording.js), solange VITE_FEATURE_TAZKIYAH30 aus ist.
+const nb = (t) => (typeof t === "string" ? neutralize(t).replace(/ %/g, "\u00a0%") : t);
 
 function formatDate(v) {
   const [y, m, d] = String(v).split(/[-.]/);
@@ -206,7 +210,7 @@ function ParameterEntry({ id, def, showLimit }) {
             <dd className="flex flex-wrap gap-x-3 gap-y-1">
               {USED_BY[id].map((cid) => (
                 <a key={cid} href={routes.criterion(cid)} className="text-[var(--primary)] underline decoration-[var(--gold)]/40 underline-offset-2">
-                  {EXPLANATIONS[cid].name} ({cid})
+                  {nb(EXPLANATIONS[cid].name)} ({cid})
                 </a>
               ))}
             </dd>
@@ -335,9 +339,22 @@ export default function MethodikPage({ onBack, anchor }) {
           </p>
           <h1 className="font-display" style={H1_STYLE}>So prüft Tazkiyah</h1>
           <p className="pt-4 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-            Tazkiyah prüft die Tazkiyah 30 in vier Stufen nach den Sharia-Standards der AAOIFI. Jede Entscheidung, die der
-            Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative und Fundstelle.
+            {FEATURE_TAZKIYAH30
+              ? "Tazkiyah prüft die Tazkiyah 30 in vier Stufen nach den Sharia-Standards der AAOIFI."
+              : "Eine Prüfung nach den Sharia-Standards der AAOIFI läuft in vier Stufen. Diese Seite zeigt, wie wir sie verstehen."}{" "}
+            Jede Entscheidung, die der Wortlaut offenlässt, steht auf dieser Seite mit Begründung, verworfener Alternative und
+            Fundstelle.
           </p>
+          {/* Archiv Tazkiyah 30 (17.10.2026): statt „Wir prüfen nur die Tazkiyah 30“ der Hinweis ohne Einschätzung */}
+          {!FEATURE_TAZKIYAH30 && (
+            <p className="mt-6 max-w-[68ch] border border-[var(--note-border)] bg-[var(--note-bg)] p-5 text-[15px] leading-relaxed text-[var(--text-soft)]">
+              {NO_SHARIA_ASSESSMENT_TEXT}{" "}
+              <a href={AKADEMIE_PRUEFEN_LINK} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+                Zur Akademie
+              </a>
+            </p>
+          )}
+          {FEATURE_TAZKIYAH30 && (
           <section id="nur-30" aria-labelledby="nur-30-titel" className="mt-6 max-w-[68ch] border border-[var(--note-border)] bg-[var(--note-bg)] p-5">
             <h2 id="nur-30-titel" className="font-display" style={{ ...H2_STYLE, fontSize: "25px" }}>
               Wir prüfen nur die Tazkiyah 30
@@ -354,6 +371,7 @@ export default function MethodikPage({ onBack, anchor }) {
               </a>
             </p>
           </section>
+          )}
           <p className="pt-4 max-w-[68ch] text-sm leading-relaxed text-[var(--muted)]">
             Grundlage: AAOIFI Shari'ah Standards Nr. 21 (Wertpapiere), Nr. 27 (Indizes) und Nr. 35 (Zakat). Tazkiyah prüft
             nach den Standards der AAOIFI und ist nicht mit der AAOIFI verbunden. {NOTICE_NO_ADVICE}
@@ -369,9 +387,11 @@ export default function MethodikPage({ onBack, anchor }) {
           <div className="mt-6">
             <StageDiagram />
           </div>
-          <div className="mt-6">
-            <StatusLegend />
-          </div>
+          {FEATURE_TAZKIYAH30 && (
+            <div className="mt-6">
+              <StatusLegend />
+            </div>
+          )}
           <h2 className="font-display mt-14" style={H2_STYLE}>Alle Prüfungen</h2>
           <div className="mt-6 grid gap-x-10 gap-y-8 md:grid-cols-2">
             {[...STAGES, ETF_STAGE].map((stage) => (
@@ -386,7 +406,7 @@ export default function MethodikPage({ onBack, anchor }) {
                       <a href={routes.criterion(cid)} className="group block py-2.5">
                         <span className="flex items-baseline gap-2">
                           <span className="w-6 flex-shrink-0 font-[IBM_Plex_Mono] text-sm text-[var(--faint)]">{cid}</span>
-                          <span className="text-sm text-[var(--text)] group-hover:underline">{EXPLANATIONS[cid].name}</span>
+                          <span className="text-sm text-[var(--text)] group-hover:underline">{nb(EXPLANATIONS[cid].name)}</span>
                         </span>
                         <span className="block pl-8 pt-0.5 text-sm leading-relaxed text-[var(--text-soft)]">{nb(shortExplanation(cid))}</span>
                       </a>
@@ -437,6 +457,17 @@ export default function MethodikPage({ onBack, anchor }) {
                   </li>
                 ))}
               </ol>
+              {!FEATURE_TAZKIYAH30 && (
+                <div className="mt-8 max-w-[68ch] space-y-3 text-sm leading-relaxed text-[var(--text-soft)]">
+                  <p>
+                    Eine Aktie erfüllt die Kriterien nur, wenn alle Prüfungen bestanden sind. Ist ein Kriterium belegt nicht
+                    erfüllt, gilt das auch dann, wenn andere Angaben noch fehlen. Fehlt eine Angabe oder ist sie unklar, bleibt
+                    die Prüfung offen; fehlende Daten zählen nie als bestanden.
+                  </p>
+                  <p>Nach jedem neuen Abschluss beginnt die Prüfung von vorn (SS 21, 3/4/8).</p>
+                </div>
+              )}
+              {FEATURE_TAZKIYAH30 && (
               <div className="mt-8 max-w-[68ch] space-y-3 text-sm leading-relaxed text-[var(--text-soft)]">
                 <p>Das Ergebnis ist einer von drei Status:</p>
                 <p>
@@ -456,12 +487,13 @@ export default function MethodikPage({ onBack, anchor }) {
                   Watchlist, siehst du einen Hinweis.
                 </p>
               </div>
+              )}
             </section>
 
             {sections.map((s) => (
               <section key={s.id} id={s.id} className="mt-20 scroll-mt-24">
                 <h2 className="font-display" style={H2_STYLE}>{s.title}</h2>
-                {s.intro && <p className="pt-3 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">{s.intro}</p>}
+                {s.intro && <p className="pt-3 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">{nb(s.intro)}</p>}
                 <div className="mt-4">
                   {s.keys.map((k) => (
                     <ParameterEntry key={k} id={k} def={DEFAULT_PARAMETERS[k]} showLimit={s.showLimits} />
@@ -476,7 +508,7 @@ export default function MethodikPage({ onBack, anchor }) {
             <section id="produkte" className="mt-20 scroll-mt-24">
               <h2 className="font-display" style={H2_STYLE}>Ausgeschlossene Produkte</h2>
               <p className="pt-3 max-w-[68ch] text-[15px] leading-relaxed text-[var(--text-soft)]">
-                Diese Produkte und Geschäfte werden nie als konform ausgewiesen, unabhängig vom zugrunde liegenden Wert.
+                {nb("Diese Produkte und Geschäfte werden nie als konform ausgewiesen, unabhängig vom zugrunde liegenden Wert.")}
               </p>
               <ul className="mt-5 max-w-[68ch] divide-y divide-[var(--border)] border-y border-[var(--border)] text-sm">
                 {Object.entries(EXCLUDED_PRODUCT_TYPES).map(([id, source]) => (
@@ -502,7 +534,7 @@ export default function MethodikPage({ onBack, anchor }) {
                 </p>
                 <p>
                   Satzung und Umsatzsegmente werten wir mit KI-Unterstützung aus den Jahresberichten aus. Jede Auswertung
-                  nennt die genaue Fundstelle. Bevor ein Titel als „konform“ gilt, prüfen wir die zitierten Stellen selbst nach.
+                  nennt die genaue Fundstelle. {nb("Bevor ein Titel als „konform“ gilt, prüfen wir die zitierten Stellen selbst nach.")}
                 </p>
                 <p>Wo die verfügbaren Daten vom Wortlaut des Standards abweichen, sagen wir das offen:</p>
                 <ul className="list-disc space-y-2 pl-5">
@@ -511,27 +543,27 @@ export default function MethodikPage({ onBack, anchor }) {
                     Die Marktkapitalisierung zum Stichtag wird aus Schlusskurs mal Aktienzahl gebildet. Als Aktienzahl dient
                     bisher der Durchschnitt der Periode, nicht der Bestand am Stichtag; das ist bei den Kennzahlen als
                     Datenabweichung gekennzeichnet. Bei mehreren Aktiengattungen müssten alle Gattungen addiert werden;
-                    ist das mit den Daten nicht möglich, bleibt die Prüfung „nicht geprüft“. Liefert die Datenquelle die
+                    ist das mit den Daten nicht möglich, {nb("bleibt die Prüfung „nicht geprüft“")}. Liefert die Datenquelle die
                     Marktkapitalisierung selbst, ersetzt sie die Näherung.
                   </li>
                   <li>
                     Weist ein Quartal Leasing nicht gesondert aus, wird der Wert des letzten Jahresabschlusses übernommen
                     und als „Schätzung aus Jahresabschluss“ gekennzeichnet. Hängt das Ergebnis von dieser Schätzung ab,
-                    lautet der Status „nicht geprüft“, bis der Quartalsbericht von Hand geprüft ist.
+                    {nb("lautet der Status „nicht geprüft“, bis")} der Quartalsbericht von Hand geprüft ist.
                   </li>
                   <li>Sonstige Erträge liegen teilweise nur als Saldo mit Aufwendungen vor.</li>
                   <li>
                     Verbotene Einnahmen (B3) werden auf die Gesamteinnahmen bezogen. Weist ein Unternehmen seine sonstigen
                     Erträge nicht gesondert aus, rechnen wir vorsichtig nur mit Umsatz und Zinserträgen. Der Nenner wird
-                    dadurch kleiner, die Quote eher höher. Liegt sie unter 5 %, gilt die Prüfung als bestanden; sonst steht
-                    sie auf „nicht geprüft“, nie auf „nicht konform“.
+                    dadurch kleiner, die Quote eher höher. Liegt sie unter 5 %, gilt die Prüfung als bestanden;{" "}
+                    {nb("sonst steht sie auf „nicht geprüft“, nie auf „nicht konform“.")}
                   </li>
                   <li>
                     Für die realen Vermögenswerte (C1) fehlen manchmal einzelne Bilanzposten, oder sie stecken in
                     Sammelzeilen wie „Sonstige Vermögenswerte“. Dann zählen wir nur Werte, die eindeutig real sind
                     (Sachanlagen, Vorräte, Forderungen, Rechte). Sammelzeilen und nicht ausgewiesene Posten zählen nicht
                     mit, die Bilanzsumme bleibt der Maßstab. Erreichen die belegten Werte 33,3 %, gilt die Prüfung als
-                    bestanden; sonst steht sie auf „nicht geprüft“, nie auf „nicht konform“.
+                    bestanden; {nb("sonst steht sie auf „nicht geprüft“, nie auf „nicht konform“.")}
                   </li>
                 </ul>
                 <p>

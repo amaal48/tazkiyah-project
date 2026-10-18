@@ -9,8 +9,8 @@ aktualisiert: 2026-10-20
 # thema: maerkte | islamisches-finanzwesen | erklaert (oder die Bezeichnung, z. B. Märkte & Wirtschaft)
 thema: maerkte
 # lesezeit: Minuten, nur angeben, wenn die automatische Schätzung (200 Wörter je Minute) nicht passt
-# lektion: Nummer der passenden Lektion im Lernpfad (1–11), erscheint unter „Passt dazu“
-lektion: 3
+# lektion: Nummer der passenden Lektion in der Akademie (z. B. 1.3), erscheint unter „Passt dazu“
+lektion: 1.3
 quellen:
   - Herausgeber, Titel, Datum, https://www.beispiel.de/seite
   - Herausgeber, Titel, Datum
