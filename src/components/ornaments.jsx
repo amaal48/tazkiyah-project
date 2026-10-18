@@ -16,10 +16,10 @@ function usePatternId(prefix) {
 const STAR_PATH = "M32 4 L39 25 L60 32 L39 39 L32 60 L25 39 L4 32 L25 25 Z";
 
 /** Rosette als Musterkachel (64 × 64). */
-function RosettePattern({ id }) {
+function RosettePattern({ id, color = "var(--gold-line)" }) {
   return (
     <pattern id={id} width="64" height="64" patternUnits="userSpaceOnUse">
-      <g fill="none" style={{ stroke: "var(--gold-line)" }} strokeWidth="1">
+      <g fill="none" style={{ stroke: color }} strokeWidth="1">
         <path d="M32 8 L38 26 L56 32 L38 38 L32 56 L26 38 L8 32 L26 26 Z" />
         <circle cx="32" cy="32" r="6" />
         <path d="M0 0 L8 8 M64 0 L56 8 M0 64 L8 56 M64 64 L56 56" />
@@ -29,13 +29,13 @@ function RosettePattern({ id }) {
 }
 
 /** Goldenes Rautenband über die volle Breite (unter dem Kopf, über der Fußzeile). */
-export function Frieze({ className = "" }) {
+export function Frieze({ className = "", color = "var(--gold)" }) {
   const id = usePatternId("fries");
   return (
     <svg aria-hidden="true" focusable="false" width="100%" height="24" className={"block " + className}>
       <defs>
         <pattern id={id} width="40" height="24" patternUnits="userSpaceOnUse">
-          <g fill="none" style={{ stroke: "var(--gold)" }} strokeWidth="1">
+          <g fill="none" style={{ stroke: color }} strokeWidth="1">
             <path d="M0 12 L10 2 L20 12 L10 22 Z M20 12 L30 2 L40 12 L30 22 Z" />
             <circle cx="20" cy="12" r="2" />
           </g>
@@ -47,12 +47,12 @@ export function Frieze({ className = "" }) {
 }
 
 /** Rosettenmuster als Hintergrund einer grünen Fläche (Eltern-Element braucht position: relative). */
-export function RosetteOverlay({ opacity = 0.2 }) {
+export function RosetteOverlay({ opacity = 0.2, color }) {
   const id = usePatternId("rosette");
   return (
     <svg aria-hidden="true" focusable="false" width="100%" height="100%" className="pointer-events-none absolute inset-0" style={{ opacity }}>
       <defs>
-        <RosettePattern id={id} />
+        <RosettePattern id={id} color={color} />
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} />
     </svg>
