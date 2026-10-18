@@ -43,10 +43,13 @@ Stand: 18.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
 - Schriften selbst hosten (nicht von Google Fonts laden).
 
 ### Branch-Reihenfolge
-1. archiv-tazkiyah30 (von tazkiyah-30) → Vorschau prüfen → Merge (dringend: auf main
-   läuft noch der alte Screener mit Status für alle Titel)
+1. archiv-tazkiyah30 (von main; main enthält tazkiyah-30 vollständig) → Vorschau → Merge.
+   Auf main erscheint der Status derzeit nur für die 30; die Aktiensuche zeigt keinen Status.
+   Mit dem Archiv-Branch verschwindet er auch bei den 30.
 2. seitenleiste (von archiv-tazkiyah30) → Vorschau → Merge
-3. design-b2 auf alle Seiten
+3. Schriften selbst hosten (Cormorant Garamond, Source Sans 3, ggf. IBM Plex Mono;
+   kommen derzeit noch von Google Fonts) – eigener kleiner Branch
+Design B2 ist seit 16.10. auf allen Seiten auf main (8050ffe), kein eigener Schritt mehr.
 
 ### Wochenbericht
 - Entwurf entsteht samstags 6:54 Uhr per geplanter Claude-Aufgabe in Notion
@@ -56,12 +59,11 @@ Stand: 18.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
   Nur Rückblick, kein Ausblick. Kein Halal-Status für Unternehmen. Islamisches
   Finanzwesen nur, wenn belegt und relevant.
 - Amaal prüft Sa/So, gibt frei; Veröffentlichung montags 12 Uhr.
-- Zu bauen (Phase 1): interne Prüfseite (nur Admin, Vorschau im B2-Design, eingebaute
-  Checkliste, Freigabe-Knopf erst aktiv, wenn Checkliste vollständig und keine
-  [eckigen Klammern] mehr im Text), automatische Veröffentlichung Mo 12 Uhr, eigene Adresse
-  je Ausgabe (z. B. #/berichte/2026-KW43), Korrekturen sichtbar ("Korrigiert am …").
-  Supabase-Tabelle weekly_reports (gibt es schon) mit Status Entwurf/freigegeben/veröffentlicht.
-  Bis dahin Text von Hand einfügen. Alter Wochenbericht-Cron bleibt aus.
+- Gebaut und auf main (96df55d): interne Prüfseite (Admin), Freigabe, Veröffentlichung
+  montags 12:00. Adresse je Ausgabe: #/berichte/wochenbericht/2026-kw43.
+  Korrekturen werden sichtbar markiert: Nach einer Änderung an einer veröffentlichten Ausgabe
+  setzt die Datenbank korrigiert_am, die Ausgabe zeigt „Korrigiert am …“ (geprüft 18.10.2026).
+  Alter Wochenbericht-Generator ist entfernt.
 - Mail/Newsletter erst nach dem Launch (braucht eigene Domain + Double-Opt-in).
 - Blog: Bereich unter "Berichte" neben dem Wochenbericht.
 
