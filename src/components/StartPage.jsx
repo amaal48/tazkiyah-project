@@ -21,11 +21,14 @@ import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
 import { ArchFrame, Frieze, ManuscriptFrame, OctaStarNumber, StarRule } from "./ornaments.jsx";
 import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
+import { SOON_KEYS } from "./Sidebar.jsx";
 import { POSTS } from "../lib/blogPosts.js";
 import { topicLabel } from "../lib/blog.js";
 
 const linkClass = "font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
 const wayLink = "inline-flex min-h-[44px] items-center font-semibold text-[var(--primary)] underline-offset-4 hover:text-[var(--primary-hover)] hover:underline";
+// Zweiter, kleinerer Link unter dem Hauptlink (höchstens einer je Weg)
+const waySubLink = "-mt-2 inline-flex min-h-[44px] items-center text-[15px] text-[var(--text-soft)] underline underline-offset-4 decoration-[var(--border)] hover:text-[var(--green-deep)] hover:decoration-[var(--text-soft)]";
 
 /** Link auf eine Seite mit Adresse (href) oder über den page-Zustand (page → onGo). */
 function NavLink({ link, onGo, className }) {
@@ -55,12 +58,15 @@ const WAYS = [
       ? "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit Methodik, 30 Beispielen und der Aktiensuche."
       : "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit der Methodik und der Aktiensuche.",
     link: { label: "So prüfst du selbst →", href: AKADEMIE_PRUEFEN_LINK },
+    sub: { label: "Aktie nachschlagen", href: routes.aktien() },
   },
   {
     n: 3,
     title: "Dranbleiben",
     text: "Wochenbericht und Kalender: was an den Märkten passiert und welche Termine anstehen.",
     link: { label: "Zum Wochenbericht →", href: routes.wochenbericht() },
+    // Kalender erst, wenn er in der Seitenleiste freigeschaltet ist (SOON_KEYS in Sidebar.jsx)
+    sub: SOON_KEYS.has("kalender") ? null : { label: "Kalender", page: "calendar" },
   },
 ];
 
@@ -290,8 +296,9 @@ export default function StartPage({ onGo }) {
                   {w.title}
                 </h3>
                 <p className="mx-auto mt-2.5 max-w-[320px] text-[17px] leading-relaxed text-[var(--text-soft)]">{w.text}</p>
-                <div className="mt-3 flex justify-center">
+                <div className="mt-3 flex flex-col items-center">
                   <NavLink link={w.link} onGo={onGo} className={wayLink} />
+                  {w.sub && <NavLink link={w.sub} onGo={onGo} className={waySubLink} />}
                 </div>
               </section>
             ))}

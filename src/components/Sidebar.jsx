@@ -19,7 +19,7 @@ import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 import { Frieze, RosetteOverlay, StarMark } from "./ornaments.jsx";
 
 // Noch nicht fertig: sichtbar mit „folgt bald“, nicht klickbar. Zum Freischalten den Schlüssel entfernen.
-const SOON_KEYS = new Set(["blog", "kalender"]);
+export const SOON_KEYS = new Set(["blog", "kalender"]);
 
 // Farben auf Grün (Tokens in App.jsx :root; Kontrast auf --green-deep: Hellgold 10,1 : 1, --on-green-soft 10,4 : 1)
 const GOLD_55 = "var(--gold-light-55)";

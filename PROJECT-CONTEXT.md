@@ -155,7 +155,7 @@ Branch `ruhiger` (von `seitenleiste`), gepusht, **nicht gemergt**. Entwurf „St
   - Fläche hell (`--surface`, ohne Muster); oben eine feine Linie `--border` und der goldene Fries, unten nur die Linie.
   - Überschrift und Titel in `--green-deep`, unter der Überschrift `StarRule`.
   - Nummern im achtzackigen Stern (`OctaStarNumber`, Linie `--gold`, Ziffer `--gold-soft`), Texte in `--text-soft`.
-  - Je Weg ein Link: „Zur Akademie →“ (`#/lernen`), „So prüfst du selbst →“ (`AKADEMIE_PRUEFEN_LINK`, solange 3.3 nicht online ist `#/lernen`), „Zum Wochenbericht →“. Die bisherigen Links Methodik, Aktien und Kalender in diesem Band entfallen; sie stehen weiter in der Seitenleiste.
+  - Je Weg ein Hauptlink und darunter höchstens ein zweiter, kleinerer Link (`--text-soft`, 15 px, ohne Pfeil): Lernen nur „Zur Akademie →“ (`#/lernen`). Selbst prüfen „So prüfst du selbst →“ (`AKADEMIE_PRUEFEN_LINK`, solange 3.3 nicht online ist `#/lernen`), darunter „Aktie nachschlagen“ (`#/aktien`). Dranbleiben „Zum Wochenbericht →“, darunter „Kalender“, aber erst, wenn `kalender` nicht mehr in `SOON_KEYS` steht (jetzt exportiert aus `Sidebar.jsx`); bis dahin ohne zweiten Link. Methodik entfällt im Band; sie steht in der Seitenleiste und wird aus Lektion 3.3 verlinkt.
 - **Durchgesehen, keine weitere große Fläche über die volle Breite mit Rosette:**
   - Fußzeile: grün über die volle Breite, aber ohne Rosette, unverändert.
   - Redaktion: schmale grüne Leiste „Redaktion · intern“, ohne Rosette, nur intern.
