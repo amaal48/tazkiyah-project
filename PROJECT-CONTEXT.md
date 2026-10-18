@@ -144,7 +144,7 @@ Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `mai
   - Tastatur durch die ganze Leiste, Fokusrahmen Hellgold.
   - Handy 375 px und Tablet 768 px ohne seitliches Scrollen; Menü schließt mit Esc, Link, Suche und Seitenwechsel.
   - Angemeldete Ansicht (Watchlist 4, Redaktion, Initiale, „Mein Konto“) mit Test-Sitzung gerendert, das Kontomenü nach oben nur im Code geprüft.
-- **Offen:** Blog und Kalender freischalten, sobald fertig (`SOON_KEYS`). Klären, ob der Umschalter auf der Seite Berichte den Blog bis dahin auch als „folgt bald“ zeigen soll. Bei niedrigen Fenstern (unter ca. 760 px Höhe) scrollen die Menüpunkte, der Kontobereich bleibt unten stehen.
+- **Offen:** Blog und Kalender freischalten, sobald fertig (`SOON_KEYS`). **Beim Freischalten des Kalenders (Entscheidung 18.10.2026):** eigene Adresse `#/kalender` anlegen (`hashRoute.js`: Route und `routes.kalender()`, mit Test) und in der Seitenleiste sowie im zweiten Link „Kalender“ unter „Dranbleiben“ (`StartPage.jsx`) statt `page: "calendar"` verwenden. Klären, ob der Umschalter auf der Seite Berichte den Blog bis dahin auch als „folgt bald“ zeigen soll. Bei niedrigen Fenstern (unter ca. 760 px Höhe) scrollen die Menüpunkte, der Kontobereich bleibt unten stehen.
 
 ### Grün nur in der Leiste und in kleinen Kästen (18.10.2026)
 
