@@ -16,6 +16,7 @@ import { routes } from "../lib/hashRoute.js";
 import MarketData from "./screening/MarketData.jsx";
 import CompanyCalendar from "./CompanyCalendar.jsx";
 import { H1_STYLE } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
 import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 const ASSET_TEXT = { stock: "Aktie", etf: "ETF" };
@@ -55,7 +56,7 @@ export default function StockInfoPage({ ticker, row, pending = false, onBack, ba
           <p className="max-w-[68ch] text-[17px] leading-relaxed text-[var(--text-soft)]">
             Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann,
             erklären wir in der{" "}
-            <a href={routes.lernen()} className={linkClass}>
+            <a href={AKADEMIE_PRUEFEN_LINK} className={linkClass}>
               Akademie
             </a>
             .

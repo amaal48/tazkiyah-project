@@ -146,3 +146,19 @@ export function StarOutline({ size = 40, stroke = "var(--gold-light)", className
     </svg>
   );
 }
+
+/** Achtzackiger Stern (zwei überlagerte Quadrate) mit Nummer, z. B. „2.10“ (Akademie). filled: Fläche statt Linie. */
+export function OctaStarNumber({ n, size = 48, stroke = "var(--gold)", color = "var(--gold-soft)", fill = "none", className = "" }) {
+  const long = String(n).length > 3;
+  return (
+    <svg aria-hidden="true" focusable="false" width={size} height={size} viewBox="0 0 64 64" className={"flex-none " + className}>
+      <g style={{ stroke, fill }} strokeWidth="1.6" strokeLinejoin="round">
+        <rect x="11" y="11" width="42" height="42" />
+        <rect x="11" y="11" width="42" height="42" transform="rotate(45 32 32)" />
+      </g>
+      <text x="32" y={long ? 38 : 39.5} textAnchor="middle" fontFamily="'Cormorant Garamond', Georgia, serif" fontSize={long ? 19 : 23} fontWeight="700" style={{ fill: color }}>
+        {n}
+      </text>
+    </svg>
+  );
+}

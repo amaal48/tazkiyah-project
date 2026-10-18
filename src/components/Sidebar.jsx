@@ -61,7 +61,7 @@ const ACTIVE_PAGES = {
   wochenbericht: ["reports"],
   blog: ["blog", "blogpost"],
   kalender: ["calendar"],
-  akademie: ["faq"],
+  akademie: ["faq", "lesson"],
   methodik: ["methodik", "methodik2", "criterion"],
   kontakt: ["kontakt"],
   watchlist: ["watchlist"],

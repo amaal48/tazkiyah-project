@@ -47,9 +47,46 @@ Stand: 18.10.2026. Dieses Dokument dient als vollständiger Kontext für neue Cl
    Auf main erscheint der Status derzeit nur für die 30; die Aktiensuche zeigt keinen Status.
    Mit dem Archiv-Branch verschwindet er auch bei den 30.
 2. seitenleiste (von archiv-tazkiyah30) → Vorschau → Merge
-3. Schriften selbst hosten (Cormorant Garamond, Source Sans 3, ggf. IBM Plex Mono;
+3. akademie-lernpfad (von seitenleiste) → Vorschau → Merge
+4. Schriften selbst hosten (Cormorant Garamond, Source Sans 3, Source Serif 4, ggf. IBM Plex Mono;
    kommen derzeit noch von Google Fonts) – eigener kleiner Branch
 Design B2 ist seit 16.10. auf allen Seiten auf main (8050ffe), kein eigener Schritt mehr.
+
+### Akademie
+- Aufbau nach dem freigegebenen Entwurf „Akademie – Entwurf“ (Claude Design, 18.10.2026), Branch
+  `akademie-lernpfad` (von `seitenleiste`), gepusht, nicht gemergt. Planung der Inhalte in Notion „Akademie – Lernpfad“.
+- Drei Stufen, 25 Lektionen (`src/data/lernpfad.js`, Titel und Sätze wörtlich): 1 Grundlagen (1.1–1.7),
+  2 Einsteigen (2.1–2.10), 3 Fortgeschritten (3.1–3.8); 11 Lektionen mit „Islamischem Blick“.
+- **Alle Lektionen sind kostenlos.** Bezahlte Inhalte (Phase 2, einmalige Kurse) kommen später getrennt davon.
+- **Launch: 15 Lektionen** = Stufe 1 (1.1–1.7), 2.1–2.3, 2.7, 3.1–3.4. Die übrigen stehen als „folgt“.
+- **Texte:** je Lektion `content/lernen/<slug>.md` (Lektion 1.3 → `1-3.md`), Vorlage `content/lernen/_vorlage.md`.
+  Eine Lektion ist online, sobald die Datei im Repository ist (nach Commit und Deployment). Kopfangaben:
+  `aktualisiert` (Pflicht), `lesezeit`, `inhalt` („Auf dieser Seite“ auch bei kurzen Lektionen, sonst ab ca. 1.200
+  Wörtern), `abschluss` (nur letzte Lektion einer Stufe). Feste Abschnitte `## Kurz erklärt`, `## Erklärung`,
+  `## Islamischer Blick`, `## Häufige Fehler`, `## Merke`, `## Quiz`, `## Quellen`; im Text `### `
+  Zwischenüberschrift, `:::beispiel … :::` mit Rechentabelle (Ergebniszeile: erste Zelle **fett**),
+  `[[Begriff]]` bzw. `[[Begriff|Text]]` für das Glossar. Quiz: `### Frage: …`, `- [ ]`/`- [x]` (genau eine
+  richtig), `> Erklärung: …`. Test `src/lib/lessons.test.js` prüft jede Datei (Pflichtabschnitte Kurz erklärt,
+  Erklärung, Merke, gültiges Quiz) und warnt bei unbekannten Glossar-Begriffen. Kein HTML, Links nur
+  https/mailto/intern.
+- **Seiten:** Übersicht `#/lernen` (Weiter, wo du warst · Wo stehst du? · Stufen · Weitere Fragen, Reiter
+  „Broker-Vergleich“ ausgeblendet, Code bleibt), Sprung `#/lernen?stufe=n`, Glossar `#/lernen?glossar=Begriff`,
+  Lektion `#/lernen/<slug>` (nicht online → Übersicht). Glossar-Daten in `src/data/glossar.js` (ein Datensatz
+  für Reiter und Lektionstext). „… erklären wir in der Akademie“ (Aktienseite, Aktiensuche, Methodik) führt
+  über `AKADEMIE_PRUEFEN_LINK` auf 3.3, sobald `3-3.md` existiert, sonst auf `#/lernen`.
+- **Entwurfsmodus:** `VITE_AKADEMIE_ENTWURF = true` (nur lokal oder in der Vorschau, nie in Production): alle 25
+  Lektionen öffnebar, fehlende Abschnitte als graue Platzhalter, Beispiel-Quiz. Online sind weiter nur echte Dateien.
+- **Fortschritt nur im Browser:** localStorage `tazkiyah-akademie-gelesen` (Liste gelesener Lektionen) und
+  `tazkiyah-akademie-zuletzt` (zuletzt geöffnete). „Gelesen“, sobald der Abschluss-Kasten sichtbar wird. Nichts
+  geht an Supabase. Ohne Speicher (privates Fenster) einfach ohne Fortschritt.
+  **Für die Datenschutzerklärung vormerken:** lokale Speicherung des Lesefortschritts (und der eingeklappten
+  Seitenleiste) im Browser, keine Übermittlung, löschbar über die Browserdaten.
+- Geprüft (lokal, 18.10.2026, mit Entwurfsmodus und zwei vorübergehenden Testdateien 1-3/1-7, danach gelöscht):
+  1280/768/375 px ohne seitliches Scrollen; Glossar mit Tastatur und Esc; Quiz; gelesen und „Weiter, wo du warst“
+  nach Neuladen; „Stufe 1 abgeschlossen“ → 2.1; privates Fenster (Speicher gesperrt) ohne Fehler; Kontrast der
+  verwendeten Farbpaare mind. 5,1 : 1. Ohne Entwurfsmodus: nicht vorhandene Lektionen leiten auf `#/lernen`.
+- **Offen:** Einleitung der Übersicht ([Platzhalter]); Lektionstexte; Zielgruppe der Kurse (Phase 2);
+  Broker-Vergleich neu oder entfernen; Blogbeiträge verweisen mit `lektion: 1.3` auf eine Lektion.
 
 ### Wochenbericht
 - Entwurf entsteht samstags 6:54 Uhr per geplanter Claude-Aufgabe in Notion

@@ -22,6 +22,7 @@ import { routes } from "../lib/hashRoute.js";
 import StageDiagram from "./screening/StageDiagram.jsx";
 import StatusLegend from "./screening/StatusLegend.jsx";
 import { H1_STYLE, NOTICE_NO_ADVICE, shortExplanation } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
 import { FEATURE_TAZKIYAH30, NO_SHARIA_ASSESSMENT_TEXT } from "../lib/features.js";
 import { neutralize } from "../lib/neutralWording.js";
 
@@ -348,7 +349,7 @@ export default function MethodikPage({ onBack, anchor }) {
           {!FEATURE_TAZKIYAH30 && (
             <p className="mt-6 max-w-[68ch] border border-[var(--note-border)] bg-[var(--note-bg)] p-5 text-[15px] leading-relaxed text-[var(--text-soft)]">
               {NO_SHARIA_ASSESSMENT_TEXT}{" "}
-              <a href={routes.lernen()} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
+              <a href={AKADEMIE_PRUEFEN_LINK} className="text-[var(--primary)] underline underline-offset-2 hover:text-[var(--primary-hover)]">
                 Zur Akademie
               </a>
             </p>

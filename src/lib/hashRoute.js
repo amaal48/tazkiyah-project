@@ -11,7 +11,8 @@
 //   #/kriterium/b1     Erklärseite je Prüfung (ID klein)
 //   #/methodik         Methodik-Übersicht
 //   #/methodik-2       Methodik, vereinfachte Fassung (Entwurf zum Vergleich, 16.10.2026)
-//   #/lernen           Akademie mit Lernpfad (Navigation „Lernen“)
+//   #/lernen           Akademie mit Lernpfad; #/lernen?stufe=2 springt zur Stufe, #/lernen?glossar=Riba zum Glossar
+//   #/lernen/1-3       eine Lektion (slug aus src/data/lernpfad.js)
 //   #/berichte         Berichte, führt zum Wochenbericht
 //   #/berichte/wochenbericht             aktuelle Ausgabe und frühere Ausgaben
 //   #/berichte/wochenbericht/2026-kw42   eine Ausgabe (Jahr und Kalenderwoche)
@@ -46,7 +47,15 @@ export function parseHash(hash = typeof window !== "undefined" ? window.location
   if (parts[0] === "kriterium" && parts[1]) return { name: "criterion", id: parts[1].toUpperCase() };
   if (parts[0] === "methodik") return { name: "methodik" };
   if (parts[0] === "methodik-2") return { name: "methodik2" };
-  if (parts[0] === "lernen") return { name: "lernen" };
+  if (parts[0] === "lernen") {
+    if (parts[1]) return { name: "lesson", slug: parts[1].toLowerCase() };
+    const q = new URLSearchParams(query);
+    const stufe = Number.parseInt(q.get("stufe"), 10);
+    const r = { name: "lernen" };
+    if (stufe >= 1 && stufe <= 3) r.stufe = stufe;
+    if (q.get("glossar")) r.glossar = q.get("glossar");
+    return r;
+  }
   if (parts[0] === "redaktion") {
     if (parts[1] === "vorschau") return { name: "redaktionVorschau" };
     return { name: "redaktion", id: parts[2] || null };
@@ -78,7 +87,14 @@ export const routes = {
   criterion: (id) => `#/kriterium/${String(id).toLowerCase()}`,
   methodik: () => "#/methodik",
   methodik2: () => "#/methodik-2",
-  lernen: () => "#/lernen",
+  lernen: ({ stufe, glossar } = {}) => {
+    const q = new URLSearchParams();
+    if (stufe) q.set("stufe", String(stufe));
+    if (glossar) q.set("glossar", glossar);
+    const qs = q.toString();
+    return `#/lernen${qs ? `?${qs}` : ""}`;
+  },
+  lesson: (slug) => `#/lernen/${encodeURIComponent(slug)}`,
   wochenbericht: (slug) => (slug ? `#/berichte/wochenbericht/${slug}` : "#/berichte/wochenbericht"),
   redaktion: (id) => (id ? `#/redaktion/wochenbericht/${encodeURIComponent(id)}` : "#/redaktion/wochenbericht"),
   redaktionVorschau: () => "#/redaktion/vorschau",

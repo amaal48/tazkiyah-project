@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test:screening": "node --test src/screening/engine.test.js src/screening/runner.test.js src/screening/publicResult.test.js src/screening/tazkiyah30.test.js src/screening/archivTazkiyah30.test.js src/screening/holdingsCsv.test.js src/screening/industryRules.test.js src/screening/providers/fmp.test.js src/screening/providers/sec.test.js src/screening/providers/secFmp.test.js",
     "test:scripts": "node --test scripts/lib/review.test.mjs scripts/lib/exchanges.test.mjs scripts/lib/universum.test.mjs",
-    "test:lib": "node --test src/lib/blog.test.js src/lib/weeklyReport.test.js src/lib/weeklyDraft.test.js src/lib/wochenberichtSql.test.js src/weekly/publish.test.js src/lib/hashRoute.test.js src/lib/tradingView.test.js src/lib/questionDigest.test.js src/lib/contact.test.js src/components/screening/format.test.js src/lib/neutralWording.test.js",
+    "test:lib": "node --test src/lib/blog.test.js src/lib/weeklyReport.test.js src/lib/weeklyDraft.test.js src/lib/wochenberichtSql.test.js src/weekly/publish.test.js src/lib/hashRoute.test.js src/lib/tradingView.test.js src/lib/questionDigest.test.js src/lib/contact.test.js src/components/screening/format.test.js src/lib/neutralWording.test.js src/lib/lessons.test.js",
     "test:calendar": "node --test src/calendar/secCalendar.test.js src/calendar/companyCalendarSql.test.js"
   },
   "dependencies": {

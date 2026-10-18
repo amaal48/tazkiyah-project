@@ -10,6 +10,7 @@ import { useScreeningList } from "../lib/screeningData.js";
 import { EARNINGS_STATUS_TEXT, useCalendarList } from "../lib/calendarData.js";
 import { routes } from "../lib/hashRoute.js";
 import { H1_STYLE, fmtDate } from "./screening/format.js";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
 import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 
 const PAGE = 50;
@@ -64,7 +65,7 @@ export default function AktienPage({ initialQuery = null }) {
           <p className="mt-4 text-[19px] leading-relaxed text-[var(--muted)]">
             Kurs, Chart, Unternehmensprofil, Termine und Berichte für alle Aktien unserer Liste. Tazkiyah gibt keine
             Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann, erklären wir in der{" "}
-            <a href={routes.lernen()} className={linkClass}>
+            <a href={AKADEMIE_PRUEFEN_LINK} className={linkClass}>
               Akademie
             </a>
             .

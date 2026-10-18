@@ -11,7 +11,7 @@ untertitel: "Was Anleger wissen sollten."
 datum: 2026-10-20
 aktualisiert: 2026-10-22
 thema: Märkte & Wirtschaft
-lektion: 3
+lektion: 1.3
 quellen:
   - Bundesbank, Monatsbericht, Oktober 2026, https://www.bundesbank.de/x.
   - SEC, Form 10-K, 2026
@@ -48,7 +48,7 @@ test("Beitrag: Slug, Thema, Lektion, Quellen mit Link", () => {
   const p = parsePost("ki-blase", SAMPLE);
   assert.equal(p.slug, "ki-blase");
   assert.equal(p.thema, "maerkte");
-  assert.equal(p.lektion, 3);
+  assert.equal(p.lektion, "1.3");
   assert.equal(p.aktualisiert, "2026-10-22");
   assert.deepEqual(p.quellen[0], { text: "Bundesbank, Monatsbericht, Oktober 2026", url: "https://www.bundesbank.de/x" });
   assert.deepEqual(p.quellen[1], { text: "SEC, Form 10-K, 2026", url: null });
@@ -119,4 +119,18 @@ test("Vorlage content/blog/_vorlage.md ist gültig (als Beitrag lesbar, wenn umb
 
 test("parseBody: leerer Text", () => {
   assert.deepEqual(parseBody(""), []);
+});
+
+test("Zwischenüberschrift H3 und Rechentabelle mit Ergebniszeile", () => {
+  const blocks = parseBody("### Klein\n\n| Umsatz | 100 € |\n|---|---|\n| **Ergebnis** | **40 €** |");
+  assert.deepEqual(blocks.map((b) => b.type), ["h3", "table"]);
+  assert.equal(blocks[1].rows.length, 2);
+  assert.equal(blocks[1].rows[0].result, false);
+  assert.equal(blocks[1].rows[1].result, true);
+  assert.deepEqual(blocks[1].rows[1].cells[0], [{ type: "text", text: "Ergebnis" }]);
+});
+
+test("Unbekannte Kästen bleiben im Blog Text", () => {
+  const blocks = parseBody(":::beispiel\nRechnung\n:::");
+  assert.ok(blocks.every((b) => b.type === "p"));
 });

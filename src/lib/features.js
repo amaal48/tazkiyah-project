@@ -13,6 +13,11 @@ const env = (typeof import.meta !== "undefined" && import.meta.env) || {};
 
 export const FEATURE_TAZKIYAH30 = String(env.VITE_FEATURE_TAZKIYAH30 ?? "").trim() === "true";
 
+// VITE_AKADEMIE_ENTWURF (Standard: aus, 18.10.2026): Entwurfsmodus der Akademie. Ein: alle 25 Lektionen sind
+// öffnebar, fehlende Abschnitte zeigen graue Platzhalter. Als „online“ gelten weiter nur echte Dateien in
+// content/lernen/. Nur der Wert "true" schaltet ein; in Production nicht setzen.
+export const FEATURE_AKADEMIE_ENTWURF = String(env.VITE_AKADEMIE_ENTWURF ?? "").trim() === "true";
+
 /** Hinweis auf jeder Aktienseite und in der Aktiensuche, solange die Tazkiyah 30 archiviert sind. */
 export const NO_SHARIA_ASSESSMENT_TEXT =
   "Tazkiyah gibt keine Sharia-Einschätzung zu einzelnen Aktien ab. Wie man selbst nach dem AAOIFI-Standard prüfen kann, erklären wir in der Akademie.";
