@@ -2,7 +2,7 @@
 //
 // Startseite (#/), Design B2 „Das Muster, hell“ (16.10.2026), Aufbau nach der Vorlage
 // tazkiyah-design-b2-startseite.html: Aufmacher mit Spitzbogen und Wochenbericht, grünes Band
-// „Drei Wege durch Tazkiyah“ (Lernen → Selbst prüfen → Dranbleiben), die Tazkiyah 30 und „Diese Woche“
+// „Drei Wege durch Tazkiyah“ (Lernen → Selbst prüfen → Dranbleiben; seit 18.10.2026 hell, Entwurf „Startseite ruhiger“), die Tazkiyah 30 und „Diese Woche“
 // in Manuskript-Rahmen, darunter der rechtliche Hinweis. Platzhalter der Vorlage sind durch echte Daten
 // ersetzt (Wochenbericht: neueste veröffentlichte Ausgabe aus weekly_reports, Endergebnisse der Tazkiyah 30, Termine aus company_calendar)
 // oder durch „folgt“. Die Legende (konform / nicht konform) steht nur auf der Seite der Tazkiyah 30.
@@ -19,12 +19,13 @@ import { addDays } from "../calendar/secCalendar.js";
 import { TAZKIYAH30_SIZE } from "../data/tazkiyah30.js";
 import { FEATURE_TAZKIYAH30 } from "../lib/features.js";
 import { LegalNoticeFull } from "./screening/LegalNotice.jsx";
-import { ArchFrame, GreenBand, ManuscriptFrame, StarNumber } from "./ornaments.jsx";
+import { ArchFrame, Frieze, ManuscriptFrame, OctaStarNumber, StarRule } from "./ornaments.jsx";
+import { AKADEMIE_PRUEFEN_LINK } from "../lib/lessonFiles.js";
 import { POSTS } from "../lib/blogPosts.js";
 import { topicLabel } from "../lib/blog.js";
 
 const linkClass = "font-semibold text-[var(--primary)] underline-offset-2 hover:text-[var(--primary-hover)] hover:underline";
-const goldLink = "inline-flex min-h-[44px] items-center font-semibold text-[var(--gold-light)] underline underline-offset-4 decoration-[var(--gold-light)]/50 hover:decoration-[var(--gold-light)]";
+const wayLink = "inline-flex min-h-[44px] items-center font-semibold text-[var(--primary)] underline-offset-4 hover:text-[var(--primary-hover)] hover:underline";
 
 /** Link auf eine Seite mit Adresse (href) oder über den page-Zustand (page → onGo). */
 function NavLink({ link, onGo, className }) {
@@ -44,7 +45,7 @@ const WAYS = [
     n: 1,
     title: "Lernen",
     text: "Die Grundlagen, kurz erklärt – von der ersten Aktie bis zur Reinigung.",
-    links: [{ label: "Zum Lernpfad", href: routes.lernen() }],
+    link: { label: "Zur Akademie →", href: routes.lernen() },
   },
   {
     n: 2,
@@ -53,20 +54,13 @@ const WAYS = [
     text: FEATURE_TAZKIYAH30
       ? "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit Methodik, 30 Beispielen und der Aktiensuche."
       : "Wie du erkennst, ob eine Aktie zu deinen Werten passt – mit der Methodik und der Aktiensuche.",
-    links: [
-      { label: "Methodik", href: routes.methodik() },
-      ...(FEATURE_TAZKIYAH30 ? [{ label: "Tazkiyah 30", href: routes.tazkiyah30() }] : []),
-      { label: "Aktien", href: routes.aktien() },
-    ],
+    link: { label: "So prüfst du selbst →", href: AKADEMIE_PRUEFEN_LINK },
   },
   {
     n: 3,
     title: "Dranbleiben",
     text: "Wochenbericht und Kalender: was an den Märkten passiert und welche Termine anstehen.",
-    links: [
-      { label: "Berichte", href: routes.wochenbericht() },
-      { label: "Kalender", page: "calendar" },
-    ],
+    link: { label: "Zum Wochenbericht →", href: routes.wochenbericht() },
   },
 ];
 
@@ -279,31 +273,31 @@ export default function StartPage({ onGo }) {
       {/* Aus dem Blog (nur mit Beiträgen) */}
       <BlogStrip />
 
-      {/* Drei Wege */}
-      <GreenBand as="section" aria-labelledby="drei-wege">
+      {/* Drei Wege: hell (18.10.2026), Grün nur noch im Bogen des Aufmachers */}
+      <section aria-labelledby="drei-wege" className="border-y border-[var(--border)] bg-[var(--surface)]">
+        <Frieze />
         <div className="page py-[72px] max-[640px]:py-14">
-          <h2 id="drei-wege" className="font-display text-center text-[48px] leading-tight max-[640px]:text-[38px]" style={{ margin: 0, fontWeight: 500 }}>
+          <h2 id="drei-wege" className="font-display text-center text-[48px] leading-tight text-[var(--green-deep)] max-[640px]:text-[38px]" style={{ margin: 0, fontWeight: 500 }}>
             Drei Wege durch Tazkiyah
           </h2>
-          <div className="mt-12 grid gap-10" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
+          <StarRule className="mx-auto mt-4" />
+          <div className="mt-10 grid gap-10" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
             {WAYS.map((w) => (
               <section key={w.n} className="text-center" aria-labelledby={`weg-${w.n}`}>
-                <StarNumber n={w.n} className="mx-auto" />
-                <h3 id={`weg-${w.n}`} className="font-display text-[34px] font-semibold leading-tight" style={{ margin: "14px 0 0" }}>
+                <OctaStarNumber n={w.n} size={72} className="mx-auto" />
+                <h3 id={`weg-${w.n}`} className="font-display text-[34px] font-semibold leading-tight text-[var(--green-deep)]" style={{ margin: "14px 0 0" }}>
                   <span className="sr-only-label">Weg {w.n}: </span>
                   {w.title}
                 </h3>
-                <p className="mx-auto mt-2.5 max-w-[320px] text-[17px] leading-relaxed text-[var(--on-green-soft)]">{w.text}</p>
-                <div className="mt-3 flex flex-wrap justify-center gap-x-4">
-                  {w.links.map((l) => (
-                    <NavLink key={l.label} link={l} onGo={onGo} className={goldLink} />
-                  ))}
+                <p className="mx-auto mt-2.5 max-w-[320px] text-[17px] leading-relaxed text-[var(--text-soft)]">{w.text}</p>
+                <div className="mt-3 flex justify-center">
+                  <NavLink link={w.link} onGo={onGo} className={wayLink} />
                 </div>
               </section>
             ))}
           </div>
         </div>
-      </GreenBand>
+      </section>
 
       {/* Tazkiyah 30 und Diese Woche */}
       <div className="page pb-8 pt-[72px] max-[640px]:pt-12">

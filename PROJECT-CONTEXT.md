@@ -128,7 +128,7 @@ Design B2 ist seit 16.10. auf allen Seiten auf main (8050ffe), kein eigener Schr
 
 Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `main` gemergt, `de0187a`). **Überarbeitet am 18.10.2026** nach dem freigegebenen Entwurf „Seitenleiste A überarbeitet“ (Claude Design), weiter im Branch `seitenleiste` (vorher auf den Stand von `main` gebracht), gepusht, **nicht gemergt**. **Auf dem Desktop gibt es keine Kopfleiste mehr; Suche und Konto stehen in der Leiste.**
 
-- **Desktop (ab 1024 px):** feste Leiste links (`src/components/Sidebar.jsx`, `SidebarDesktop`), 272 px, volle Höhe, Fläche `--green-deep` mit Rosettenmuster in Hellgold (Deckkraft 0,14, `RosetteOverlay` mit neuer Option `color`). Eckig, ohne Schatten. Von oben: StarMark in Hellgold und „Tazkiyah“ (Cormorant Garamond 34 px, Link zur Startseite) · Suchfeld (44 px, „Aktie suchen, z. B. Apple“, springt zu `#/aktien?suche=…`, `<label>` für Screenreader) · goldener Fries (`Frieze` mit `color="var(--gold-line)"`) · Menüpunkte in Gruppen · Kontobereich · Fußzeile der Leiste („Einklappen“ links, „Keine Anlageberatung“ rechts).
+- **Desktop (ab 1024 px):** feste Leiste links (`src/components/Sidebar.jsx`, `SidebarDesktop`), 272 px, volle Höhe, Fläche `--green-deep` mit Rosettenmuster in Hellgold (Deckkraft 0,07 seit 18.10.2026, vorher 0,14; `RosetteOverlay` mit neuer Option `color`). Eckig, ohne Schatten. Von oben: StarMark in Hellgold und „Tazkiyah“ (Cormorant Garamond 34 px, Link zur Startseite) · Suchfeld (44 px, „Aktie suchen, z. B. Apple“, springt zu `#/aktien?suche=…`, `<label>` für Screenreader) · goldener Fries (`Frieze` mit `color="var(--gold-line)"`) · Menüpunkte in Gruppen · Kontobereich · Fußzeile der Leiste („Einklappen“ links, „Keine Anlageberatung“ rechts).
 - **Gruppen** (Kicker 12 px, Versalien, Hellgold): „Entdecken“: Start · Aktiensuche · Berichte (aufklappbar: Wochenbericht, Blog) · Kalender (· Die Tazkiyah 30, nur mit `VITE_FEATURE_TAZKIYAH30 = true`). „Verstehen“: Akademie · Methodik · Kontakt. Punkte 17 px, mind. 46 px hoch, Text `--on-green-soft`, beim Darüberfahren heller.
 - **Aktiv:** Fläche `--paper`, Text `--green-deep`, halbfett, kleiner gefüllter Goldstern links, `aria-current="page"`. Bei aufgeklappten Berichten trägt der Unterpunkt die volle Markierung, „Berichte“ ist nur halbfett. Die Gruppe klappt auf, sobald man in Berichten ist.
 - **„folgt bald“:** Blog und Kalender sind sichtbar, aber nicht klickbar (`SOON_KEYS` in `Sidebar.jsx`; zum Freischalten den Schlüssel entfernen); rechts kleine Hellgold-Versalien. Über die Adresse, den Umschalter „Wochenbericht | Blog“ auf der Seite Berichte und die Startseite sind beide weiter erreichbar.
@@ -145,6 +145,25 @@ Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `mai
   - Handy 375 px und Tablet 768 px ohne seitliches Scrollen; Menü schließt mit Esc, Link, Suche und Seitenwechsel.
   - Angemeldete Ansicht (Watchlist 4, Redaktion, Initiale, „Mein Konto“) mit Test-Sitzung gerendert, das Kontomenü nach oben nur im Code geprüft.
 - **Offen:** Blog und Kalender freischalten, sobald fertig (`SOON_KEYS`). Klären, ob der Umschalter auf der Seite Berichte den Blog bis dahin auch als „folgt bald“ zeigen soll. Bei niedrigen Fenstern (unter ca. 760 px Höhe) scrollen die Menüpunkte, der Kontobereich bleibt unten stehen.
+
+### Grün nur in der Leiste und in kleinen Kästen (18.10.2026)
+
+Branch `ruhiger` (von `seitenleiste`), gepusht, **nicht gemergt**. Entwurf „Startseite ruhiger“ (Claude Design, 18.10.2026): weniger Dunkelgrün auf einmal. Nur die Darstellung ist geändert.
+- **Regel:** Große dunkelgrüne Flächen mit Rosette gibt es im Inhalt nicht mehr über die volle Breite. Grün bleiben die Seitenleiste, das Handy-Menü und kleine Kästen (z. B. „Wo stehst du?“, Glossar-Erklärung, „Stufe abgeschlossen“, Einordnung im Wochenbericht, Abo-Kasten). Einziger großer grüner Blickfang ist der Bogen „Wochenbericht“ im Aufmacher der Startseite.
+- **Seitenleiste und Handy-Menü:** Rosette mit Deckkraft 0,07 statt 0,14, nur noch als leichte Struktur zu sehen.
+- **Startseite, „Drei Wege durch Tazkiyah“:**
+  - Fläche hell (`--surface`, ohne Muster); oben eine feine Linie `--border` und der goldene Fries, unten nur die Linie.
+  - Überschrift und Titel in `--green-deep`, unter der Überschrift `StarRule`.
+  - Nummern im achtzackigen Stern (`OctaStarNumber`, Linie `--gold`, Ziffer `--gold-soft`), Texte in `--text-soft`.
+  - Je Weg ein Link: „Zur Akademie →“ (`#/lernen`), „So prüfst du selbst →“ (`AKADEMIE_PRUEFEN_LINK`, solange 3.3 nicht online ist `#/lernen`), „Zum Wochenbericht →“. Die bisherigen Links Methodik, Aktien und Kalender in diesem Band entfallen; sie stehen weiter in der Seitenleiste.
+- **Durchgesehen, keine weitere große Fläche über die volle Breite mit Rosette:**
+  - Fußzeile: grün über die volle Breite, aber ohne Rosette, unverändert.
+  - Redaktion: schmale grüne Leiste „Redaktion · intern“, ohne Rosette, nur intern.
+  - Blog: Bildfläche des neuesten Beitrags mit Rosette, halb so breit im Rahmen; der Blog ist noch leer.
+  - Wochenbericht: Abo-Kasten.
+  - Anmelde-Dialog: linke Hälfte mit Bogen, eigener Vollbild-Dialog.
+  - Alle übrigen grünen Stellen sind kleine Kästen oder Knöpfe.
+- **Kontrast auf `--surface`:** `--green-deep` 12,6 : 1, `--text-soft` 9,0 : 1, `--primary` 7,6 : 1, `--gold-soft` 5,9 : 1. Geprüft bei 1280 px und 375 px ohne seitliches Scrollen.
 
 ### Archiv Tazkiyah 30 (17.10.2026)
 

@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 //
 // Navigation als Seitenleiste nach dem Entwurf „Seitenleiste A überarbeitet“ (Claude Design, 18.10.2026):
-// dunkelgrüne Fläche mit Rosette in Hellgold, oben Logo und Suche, goldener Fries, Menüpunkte in Gruppen
+// dunkelgrüne Fläche mit Rosette in Hellgold (seit 18.10.2026 nur noch leicht, Deckkraft 0,07), oben Logo und Suche, goldener Fries, Menüpunkte in Gruppen
 // („Entdecken“, „Verstehen“), unten der Kontobereich. Eckig, ohne Schatten. Auf dem Desktop gibt es keine
 // Kopfleiste mehr; Suche und Konto stehen in der Leiste.
 //   - Desktop (ab 1024 px): feste Leiste links (SidebarDesktop), 272 px, einklappbar auf 72 px (nur Zeichen);
@@ -533,7 +533,7 @@ function SidebarBody({ collapsed = false, searchId, searchRef, onSearchIcon, top
   const { page, onGo, onNavigate } = props;
   return (
     <>
-      <RosetteOverlay opacity={0.14} color="var(--gold-light)" />
+      <RosetteOverlay opacity={0.07} color="var(--gold-light)" />
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div className={"flex flex-none items-center gap-2 pt-5 " + (collapsed ? "justify-center px-2" : "justify-between pl-5 pr-4")}>
           <Brand onGo={onGo} onNavigate={onNavigate} collapsed={collapsed} />
