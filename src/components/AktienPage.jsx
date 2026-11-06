@@ -79,9 +79,9 @@ export default function AktienPage({ initialQuery = null }) {
             <span className="sr-only-label">Name oder Ticker suchen</span>
             <input value={f.query} onChange={(e) => update({ query: e.target.value })} placeholder="Name oder Ticker suchen" className="field w-full" />
           </label>
-          <label>
+          <label className="w-full sm:w-64">
             <span className="sr-only-label">Branche</span>
-            <select value={f.sector} onChange={(e) => update({ sector: e.target.value })} className="field">
+            <select value={f.sector} onChange={(e) => update({ sector: e.target.value })} className="field w-full">
               <option value="">Alle Branchen</option>
               {sectors.map((s) => (
                 <option key={s} value={s}>
@@ -113,9 +113,8 @@ export default function AktienPage({ initialQuery = null }) {
                 <th scope="col" className="px-5 py-3 font-medium">Unternehmen</th>
                 <th scope="col" className="px-5 py-3 font-medium">Branche</th>
                 <th scope="col" className="px-5 py-3 font-medium">Börse</th>
-                <th scope="col" className="px-5 py-3 font-medium">Kurs &amp; Chart</th>
                 <th scope="col" className="px-5 py-3 font-medium">Nächste Zahlen</th>
-                <th scope="col" className="px-5 py-3 font-medium">Berichte</th>
+                <th scope="col" className="px-5 py-3 font-medium">Detailansicht</th>
               </tr>
             </thead>
             <tbody>
@@ -133,11 +132,6 @@ export default function AktienPage({ initialQuery = null }) {
                   <td className="px-5 py-3 text-[var(--text-soft)]">{r.sector || "–"}</td>
                   <td className="px-5 py-3 font-[IBM_Plex_Mono] text-[13px] text-[var(--text-soft)]">{r.exchange || "–"}</td>
                   <td className="px-5 py-3">
-                    <a href={routes.stock(r.ticker)} className={linkClass} aria-label={`Kurs und Chart von ${r.name}`}>
-                      Kurs &amp; Chart
-                    </a>
-                  </td>
-                  <td className="px-5 py-3">
                     {cal.byTicker.get(r.ticker)?.next_earnings_date ? (
                       <>
                         <span className="font-[IBM_Plex_Mono] text-[14px] text-[var(--text)]">{fmtDate(cal.byTicker.get(r.ticker).next_earnings_date)}</span>
@@ -148,8 +142,8 @@ export default function AktienPage({ initialQuery = null }) {
                     )}
                   </td>
                   <td className="px-5 py-3">
-                    <a href={routes.stock(r.ticker)} className={linkClass} aria-label={`Berichte von ${r.name}`}>
-                      Berichte
+                    <a href={routes.stock(r.ticker)} className={linkClass} aria-label={`Detailansicht von ${r.name}`}>
+                      Detailansicht
                     </a>
                   </td>
                 </tr>
