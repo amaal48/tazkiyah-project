@@ -488,7 +488,8 @@ export default function TazkiyahPrototype() {
   const [blogSlug, setBlogSlug] = useState(null);
   const [contactPrefill, setContactPrefill] = useState({ topic: null, ticker: null });
   const [session, setSession] = useState(null);
-  const [showAuth, setShowAuth] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // false | "login" | "signup"
+  const openAuth = (mode = "login") => setShowAuth(mode === "signup" ? "signup" : "login");
   const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Session beim Start laden, plus auf Login/Logout reagieren.
@@ -672,6 +673,12 @@ export default function TazkiyahPrototype() {
           --on-primary: var(--paper);
           --on-green: var(--paper);
           --on-green-soft: #DCE5DF;  /* Text auf Grün, gedämpft (10,4 : 1) */
+          --green-darker: #0F2A21;   /* Kasten „Dein Konto“ in der Seitenleiste */
+          --on-green-placeholder: #BFCCC4; /* Platzhalter im Suchfeld der Seitenleiste (ca. 6,4 : 1) */
+          --gold-light-55: rgba(231, 207, 149, 0.55); /* Rand Suchfeld, Knöpfe auf Grün */
+          --gold-light-35: rgba(231, 207, 149, 0.35); /* Trennlinien auf Grün */
+          --paper-8: rgba(246, 241, 228, 0.08);       /* Suchfläche auf Grün */
+          --paper-7: rgba(246, 241, 228, 0.07);       /* Hover auf Grün */
           --footer: var(--green-deep);
           --footer-text: #DCE5DF;
           --footer-link: var(--gold-light);
@@ -745,12 +752,12 @@ export default function TazkiyahPrototype() {
         watchCount={wl.watchlist.length}
         onGo={goTo}
         session={session}
-        onOpenAuth={() => setShowAuth(true)}
+        onOpenAuth={openAuth}
         onSignOut={() => supabase.auth.signOut()}
       />
       )}
 
-      {showAuth && <AuthPanel onClose={() => setShowAuth(false)} />}
+      {showAuth && <AuthPanel initialMode={showAuth === "signup" ? "signup" : "login"} onClose={() => setShowAuth(false)} />}
       {showResetPassword && <ResetPasswordPanel onDone={() => setShowResetPassword(false)} />}
 
       {/* Seitenleiste links (ab 1024 px), daneben Inhalt und Fußzeile */}
@@ -764,6 +771,8 @@ export default function TazkiyahPrototype() {
             watchCount={wl.watchlist.length}
             collapsed={sidebarCollapsed}
             onToggleCollapsed={toggleSidebar}
+            onOpenAuth={openAuth}
+            onSignOut={() => supabase.auth.signOut()}
           />
         )}
       <div className="min-w-0 flex-1">

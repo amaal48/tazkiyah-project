@@ -17,8 +17,8 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { ArchFrame, ManuscriptFrame, RosetteOverlay, StarMark } from "./ornaments.jsx";
 
-export function AuthPanel({ onClose }) {
-  const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
+export function AuthPanel({ onClose, initialMode = "login" }) {
+  const [mode, setMode] = useState(initialMode); // "login" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
