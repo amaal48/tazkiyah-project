@@ -717,6 +717,13 @@ export default function TazkiyahPrototype() {
           .field { min-height: 50px; padding: 0 16px; border-radius: 0; background: var(--field); border: 1px solid var(--control-border); color: var(--text); font-size: 17px; font-family: 'Source Sans 3', system-ui, sans-serif; }
           .field:focus { border-color: var(--green-deep); }
           .field::placeholder { color: var(--muted); }
+          /* Auswahlfeld: gleiche Form wie das Textfeld, eigener Pfeil statt des Browser-Knopfs */
+          select.field {
+            -webkit-appearance: none; appearance: none; cursor: pointer; padding-right: 44px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1.5l6 6 6-6' stroke='%237A5B1F' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 16px center;
+          }
+          select.field:hover { border-color: var(--green-deep); }
           .field-label { display: block; font-size: 15px; font-weight: 600; color: var(--text); }
           .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 16px; border-radius: 0; background: transparent; border: 1px solid var(--control-border); color: var(--text); font-size: 15px; font-weight: 500; }
           .chip[aria-pressed="true"] { background: var(--green-deep); border-color: var(--green-deep); color: var(--paper); }
