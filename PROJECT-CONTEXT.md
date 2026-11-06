@@ -126,7 +126,7 @@ Design B2 ist seit 16.10. auf allen Seiten auf main (8050ffe), kein eigener Schr
 
 ### Navigation / Seitenleiste (17.10.2026, überarbeitet 18.10.2026)
 
-Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `main` gemergt, `de0187a`). **Überarbeitet am 18.10.2026** nach dem freigegebenen Entwurf „Seitenleiste A überarbeitet“ (Claude Design), weiter im Branch `seitenleiste` (vorher auf den Stand von `main` gebracht), gepusht, **nicht gemergt**. **Auf dem Desktop gibt es keine Kopfleiste mehr; Suche und Konto stehen in der Leiste.**
+Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `main` gemergt, `de0187a`). **Überarbeitet am 18.10.2026** nach dem freigegebenen Entwurf „Seitenleiste A überarbeitet“ (Claude Design), weiter im Branch `seitenleiste` (vorher auf den Stand von `main` gebracht), über `ruhiger` **am 06.11.2026 auf `main` gemergt (Merge-Commit `a5097b9`)**. **Auf dem Desktop gibt es keine Kopfleiste mehr; Suche und Konto stehen in der Leiste.**
 
 - **Desktop (ab 1024 px):** feste Leiste links (`src/components/Sidebar.jsx`, `SidebarDesktop`), 272 px, volle Höhe, Fläche `--green-deep` mit Rosettenmuster in Hellgold (Deckkraft 0,07 seit 18.10.2026, vorher 0,14; `RosetteOverlay` mit neuer Option `color`). Eckig, ohne Schatten. Von oben: StarMark in Hellgold und „Tazkiyah“ (Cormorant Garamond 34 px, Link zur Startseite) · Suchfeld (44 px, „Aktie suchen, z. B. Apple“, springt zu `#/aktien?suche=…`, `<label>` für Screenreader) · goldener Fries (`Frieze` mit `color="var(--gold-line)"`) · Menüpunkte in Gruppen · Kontobereich · Fußzeile der Leiste („Einklappen“ links, „Keine Anlageberatung“ rechts).
 - **Gruppen** (Kicker 12 px, Versalien, Hellgold): „Entdecken“: Start · Aktiensuche · Berichte (aufklappbar: Wochenbericht, Blog) · Kalender (· Die Tazkiyah 30, nur mit `VITE_FEATURE_TAZKIYAH30 = true`). „Verstehen“: Akademie · Methodik · Kontakt. Punkte 17 px, mind. 46 px hoch, Text `--on-green-soft`, beim Darüberfahren heller.
@@ -148,7 +148,7 @@ Erste Fassung 17.10.2026 (Branch `seitenleiste`, mit `akademie-lernpfad` in `mai
 
 ### Grün nur in der Leiste und in kleinen Kästen (18.10.2026)
 
-Branch `ruhiger` (von `seitenleiste`), gepusht, **nicht gemergt**. Entwurf „Startseite ruhiger“ (Claude Design, 18.10.2026): weniger Dunkelgrün auf einmal. Nur die Darstellung ist geändert.
+Branch `ruhiger` (von `seitenleiste`, enthält dessen Überarbeitung), **am 06.11.2026 auf `main` gemergt (Merge-Commit `a5097b9`)**. Entwurf „Startseite ruhiger“ (Claude Design, 18.10.2026): weniger Dunkelgrün auf einmal. Nur die Darstellung ist geändert.
 - **Regel:** Große dunkelgrüne Flächen mit Rosette gibt es im Inhalt nicht mehr über die volle Breite. Grün bleiben die Seitenleiste, das Handy-Menü und kleine Kästen (z. B. „Wo stehst du?“, Glossar-Erklärung, „Stufe abgeschlossen“, Einordnung im Wochenbericht, Abo-Kasten). Einziger großer grüner Blickfang ist der Bogen „Wochenbericht“ im Aufmacher der Startseite.
 - **Seitenleiste und Handy-Menü:** Rosette mit Deckkraft 0,07 statt 0,14, nur noch als leichte Struktur zu sehen.
 - **Startseite, „Drei Wege durch Tazkiyah“:**
